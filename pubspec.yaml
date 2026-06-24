@@ -1,0 +1,97 @@
+name: advance_media_kb
+description: "AdvanceMediaKB - Cross-platform multimedia file management application (Flutter + Rust)"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Rust FFI 桥接
+  flutter_rust_bridge: ^2.12.0
+
+  # 状态管理
+  bloc: ^8.1.4
+  flutter_bloc: ^8.1.6
+  equatable: ^2.0.7
+
+  # 图片查看
+  photo_view: ^0.15.0
+
+  # 视频播放
+  video_player: ^2.9.1
+  chewie: ^1.8.5
+
+  # 文件选择
+  file_picker: ^8.0.7
+
+  # 路径管理
+  path_provider: ^2.1.4
+  path: ^1.9.0
+
+  # 本地数据库 (Flutter 侧辅助)
+  sqflite: ^2.3.3+1
+
+  # 国际化
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.19.0
+
+  # 图片缓存
+  cached_network_image: ^3.4.1
+
+  # 权限管理
+  permission_handler: ^11.3.1
+
+  # 存储信息
+  device_info_plus: ^10.1.2
+
+  # 日志
+  logger: ^2.4.0
+
+  # JSON 序列化
+  json_annotation: ^4.9.0
+
+  # 共享偏好设置
+  shared_preferences: ^2.3.2
+
+  # 图片处理
+  image_picker: ^1.1.2
+
+  # 文件 MIME 类型检测
+  mime: ^2.0.0
+
+  # 日期时间处理
+  jiffy: ^6.3.1
+
+  # 主题/动态颜色
+  dynamic_color: ^1.7.2
+
+  # 图标
+  cupertino_icons: ^1.0.8
+  material_symbols_icons: ^4.2801.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^4.0.0
+
+  # FFI 代码生成 (flutter_rust_bridge 需要)
+  ffigen: ^14.0.0
+
+  # JSON 代码生成
+  json_serializable: ^6.8.0
+  build_runner: ^2.4.12
+
+flutter:
+  uses-material-design: true
+
+  # 应用图标和启动图资源
+  # assets:
+  #   - assets/images/
+  #   - assets/icons/
