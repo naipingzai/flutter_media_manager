@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge.dart';
 import 'src/rust/frb_generated.dart';
+import 'bloc/bloc.dart';
+import 'screens/home_screen.dart';
 
 /// 全局 Rust API 实例
 late final RustLib rustLib;
@@ -20,59 +23,56 @@ class AdvanceMediaKBApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'AdvanceMediaKB',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6750A4),
-          brightness: Brightness.light,
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<AppBloc>(
+          create: (context) => AppBloc()..add(const AppInitializeEvent()),
         ),
-        useMaterial3: true,
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6750A4),
-          brightness: Brightness.dark,
+        BlocProvider<MediaBloc>(
+          create: (context) => MediaBloc(),
         ),
-        useMaterial3: true,
+        BlocProvider<AlbumBloc>(
+          create: (context) => AlbumBloc(),
+        ),
+        BlocProvider<TagBloc>(
+          create: (context) => TagBloc(),
+        ),
+      ],
+      child: BlocBuilder<AppBloc, AppState>(
+        builder: (context, state) {
+          return MaterialApp(
+            title: 'AdvanceMediaKB',
+            debugShowCheckedModeBanner: false,
+            theme: ThemeData(
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: const Color(0xFF6750A4),
+                brightness: Brightness.light,
+              ),
+              useMaterial3: true,
+            ),
+            darkTheme: ThemeData(
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: const Color(0xFF6750A4),
+                brightness: Brightness.dark,
+              ),
+              useMaterial3: true,
+            ),
+            themeMode: _mapThemeMode(state.settings?.themeMode),
+            home: const HomeScreen(),
+          );
+        },
       ),
-      home: const HomeScreen(),
     );
   }
-}
 
-/// 主屏幕占位
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('AdvanceMediaKB'),
-        centerTitle: true,
-      ),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.photo_library, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
-            Text(
-              'AdvanceMediaKB',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Flutter + Rust 跨平台多媒体管理',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-            SizedBox(height: 24),
-            Text('Rust FFI 桥接已初始化'),
-          ],
-        ),
-      ),
-    );
+  ThemeMode _mapThemeMode(ThemeMode? mode) {
+    switch (mode) {
+      case ThemeMode.light:
+        return ThemeMode.light;
+      case ThemeMode.dark:
+        return ThemeMode.dark;
+      default:
+        return ThemeMode.system;
+    }
   }
 }
