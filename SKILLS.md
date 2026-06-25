@@ -1,17 +1,17 @@
-# AdvanceMediaKB-FR 项目 — 详细 Skill 规划文档
+# AdvanceMediaKB-FR 项目 — 完整 Skill 规划文档
 
-> 本文档记录项目目标、功能需求、技术架构、实现细节和开发规范。
-> 实现语言：Flutter + Rust
+> 本文档是项目的核心设计文档，整合了所有功能需求、技术方案、实现细节和迁移计划。
+> 实现语言：Flutter 3.24.5 + Dart 3.5.4 / Rust
 > 目标平台：Windows、iOS、Android、Linux
-> 必须遵守的命令：任何需要选择的或在不确定的东西，必须提供方案让用户手动选择，或给出新的设计方案，不允许自动选择方案，不允许用最简单最偷懒的方法，必须严格按照规范进行设计开发。
+> 参考项目：`/home/npznnz/VirtualBoxShareFloder/projects/AdvanceMediaKB`（Android Kotlin）
+>
+> 📋 实施状态详见 [SKILLS_IMPLEMENTATION.md](SKILLS_IMPLEMENTATION.md)
 
 ---
 
-## 一、项目概述
+## 第一章：项目概述
 
 **AdvanceMediaKB-FR** 是一个跨平台多媒体文件管理应用，基于 Flutter 前端 + Rust 核心后端架构。
-
-**参考项目**：`/home/npznnz/VirtualBoxShareFloder/projects/AdvanceMediaKB`（Android Kotlin + Jetpack Compose + Hilt + Room + Media3 ExoPlayer + Material 3 + Coil）
 
 **核心功能**：
 - 本地图片/视频/音频文件管理
@@ -32,13 +32,11 @@
 - 媒体解码：Rust 端处理（图片缩略图、视频信息提取、EXIF 读取）
 - UI 框架：Material 3
 
-> 📋 实施状态详见 [SKILLS_IMPLEMENTATION.md](SKILLS_IMPLEMENTATION.md)
-
 ---
 
-## 二、绝对规则
+## 第二章：绝对规则
 
-> **⚠️ 绝对规则：任何需要选择的或在不确定的东西，必须提供方案让用户手动选择，或给出新的设计方案，不允许自动选择方案，不允许用最简单最偷懒的方法，必须严格按照规范进行设计开发。**
+> **⚠️ 任何需要选择的或在不确定的东西，必须提供方案让用户手动选择，或给出新的设计方案，不允许自动选择方案，不允许用最简单最偷懒的方法，必须严格按照规范进行设计开发。**
 
 这意味着：
 1. 当存在多个技术方案时，必须列出所有候选方案的优缺点，由用户决策。
@@ -48,340 +46,555 @@
 
 ---
 
-## 三、目录结构规范
+## 第三章：目录结构
 
 ```
-flutter/
-├── lib/
-│   ├── main.dart                    # 应用入口
-│   ├── app.dart                     # 根应用组件（MaterialApp 配置）
-│   ├── ui/                          # UI 层
-│   │   ├── theme/                   # 主题配置（Material 3 动态颜色）
-│   │   ├── components/              # 可复用组件
-│   │   │   ├── selection_bottom_bar.dart
-│   │   │   ├── selection_count_text.dart
-│   │   │   └── standard_fab.dart
-│   │   └── transitions/             # 页面转场动画
-│   ├── pages/                       # 页面级组件
-│   │   ├── home_page.dart           # 首页（含 AllMedia/Album/Tag 三标签）
-│   │   ├── media_viewer_page.dart   # 媒体查看器（浏览模式 + 详情模式）
-│   │   ├── search_page.dart         # 搜索页
-│   │   ├── settings_page.dart       # 设置页
-│   │   ├── album_page.dart          # 相册浏览页
-│   │   ├── tag_page.dart            # 标签浏览页
-│   │   └── note_page.dart           # 笔记页
-│   ├── widgets/                     # 业务级 widgets
-│   │   ├── media_grid.dart          # 媒体网格（支持多选）
-│   │   ├── media_thumbnail_item.dart
-│   │   ├── tag_card.dart            # 标签卡片
-│   │   ├── album_card.dart          # 相册卡片
-│   │   ├── breadcrumb_navigation.dart
-│   │   ├── video_player_view.dart   # 视频播放器
-│   │   ├── video_controls_inline.dart
-│   │   ├── file_info_dialog.dart    # 文件信息对话框
-│   │   ├── import_progress_dialog.dart
+AdvanceMediaKB-FR/
+├── lib/                           # Flutter 前端代码
+│   ├── main.dart                  # 应用入口（Bloc 全局初始化）
+│   ├── bloc/                      # Bloc 状态管理
+│   │   ├── bloc.dart              # 统一导出
+│   │   ├── app/                   # 应用级状态（主题、初始化）
+│   │   ├── media/                 # 媒体列表状态
+│   │   ├── album/                 # 相册状态
+│   │   └── tag/                   # 标签状态
+│   ├── screens/                   # 页面级组件
+│   │   ├── home_screen.dart       # 首页（底部导航四标签）
+│   │   ├── media_screen.dart      # 媒体浏览页面
+│   │   ├── media_detail_screen.dart # 媒体详情查看器
+│   │   ├── album_screen.dart      # 相册浏览页
+│   │   ├── tag_screen.dart        # 标签浏览页
+│   │   ├── settings_screen.dart   # 设置页
+│   │   └── api_test_screen.dart   # API 调试页
+│   ├── widgets/                   # 可复用组件
+│   │   ├── media_grid.dart        # 媒体网格展示
+│   │   ├── search_bar.dart        # 搜索栏
 │   │   ├── file_browser_dialog.dart # 文件浏览器对话框
-│   │   ├── tag_selector_dialog.dart # 标签选择器（多选/筛选模式）
-│   │   ├── add_to_album_dialog.dart # 添加到相册对话框
-│   │   └── create_rename_dialogs.dart
-│   └── state/                       # 状态管理
-│       ├── providers/               # Riverpod Providers（或 Bloc）
-│       ├── models/                  # 状态模型（Freezed）
-│       └── notifiers/               # StateNotifier / AsyncNotifier
-
-rust_core/
-├── Cargo.toml
-├── src/
-│   ├── lib.rs                       # Rust 库入口，导出 FFI 接口
-│   ├── scanner/                     # 文件扫描模块
-│   │   ├── mod.rs
-│   │   ├── file_scanner.rs          # 递归扫描目录，识别媒体文件
-│   │   └── mime_detector.rs         # MIME 类型检测（magic bytes）
-│   ├── thumbnail/                   # 缩略图生成模块
-│   │   ├── mod.rs
-│   │   ├── image_thumbnail.rs       # 图片缩略图（使用 image crate）
-│   │   ├── video_thumbnail.rs       # 视频首帧提取（使用 ffmpeg 或 opencv）
-│   │   └── thumbnail_cache.rs       # 缩略图缓存管理（LRU + 磁盘缓存）
-│   ├── database/                    # 数据库模块
-│   │   ├── mod.rs
-│   │   ├── connection.rs            # SQLite 连接池管理
-│   │   ├── schema.rs                # 表结构定义 / 迁移
-│   │   ├── media_dao.rs             # 媒体项 DAO
-│   │   ├── album_dao.rs             # 相册 DAO
-│   │   ├── tag_dao.rs               # 标签 DAO
-│   │   ├── note_dao.rs              # 笔记 DAO
-│   │   └── search_dao.rs            # 搜索 DAO
-│   ├── search/                      # 搜索模块
-│   │   ├── mod.rs
-│   │   ├── text_search.rs           # 全文搜索（文件名 + 标签名）
-│   │   └── filter_engine.rs         # 复合筛选引擎（类型/日期/相册/标签）
-│   ├── exif/                        # EXIF 元数据模块
-│   │   ├── mod.rs
-│   │   └── exif_reader.rs           # EXIF 读取（使用 kamadak-exif）
-│   ├── duplicate/                   # 重复文件检测模块
-│   │   ├── mod.rs
-│   │   └── hash_calculator.rs       # SHA-256 / perceptual hash 计算
-│   ├── models/                      # 数据模型（与 Flutter 端共享）
-│   │   ├── mod.rs
-│   │   ├── media_item.rs
-│   │   ├── album.rs
-│   │   ├── tag.rs
-│   │   ├── note.rs
-│   │   └── search_result.rs
-│   └── ffi/                         # FFI 桥接层（flutter_rust_bridge）
-│       ├── mod.rs
-│       └── api.rs                   # 导出给 Dart 调用的 API
-├── tests/                           # Rust 单元测试
-└── benches/                         # 性能基准测试
-
-database/
-└── photo.db                         # SQLite 数据库文件（运行时生成）
-
-assets/
-├── icons/
-└── i18n/                            # 国际化资源（arb 文件）
-    ├── en.arb
-    └── zh.arb
+│   │   └── widgets.dart           # 统一导出
+│   └── src/rust/                  # FFI 生成代码
+│       ├── frb_generated.dart     # 桥接代码
+│       ├── frb_generated.io.dart  # 平台相关 FFI
+│       └── api/                   # Rust API Dart 端类型
+│           ├── media.dart
+│           ├── album.dart
+│           ├── tag.dart
+│           ├── note.dart
+│           ├── search.dart
+│           ├── settings.dart
+│           ├── scanner.dart
+│           └── import_export.dart
+├── rust/                          # Rust 核心后端
+│   ├── Cargo.toml                 # 依赖配置
+│   └── src/
+│       ├── lib.rs                 # 库入口
+│       ├── frb_generated.rs       # FFI 生成代码
+│       ├── api/                   # API 模块
+│       │   ├── mod.rs
+│       │   ├── media.rs           # 媒体 CRUD
+│       │   ├── album.rs           # 相册 CRUD
+│       │   ├── tag.rs             # 标签 CRUD
+│       │   ├── note.rs            # 笔记 CRUD
+│       │   ├── search.rs          # 搜索功能
+│       │   ├── settings.rs        # 应用设置
+│       │   ├── scanner.rs         # 文件扫描
+│       │   └── import_export.rs   # 导入导出
+│       └── db/                    # 数据库模块
+│           ├── mod.rs             # 连接池和表结构
+│           └── models.rs          # 数据模型转换
+├── android/                       # Android 平台配置
+├── ios/                           # iOS 平台配置
+├── linux/                         # Linux 平台配置
+├── macos/                         # macOS 平台配置
+├── windows/                       # Windows 平台配置
+├── SKILLS.md                      # 本文档（完整设计）
+├── SKILLS_IMPLEMENTATION.md       # 实施状态追踪
+└── test/                          # 测试目录
 ```
 
 ---
 
-## 四、功能需求详细说明（含参考代码映射）
+## 第四章：功能需求详细方案
 
-### 4.1 首页（HomePage）
+### 4.1 首页（HomeScreen）
 
-**参考文件**：`feature-home/HomeScreen.kt`（766行）、`feature-home/HomeViewModel.kt`
+**文件**：`lib/screens/home_screen.dart`
 
 **功能描述**：
-- 底部 NavigationBar 三标签切换：全部媒体 / 相册 / 标签
-- 顶部 TopAppBar：显示当前位置名称 + 搜索按钮 + 设置按钮
-- 全部媒体标签：
-  - 顶部 FilterChip 行：全部 / 带标签 / 无标签 / 带相册 / 无相册（5 种过滤模式）
-  - 媒体网格（可配置列数 2-6）
-  - 支持多选模式（长按进入）
-  - 多选底部操作栏：取消 / 添加到相册 / 打标签 / 删除
-  - 导入 FAB（浮动操作按钮）
+- 底部 NavigationBar 四标签切换：媒体 / 相册 / 标签 / 设置
+- AppBar 显示当前位置名称
+- 默认显示媒体页面（AllMedia）
+- 使用 IndexedStack 保持页面状态
 
-**参考代码关键片段（Kotlin → Dart 映射）**：
-
-```kotlin
-// Kotlin: HomeScreen.kt 过滤模式定义
-enum class FilterMode { ALL, WITH_TAGS, WITHOUT_TAGS, WITH_ALBUMS, WITHOUT_ALBUMS }
-
-// Kotlin: HomeViewModel.kt filterMode 切换
-val filterMode = MutableStateFlow(FilterMode.ALL)
-val mediaList = filterMode.flatMapLatest { mode ->
-    when (mode) {
-        FilterMode.ALL -> mediaRepository.observeAll()
-        FilterMode.WITH_TAGS -> mediaRepository.observeWithAnyTag()
-        FilterMode.WITHOUT_TAGS -> mediaRepository.observeWithoutAnyTag()
-        FilterMode.WITH_ALBUMS -> mediaRepository.observeWithAnyAlbum()
-        FilterMode.WITHOUT_ALBUMS -> mediaRepository.observeWithoutAnyAlbum()
-    }
-}.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-```
-
-```dart
-// Dart 等价实现（使用 Riverpod）
-enum FilterMode { all, withTags, withoutTags, withAlbums, withoutAlbums }
-
-final filterModeProvider = StateProvider<FilterMode>((ref) => FilterMode.all);
-
-final mediaListProvider = StreamProvider.autoDispose<List<MediaItem>>((ref) {
-  final mode = ref.watch(filterModeProvider);
-  final rustApi = ref.watch(rustApiProvider);
-  switch (mode) {
-    case FilterMode.all: return rustApi.observeAllMedia();
-    case FilterMode.withTags: return rustApi.observeWithAnyTag();
-    case FilterMode.withoutTags: return rustApi.observeWithoutAnyTag();
-    case FilterMode.withAlbums: return rustApi.observeWithAnyAlbum();
-    case FilterMode.withoutAlbums: return rustApi.observeWithoutAnyAlbum();
-  }
-});
-```
-
-**交互细节**：
-- 点击媒体项 → 进入 MediaViewerPage（浏览模式），传递媒体列表和当前索引
-- 长按媒体项 → 进入多选模式（选中该项）
-- 多选模式下点击其他项 → 切换选中状态
-- 返回键优先级：文件浏览器 > 设置/搜索覆盖层 > 多选模式 > 系统默认
-- 过滤模式切换时清空选择状态，避免跨 filter 选中状态错乱
-- 使用 AnimatedSwitcher 实现 Tab 切换淡入淡出动画
-
-**多选底部栏**：
-```kotlin
-// Kotlin: SelectionBottomBar 组件
-@Composable
-fun SelectionBottomBar(
-    text: @Composable () -> Unit,
-    leading: @Composable () -> Unit,
-    trailing: @Composable () -> Unit
-)
-```
-
-**已选择方案**：
-- [x] 状态管理框架：**Bloc**（flutter_bloc 8.1.6）
-- [ ] 网格列数配置范围：2-6 列 vs 其他范围（待确认）
-- [ ] 多选模式下是否支持滑动连续选择（待确认）
+**方案流程**：
+1. 应用启动 → AppBloc 初始化 → 加载设置 → 创建全部分支 Bloc
+2. 用户点击底部导航 → AppNavigationChangedEvent → 切换 IndexedStack index
+3. 媒体页面自动调用 MediaLoadAllEvent 加载列表
+4. FAB 在媒体页面提供导入入口
 
 ---
 
-### 4.2 媒体查看器（MediaViewerPage）
+### 4.2 媒体浏览页面（MediaScreen）
 
-**参考文件**：`app/MediaViewerActivity.kt`（1408行）
+**文件**：`lib/screens/media_screen.dart`
+
+**功能描述**：
+- 顶部搜索栏（MediaSearchBar）
+- 媒体网格展示（可配置列数 2-6）
+- 空状态提示
+- 过滤选项（全部/图片/视频/音频）
+- 排序选项（日期/名称/大小/类型）
+- 导入功能（扫描文件夹 / 文件浏览器选择）
+- 多选模式
+
+**导入流程（核心）**：
+```
+用户点击 FAB → 导入选项弹出
+  ├── 扫描文件夹 → FilePicker 选择目录 → Rust scanDirectory() → 显示结果
+  └── 浏览选择文件 → 打开 FileBrowserDialog（全屏文件浏览器）
+        ├── 浏览文件系统目录
+        ├── 多选文件（支持所有文件类型）
+        ├── 点击"导入"按钮
+        ├── 逐个调用 Rust importSingleFile()
+        │     ├── SHA-256 哈希计算
+        │     ├── 检查重复
+        │     ├── 复制到应用私有目录
+        │     ├── 生成缩略图
+        │     └── 写入数据库
+        ├── 全部完成后发送 MediaLoadAllEvent 刷新列表
+        └── 显示导入结果（成功数 / 失败数 / 错误详情）
+```
+
+**文件浏览器设计**（参考项目 `FileBrowserDialog.kt` 全屏设计）：
+- 全屏覆盖（非 Dialog），与系统文件管理器体验一致
+- 顶部 AppBar + 路径面包屑（可点击跳转各级目录）
+- 内容区：目录优先显示（文件夹图标），文件可勾选
+- 底部：取消 / 导入按钮（显示选中数量）
+- 每次进入清空上次选择状态
+
+---
+
+### 4.3 媒体详情查看器（MediaDetailScreen）
+
+**文件**：`lib/screens/media_detail_screen.dart`
 
 **功能描述**：
 - 支持图片、视频、音频三种媒体类型
-- 两种模式：浏览模式（默认）/ 详情模式（点击"详情"按钮进入）
 - 左右滑动翻页（PageView）
+- 两种模式：浏览模式（默认）/ 详情模式
 
 **浏览模式 UI**：
-- 顶部栏：白色背景 + 文件名（支持省略）+ 详情模式按钮
-- 多页时显示计数器悬浮（"1 / 10" 格式，黑色半透明圆角背景）
-- 底部栏：白色全宽栏，包含四个操作按钮：
-  - 分享（Share）
-  - 导出到 Download（Export）
-  - 打标签（Tag）
-  - 文件信息（Info）
+- 顶部栏：文件名 + 详情模式切换按钮
+- 多页计数器悬浮显示
+- 底部操作栏：分享 / 导出 / 标签 / 信息
 - 点击媒体区域切换 overlay 显隐
 
 **详情模式 UI**：
-- 顶部栏隐藏
-- 底部悬浮窗（玻璃透明效果）：
-  - 视频/音频详情模式：上方嵌入播放控件（进度条 + 播放/暂停 + 后退10秒/前进10秒）
-  - 图片变换按钮：上移 / 左旋 / 缩小 / 还原 / 放大 / 右旋 / 下移（7 个按钮）
-  - 按钮位置：底部偏上（padding 精确控制）
-  - 背景：Color.White.copy(alpha = 0.25f) + blur(20.dp) 模糊效果
+- 无顶部栏
+- 底部悬浮窗：7 个图片变换按钮 + 视频播放控件
+- 图片变换：上移 / 左旋 / 缩小 / 还原 / 放大 / 右旋 / 下移
+- 变换参数：scale（0.25~4.0）、rotation（0/90/180/270）、offsetX、offsetY
+- 拖动手势考虑旋转角度修正方向
 
-**图片变换功能（参考代码）**：
-
-```kotlin
-// Kotlin: ImageTransformState 对象
-object ImageTransformState {
-    var scale by mutableFloatStateOf(1f)
-    var rotation by mutableIntStateOf(0)
-    var offsetX by mutableFloatStateOf(0f)
-    var offsetY by mutableFloatStateOf(0f)
-}
-
-// Kotlin: 缩放
-fun zoomIn() { scale = (scale * 1.25f).coerceAtMost(4f) }
-fun zoomOut() { scale = (scale / 1.25f).coerceAtLeast(0.25f) }
-
-// Kotlin: 旋转（使用 Int 度数避免浮点精度问题）
-fun rotateLeft() { rotation -= 90 }
-fun rotateRight() { rotation += 90 }
-
-// Kotlin: 平移
-fun shiftUp() { offsetY -= 80f }
-fun shiftDown() { offsetY += 80f }
-fun shiftLeft() { offsetX -= 80f }
-fun shiftRight() { offsetX += 80f }
-
-// Kotlin: 还原
-fun reset() { scale = 1f; rotation = 0; offsetX = 0f; offsetY = 0f }
-
-// Kotlin: 拖动手势（方向随旋转角度修正）
-detectDragGestures { change, dragAmount ->
-    change.consume()
-    val angle = Math.toRadians(rotation.toDouble())
-    val cos = cos(angle).toFloat()
-    val sin = sin(angle).toFloat()
-    offsetX += dragAmount.x * cos + dragAmount.y * sin
-    offsetY += -dragAmount.x * sin + dragAmount.y * cos
-}
-```
-
-```dart
-// Dart 等价实现
-class ImageTransform {
-  double scale = 1.0;
-  int rotation = 0;
-  double offsetX = 0.0;
-  double offsetY = 0.0;
-  
-  void zoomIn() => scale = (scale * 1.25).clamp(0.25, 4.0);
-  void zoomOut() => scale = (scale / 1.25).clamp(0.25, 4.0);
-  void rotateLeft() => rotation -= 90;
-  void rotateRight() => rotation += 90;
-  void shiftUp() => offsetY -= 80;
-  void shiftDown() => offsetY += 80;
-  void shiftLeft() => offsetX -= 80;
-  void shiftRight() => offsetX += 80;
-  void reset() { scale = 1.0; rotation = 0; offsetX = 0.0; offsetY = 0.0; }
-}
-```
-
-**视频播放功能**：
-- 视频 fit 到视图中心，保持原始宽高比（防止拉伸）
-- 监听视频尺寸变化 → 重新计算 fit scale
-- 叠加详情模式的用户变换（旋转 + 缩放 + 平移）
-- 音频文件显示音乐图标占位（黑色背景 + MusicNote icon）
-- 应用进入后台时暂停播放器，避免后台解码消耗 CPU
-- 翻页时自动播放当前页视频，暂停其他页
-
-**文件信息对话框**：
-- 显示：文件名、文件大小、文件类型、MIME 类型、分辨率、时长、创建时间、文件路径、SHA-256
-- 所属相册列表、关联标签列表
-
-**导出功能**：
-- 导出到 Download/AdvanceMediaKB 目录
-- 文件名冲突时自动重命名（name_1.ext）
-- 导出进度覆盖层
-
-**已选择方案**：
-- [x] 视频播放器：**video_player** 2.9.1 + **chewie** 1.8.5
-- [x] 图片查看器：**photo_view** 0.15.0
-- [ ] 详情模式按钮布局：7 个（当前设计）vs 9 个（九宫格含左右移动）（待确认）
+**视频播放**：
+- 保持原始宽高比（fit 到视图中心，禁止拉伸）
+- 通过 Matrix 计算：视频宽高比 vs 视图宽高比 → fit scale → 居中
+- 然后叠加用户旋转/缩放/平移变换
+- 应用进入后台时暂停播放
 
 ---
 
-### 4.3 相册模块（Album）
+### 4.4 相册模块（Album）
 
-**参考文件**：`feature-home/album/AlbumScreen.kt`（完整）、`feature-home/album/AlbumViewModel.kt`（完整）
+**文件**：`lib/screens/album_screen.dart`
 
-**功能描述**：
-- 层级结构：支持根相册和子相册（无限嵌套）
-- 相册实体字段：id, name, parentId, coverMediaId, sortOrder, createdAt
-- 相册卡片展示：封面缩略图 + 渐变蒙层 + 相册名 + 媒体数量 + 子相册指示箭头
-- 面包屑导航：Home icon + 各级相册名（AssistChip 样式）
-- 空状态提示
+**数据模型**（Rust）：
+```rust
+struct Album {
+    id: String,
+    name: String,
+    parent_id: Option<String>,      // 父相册ID（无限嵌套）
+    cover_media_id: Option<String>,  // 封面媒体ID
+    sort_order: i32,
+    created_at: i64,
+}
 
-**参考代码关键片段**：
+struct AlbumWithInfo {
+    album: Album,
+    media_count: i32,
+    has_children: bool,
+    cover_thumbnail_path: Option<String>,
+}
+```
 
-```kotlin
-// Kotlin: AlbumEntity 数据类
-@Entity(
-    tableName = "albums",
-    indices = [Index(value = ["parent_id"])],
-    foreignKeys = [ForeignKey(
-        entity = AlbumEntity::class,
-        parentColumns = ["id"],
-        childColumns = ["parent_id"],
-        onDelete = ForeignKey.CASCADE
-    )]
-)
-data class AlbumEntity(
-    @PrimaryKey val id: String = UUID.randomUUID().toString(),
-    val name: String,
-    @ColumnInfo(name = "parent_id") val parentId: String?,
-    @ColumnInfo(name = "cover_media_id") val coverMediaId: String?,
-    @ColumnInfo(name = "sort_order") val sortOrder: Int = 0,
-    @ColumnInfo(name = "created_at") val createdAt: Long = System.currentTimeMillis()
-)
+**方案流程**：
+1. 进入相册 → 加载根相册列表 → 卡片展示（封面缩略图 + 相册名 + 媒体数量）
+2. 面包屑导航：Home Icon → 各级相册名（可点击跳转）
+3. 点击相册 → 加载子相册列表 / 显示该相册内的媒体
+4. 长按相册 → 删除确认对话框
+5. FAB → 创建相册（输入名称）
+6. 空状态提示
 
-// Kotlin: AlbumWithInfo 展示用数据类
-data class AlbumWithInfo(
-    val album: AlbumEntity,
-    val mediaCount: Int,
-    val hasChildren: Boolean,
-    val coverThumbnailPath: String?
-)
+**操作项**：
+- 创建相册（输入名称，可选在当前相册内创建子相册）
+- 删除相册（显示相册名称确认）
+- 重命名相册
+- 设置相册封面（选择策略）
+- 添加媒体到相册（弹出未添加媒体列表，支持多选）
+- 面包屑点击任意一级可快速跳转
 
-// Kotlin: AlbumViewModel 导航栈管理
-private val _navigationStack = MutableStateFlow<List<String>>(emptyList())
-val navigationStack: StateFlow<List<String>> = _navigationStack.asStateFlow()
+---
 
-fun navigateToAlbum(albumId: String?) {
-    _isNavigating.value = true
-    _currentAlbumId.value =
+### 4.5 标签模块（Tag）
+
+**文件**：`lib/screens/tag_screen.dart`
+
+**数据模型**（Rust）：
+```rust
+struct Tag {
+    id: String,
+    name: String,
+    color: Option<String>,        // 标签颜色（hex 格式）
+    parent_id: Option<String>,    // 父标签ID（无限嵌套）
+    created_at: i64,
+}
+
+struct TagWithInfo {
+    tag: Tag,
+    media_count: i32,
+    cover_thumbnail_path: Option<String>,
+    has_children: bool,
+}
+```
+
+**方案流程**：
+1. 进入标签 → 加载根标签列表 → 卡片展示（封面缩略图 + 渐变蒙层 + 标签名 + 媒体数量）
+2. 面包屑导航（与相册一致）
+3. 点击标签 → 进入子标签列表 / 显示该标签的媒体
+4. 长按标签 → 删除确认对话框
+5. FAB → 创建标签（输入名称）
+
+**标签选择器对话框（参考 `TagSelectorDialog.kt`）**：
+- 两种模式：MULTI（多选打标签）/ FILTER（搜索筛选）
+- 展示所有标签层级（扁平列表）
+- 支持搜索过滤
+- 批量打标签：差集计算（selectedTagIds - currentTags = toAdd, currentTags - selectedTagIds = toRemove）
+
+**多标签筛选**：
+- AND 模式：取标签媒体列表的交集
+- OR 模式：取标签媒体列表的并集
+- 使用 Flow/Rx 组合操作
+
+---
+
+### 4.6 笔记模块（Note）
+
+**文件**：Rust: `rust/src/api/note.rs` / Dart: `lib/src/rust/api/note.dart`
+
+**数据模型**（Rust）：
+```rust
+struct Note {
+    id: String,
+    media_id: String,
+    content: String,
+    created_at: i64,
+    updated_at: i64,
+}
+```
+
+**方案流程**：
+1. 在媒体详情查看器中查看笔记
+2. 一个媒体最多一个笔记（一对一关联）
+3. 支持创建、编辑、删除
+4. 笔记列表按更新时间排序
+5. UPSERT 模式：查询是否存在 → 存在则更新 / 不存在则插入
+
+---
+
+### 4.7 搜索模块（Search）
+
+**文件**：Rust: `rust/src/api/search.rs` / Dart: `lib/src/rust/api/search.dart`
+
+**方案流程**：
+1. 输入搜索关键词（OutlinedTextField，带防抖 300ms）
+2. 实时搜索：文件名匹配 + 标签名匹配（SQL LIKE 查询）
+3. 排序：文件名匹配优先，然后按创建时间倒序
+4. 搜索结果网格展示（与首页一致）
+5. 搜索历史记录（最近搜索列表，点击可快速搜索）
+6. 清空历史记录按钮
+7. 标签筛选：通过 TagSelectorDialog 选择标签进行筛选
+8. 活动筛选 Chip 展示（可点击移除）
+
+---
+
+### 4.8 设置模块（Settings）
+
+**文件**：`lib/screens/settings_screen.dart`
+
+**设置项分类**：
+
+**导入设置**：
+- 导入冲突策略：跳过 / 替换 / 保留两者（Dropdown）
+- 导入后删除原文件（Switch）
+
+**外观设置**：
+- 主题模式：跟随系统 / 浅色 / 深色（Dropdown）
+- 首页网格列数（2-6）
+- 相册网格列数（2-6）
+- 搜索网格列数（2-6）
+- 标签网格列数（2-6）
+- 缩略图质量（30%-100%）
+
+**交互设置**：
+- 显示内容预览（Switch）：关闭后列表仅显示图标+文件名
+
+**存储管理**：
+- 存储统计：媒体数量、总大小、缩略图缓存大小
+- 清理缩略图缓存
+- 查找未引用文件
+
+**数据管理**：
+- 备份数据库
+- 恢复数据库
+- 导出数据（AMB 格式）
+- 删除所有数据（危险操作，需确认对话框）
+
+---
+
+### 4.9 数据库模块
+
+**文件**：`rust/src/db/mod.rs`、`rust/src/db/models.rs`
+
+**数据库表结构**：
+
+**media_items 表**：
+```sql
+CREATE TABLE media_items (
+    id TEXT PRIMARY KEY,
+    original_name TEXT NOT NULL,
+    storage_name TEXT NOT NULL,
+    file_path TEXT NOT NULL,
+    thumbnail_path TEXT NOT NULL DEFAULT '',
+    media_type INTEGER NOT NULL,     -- 0=Image, 1=Video, 2=Audio, 3=Document, 4=Other
+    mime_type TEXT NOT NULL DEFAULT '',
+    size INTEGER NOT NULL,
+    width INTEGER,
+    height INTEGER,
+    duration INTEGER,                -- 毫秒
+    sha256_hash TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+CREATE INDEX idx_media_items_created_at ON media_items(created_at);
+CREATE INDEX idx_media_items_type ON media_items(media_type);
+CREATE INDEX idx_media_items_hash ON media_items(sha256_hash);
+```
+
+**albums 表**：
+```sql
+CREATE TABLE albums (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    parent_id TEXT REFERENCES albums(id) ON DELETE CASCADE,
+    cover_media_id TEXT,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL
+);
+CREATE INDEX idx_albums_parent ON albums(parent_id);
+```
+
+**media_albums 表**（多对多）：
+```sql
+CREATE TABLE media_albums (
+    id TEXT PRIMARY KEY,
+    album_id TEXT NOT NULL REFERENCES albums(id) ON DELETE CASCADE,
+    media_id TEXT NOT NULL REFERENCES media_items(id) ON DELETE CASCADE,
+    created_at INTEGER NOT NULL
+);
+```
+
+**tags 表**：
+```sql
+CREATE TABLE tags (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    color TEXT,
+    parent_id TEXT REFERENCES tags(id) ON DELETE CASCADE,
+    created_at INTEGER NOT NULL
+);
+CREATE INDEX idx_tags_parent ON tags(parent_id);
+```
+
+**media_tags 表**（多对多）：
+```sql
+CREATE TABLE media_tags (
+    id TEXT PRIMARY KEY,
+    media_id TEXT NOT NULL REFERENCES media_items(id) ON DELETE CASCADE,
+    tag_id TEXT NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+    created_at INTEGER NOT NULL
+);
+```
+
+**notes 表**：
+```sql
+CREATE TABLE notes (
+    id TEXT PRIMARY KEY,
+    media_id TEXT NOT NULL REFERENCES media_items(id) ON DELETE CASCADE,
+    content TEXT NOT NULL DEFAULT '',
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+CREATE INDEX idx_notes_media ON notes(media_id);
+```
+
+**app_settings 表**：
+```sql
+CREATE TABLE app_settings (
+    id INTEGER PRIMARY KEY DEFAULT 1,
+    theme_mode INTEGER NOT NULL DEFAULT 0,
+    grid_columns INTEGER NOT NULL DEFAULT 3,
+    album_grid_columns INTEGER NOT NULL DEFAULT 2,
+    show_content_previews INTEGER NOT NULL DEFAULT 1,
+    thumbnail_quality INTEGER NOT NULL DEFAULT 85,
+    language TEXT NOT NULL DEFAULT 'zh_CN'
+);
+```
+
+---
+
+### 4.10 Rust 核心模块
+
+**scanner 模块**（`rust/src/api/scanner.rs`）：
+- 扫描目录：递归遍历，识别媒体扩展名
+- 导入文件：SHA-256 哈希 → 去重检查 → 复制到应用目录 → 缩略图生成 → 数据库写入
+- 支持批量导入和单文件导入
+- 缩略图生成：使用 image crate，最大 512px，Lanczos3 滤波
+- 图片尺寸提取
+
+**search 模块**（`rust/src/api/search.rs`）：
+- 文本搜索：文件名 + 标签名 LIKE 查询
+- 复合筛选：类型、日期范围、相册、标签（AND/OR）
+- 排序：匹配优先 + 时间倒序
+
+**settings 模块**（`rust/src/api/settings.rs`）：
+- 设置 CRUD（upsert 模式）
+- 存储统计
+- 缩略图缓存清理
+- 数据备份/恢复/导出
+- 全部数据删除
+
+---
+
+### 4.11 文件导入方案
+
+**导入方式**（当前实现）：
+1. **扫描文件夹**：通过 file_picker 选择目录 → Rust 端递归扫描识别媒体 → 逐个导入
+2. **文件浏览器选择**：通过 FileBrowserDialog 选择单个/多个文件 → 逐个导入
+
+**导入流程（Rust 端 import_single_file）**：
+1. 检查文件是否存在
+2. 计算 SHA-256 哈希
+3. 检查是否已存在（通过哈希查询）
+4. 获取文件信息（名称、扩展名、MIME 类型、大小）
+5. 生成 UUID 存储文件名
+6. 复制文件到应用私有媒体目录
+7. 生成缩略图（图片/视频类型）
+8. 提取图片尺寸（图片类型）
+9. 插入 media_items 表
+10. 返回 MediaItem 结构体
+
+---
+
+## 第五章：已确定的技术方案
+
+### 5.1 架构
+| 方案 | 选择 |
+|------|------|
+| 状态管理 | **Bloc** (flutter_bloc 8.1.6) |
+| Rust-Flutter | **flutter_rust_bridge** 2.12.0 |
+| 数据库 | **sqlx** 0.7 + SQLite |
+| 异步运行时 | **tokio** 1.x |
+| 数据库迁移 | **refinery** 0.8 |
+
+### 5.2 功能
+| 方案 | 选择 |
+|------|------|
+| 视频播放 | **video_player** 2.9.1 + **chewie** 1.8.5 |
+| 图片查看 | **photo_view** 0.15.0 |
+| 文件选择 | **file_picker** 8.0.7 |
+| 搜索算法 | **SQL LIKE** 查询 |
+| 图片处理 | **image** crate 0.24 |
+| EXIF 读取 | **kamadak-exif** 0.5 |
+
+### 5.3 UI
+| 方案 | 选择 |
+|------|------|
+| 主题框架 | **Material 3** + dynamic_color |
+| 主题模式 | 跟随系统 / 浅色 / 深色 |
+| 标签颜色 | **保留** |
+| 国际化 | **Flutter 内置**（flutter_localizations + intl） |
+
+---
+
+## 第六章：已解决的问题
+
+### 6.1 技术难题
+1. **Rust 动态库未打包** → 手动创建 jniLibs 目录结构并复制 Rust 库
+2. **数据库无法打开** → 使用 `SqliteConnectOptions::from_str()` + `libsqlite3-sys` bundled 特性
+3. **FFI bool 类型映射错误** → 手动修复为 ffi.Int8
+4. **Android Scoped Storage** → 使用应用外部存储目录
+5. **Java 21 兼容性** → 降级到 Java 17
+
+---
+
+## 第七章：开发阶段规划
+
+### 阶段 1：基础架构搭建 ✅
+- 初始化 Flutter + Rust 项目
+- 配置 FFI 桥接
+- 数据库连接和表结构
+- 主题配置
+
+### 阶段 2：核心功能实现 ✅
+- 文件扫描和导入
+- 媒体数据库 CRUD
+- 缩略图生成
+- 媒体网格展示
+- 媒体查看器（图片）
+
+### 阶段 3：高级功能实现 🔄
+- 视频播放功能
+- 相册层级管理
+- 标签层级管理
+- 搜索功能
+- 设置页面
+
+### 阶段 4：优化和打磨 ⬜
+- 性能优化（启动、列表、视频）
+- UI 动画
+- 错误处理
+- 测试
+
+### 阶段 5：发布准备 ⬜
+- 多平台构建
+- 应用签名
+- 用户文档
+
+---
+
+## 第八章：验收标准
+
+### 功能验收
+- [ ] 所有参考项目功能完整迁移（部分完成）
+- [x] 跨平台支持（代码层面支持 Windows/iOS/Android/Linux）
+- [x] Android 构建通过（APK 47.5MB）
+- [x] Rust FFI 接口测试通过（8/8）
+
+### 性能验收
+- [ ] 启动时间 < 2 秒
+- [ ] 列表滑动帧率 > 55fps
+- [ ] 内存占用稳定，无 OOM
+
+### 质量验收
+- [ ] 单元测试覆盖率 > 70%
+- [ ] 无崩溃（Crash-free rate > 99%）
+- [ ] 国际化完整
