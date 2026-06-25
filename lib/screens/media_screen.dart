@@ -1,9 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:file_picker/file_picker.dart';
 import '../bloc/bloc.dart';
 import '../widgets/media_grid.dart';
 import '../widgets/search_bar.dart';
+import '../widgets/file_browser_dialog.dart';
 import '../src/rust/api/media.dart';
 import '../src/rust/api/scanner.dart';
 
@@ -225,7 +227,8 @@ class _MediaScreenState extends State<MediaScreen> {
               ),
               ListTile(
                 leading: const Icon(Icons.file_upload),
-                title: const Text('导入文件'),
+                title: const Text('浏览选择文件'),
+                subtitle: const Text('直接浏览文件系统选择文件'),
                 onTap: () async {
                   Navigator.pop(context);
                   await _importFiles(context);
@@ -306,32 +309,86 @@ class _MediaScreenState extends State<MediaScreen> {
   }
 
   Future<void> _importFiles(BuildContext context) async {
-    final result = await FilePicker.platform.pickFiles(
-      allowMultiple: true,
-      type: FileType.any,
-    );
-    if (result == null || result.files.isEmpty) return;
+    // 使用文件浏览器直接选择文件
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FileBrowserDialog(
+          onImport: (filePaths) async {
+            if (!context.mounted) return;
+            
+            // 显示导入进度对话框
+            if (!context.mounted) return;
+            final progressText = '正在导入 ${filePaths.length} 个文件...';
+            
+            int successCount = 0;
+            int failCount = 0;
+            final errors = <String>[];
 
-    if (!context.mounted) return;
+            // 逐个导入文件
+            for (final path in filePaths) {
+              try {
+                final file = File(path);
+                if (!await file.exists()) {
+                  failCount++;
+                  errors.add('文件不存在: $path');
+                  continue;
+                }
+                // 通过 Rust 端导入
+                await importSingleFile(filePath: path);
+                successCount++;
+              } catch (e) {
+                failCount++;
+                errors.add('$path: $e');
+              }
+            }
 
-    final bloc = context.read<MediaBloc>();
-    int successCount = 0;
-    int failCount = 0;
+            if (!context.mounted) return;
+            
+            // 刷新媒体列表
+            context.read<MediaBloc>().add(const MediaLoadAllEvent());
+            
+            // 显示结果
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('导入完成: $successCount 成功, $failCount 失败'),
+                duration: const Duration(seconds: 3),
+              ),
+            );
 
-    for (final file in result.files) {
-      if (file.path != null) {
-        try {
-          bloc.add(MediaImportFileEvent(file.path!));
-          successCount++;
-        } catch (e) {
-          failCount++;
-        }
-      }
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('导入请求已发送: $successCount 成功, $failCount 失败'),
+            if (errors.isNotEmpty) {
+              // 显示错误详情
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('导入错误详情'),
+                  content: SizedBox(
+                    width: double.maxFinite,
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: errors.length.clamp(0, 20),
+                      itemBuilder: (context, index) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 2),
+                          child: Text(
+                            errors[index],
+                            style: const TextStyle(fontSize: 12, color: Colors.red),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('关闭'),
+                    ),
+                  ],
+                ),
+              );
+            }
+          },
+        ),
       ),
     );
   }

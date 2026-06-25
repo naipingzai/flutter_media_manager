@@ -359,7 +359,7 @@ pub async fn import_single_file(file_path: String) -> Result<MediaItem, String> 
         .map_err(|e| format!("读取文件元数据失败: {}", e))?;
     let size = metadata.len() as i64;
 
-    // 生成存储文件名
+    // 生成存储文件名（使用原始路径哈希确保唯一性）
     let storage_name = format!("{}_{}.{}", Uuid::new_v4().to_string(), hash[..8].to_string(), extension);
     let dest_path = PathBuf::from(&app_dir).join(&storage_name);
 
@@ -390,7 +390,7 @@ pub async fn import_single_file(file_path: String) -> Result<MediaItem, String> 
     let now = chrono::Utc::now().timestamp();
     let id = Uuid::new_v4().to_string();
 
-    // 插入数据库
+    // 插入数据库（file_path 保存复制后的路径，original_path 保存原始路径）
     sqlx::query(
         "INSERT INTO media_items (
             id, original_name, storage_name, file_path, thumbnail_path,
