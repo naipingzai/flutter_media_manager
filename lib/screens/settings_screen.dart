@@ -6,8 +6,34 @@ import '../src/rust/api/settings.dart' as rust_settings;
 import 'api_test_screen.dart';
 
 /// 设置页面
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  rust_settings.StorageStats? _stats;
+  bool _loadingStats = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    setState(() => _loadingStats = true);
+    try {
+      final stats = await rust_settings.getStorageStats();
+      if (mounted) setState(() => _stats = stats);
+    } catch (_) {
+      // 忽略加载失败
+    } finally {
+      if (mounted) setState(() => _loadingStats = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +64,55 @@ class SettingsScreen extends StatelessWidget {
                 subtitle: Text('${settings.gridColumns} 列'),
                 onTap: () => _showGridColumnsDialog(context, settings),
               ),
+              const Divider(),
+              const _SectionHeader(title: '显示'),
+              SwitchListTile(
+                secondary: const Icon(Icons.preview),
+                title: const Text('内容预览'),
+                subtitle: const Text('在网格中显示文件预览信息'),
+                value: settings.showContentPreviews,
+                onChanged: (val) {
+                  final updated = rust_settings.AppSettings(
+                    themeMode: settings.themeMode,
+                    gridColumns: settings.gridColumns,
+                    albumGridColumns: settings.albumGridColumns,
+                    showContentPreviews: val,
+                    thumbnailQuality: settings.thumbnailQuality,
+                    language: settings.language,
+                  );
+                  context.read<AppBloc>().add(
+                        AppSettingsUpdatedEvent(updated),
+                      );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_size_select_small),
+                title: const Text('缩略图质量'),
+                subtitle: Text('${settings.thumbnailQuality}%'),
+                onTap: () => _showThumbnailQualityDialog(context, settings),
+              ),
+              const Divider(),
+              const _SectionHeader(title: '存储'),
+              if (_loadingStats)
+                const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                )
+              else ...[
+                ListTile(
+                  leading: const Icon(Icons.storage),
+                  title: const Text('存储统计'),
+                  subtitle: Text(_buildStatsText()),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.cleaning_services),
+                  title: const Text('清理缩略图缓存'),
+                  subtitle: Text(_stats != null
+                      ? _formatSize(_stats!.thumbnailCacheSize)
+                      : '点击清理未引用的缩略图'),
+                  onTap: () => _clearThumbnailCache(context),
+                ),
+              ],
               const Divider(),
               const _SectionHeader(title: '数据'),
               ListTile(
@@ -83,13 +158,45 @@ class SettingsScreen extends StatelessWidget {
               const ListTile(
                 leading: Icon(Icons.code),
                 title: Text('技术栈'),
-                subtitle: Text('Flutter + Rust'),
+                subtitle: Text('Flutter + Rust (flutter_rust_bridge)'),
               ),
             ],
           );
         },
       ),
     );
+  }
+
+  String _buildStatsText() {
+    if (_stats == null) return '点击刷新';
+    final s = _stats!;
+    return '${s.totalMediaCount} 个文件 · 总计 ${_formatSize(s.totalSize)} · 数据库 ${_formatSize(s.databaseSize)}';
+  }
+
+  String _formatSize(dynamic size) {
+    final bytes = size is int ? size : (size as int);
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+  }
+
+  Future<void> _clearThumbnailCache(BuildContext context) async {
+    try {
+      final deleted = await rust_settings.clearThumbnailCache();
+      await _loadStats();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('已清理 $deleted 个缩略图文件')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('清理失败: $e')),
+      );
+    }
   }
 
   String _themeModeLabel(rust_settings.ThemeMode mode) {
@@ -103,7 +210,8 @@ class SettingsScreen extends StatelessWidget {
     }
   }
 
-  void _showThemeModeDialog(BuildContext context, rust_settings.AppSettings settings) {
+  void _showThemeModeDialog(
+      BuildContext context, rust_settings.AppSettings settings) {
     showDialog(
       context: context,
       builder: (context) {
@@ -118,7 +226,9 @@ class SettingsScreen extends StatelessWidget {
                 groupValue: settings.themeMode,
                 onChanged: (value) {
                   if (value != null) {
-                    context.read<AppBloc>().add(AppThemeChangedEvent(value));
+                    context
+                        .read<AppBloc>()
+                        .add(AppThemeChangedEvent(value));
                     Navigator.pop(context);
                   }
                 },
@@ -129,7 +239,9 @@ class SettingsScreen extends StatelessWidget {
                 groupValue: settings.themeMode,
                 onChanged: (value) {
                   if (value != null) {
-                    context.read<AppBloc>().add(AppThemeChangedEvent(value));
+                    context
+                        .read<AppBloc>()
+                        .add(AppThemeChangedEvent(value));
                     Navigator.pop(context);
                   }
                 },
@@ -140,7 +252,9 @@ class SettingsScreen extends StatelessWidget {
                 groupValue: settings.themeMode,
                 onChanged: (value) {
                   if (value != null) {
-                    context.read<AppBloc>().add(AppThemeChangedEvent(value));
+                    context
+                        .read<AppBloc>()
+                        .add(AppThemeChangedEvent(value));
                     Navigator.pop(context);
                   }
                 },
@@ -152,7 +266,8 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  void _showGridColumnsDialog(BuildContext context, rust_settings.AppSettings settings) {
+  void _showGridColumnsDialog(
+      BuildContext context, rust_settings.AppSettings settings) {
     final columns = [2, 3, 4, 5];
     showDialog(
       context: context,
@@ -176,9 +291,48 @@ class SettingsScreen extends StatelessWidget {
                       thumbnailQuality: settings.thumbnailQuality,
                       language: settings.language,
                     );
-                    context.read<AppBloc>().add(
-                          AppSettingsUpdatedEvent(newSettings),
-                        );
+                    context
+                        .read<AppBloc>()
+                        .add(AppSettingsUpdatedEvent(newSettings));
+                    Navigator.pop(context);
+                  }
+                },
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showThumbnailQualityDialog(
+      BuildContext context, rust_settings.AppSettings settings) {
+    final qualities = [50, 60, 70, 80, 85, 90, 95, 100];
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('缩略图质量'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: qualities.map((q) {
+              return RadioListTile<int>(
+                title: Text('$q%'),
+                value: q,
+                groupValue: settings.thumbnailQuality,
+                onChanged: (value) {
+                  if (value != null) {
+                    final newSettings = rust_settings.AppSettings(
+                      themeMode: settings.themeMode,
+                      gridColumns: settings.gridColumns,
+                      albumGridColumns: settings.albumGridColumns,
+                      showContentPreviews: settings.showContentPreviews,
+                      thumbnailQuality: value,
+                      language: settings.language,
+                    );
+                    context
+                        .read<AppBloc>()
+                        .add(AppSettingsUpdatedEvent(newSettings));
                     Navigator.pop(context);
                   }
                 },
@@ -220,8 +374,12 @@ class SettingsScreen extends StatelessWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('数据导入成功')),
                       );
-                      context.read<AppBloc>().add(const AppInitializeEvent());
-                      context.read<MediaBloc>().add(const MediaLoadAllEvent());
+                      context
+                          .read<AppBloc>()
+                          .add(const AppInitializeEvent());
+                      context
+                          .read<MediaBloc>()
+                          .add(const MediaLoadAllEvent());
                     }
                   } catch (e) {
                     if (context.mounted) {
@@ -260,9 +418,11 @@ class SettingsScreen extends StatelessWidget {
                 Navigator.pop(context);
                 final result = await FilePicker.platform.getDirectoryPath();
                 if (result != null) {
-                  final exportPath = '$result/advance_media_kb_backup.db';
+                  final exportPath =
+                      '$result/advance_media_kb_backup.db';
                   try {
-                    await rust_settings.exportData(exportPath: exportPath);
+                    await rust_settings.exportData(
+                        exportPath: exportPath);
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('已导出到: $exportPath')),
@@ -318,6 +478,7 @@ class SettingsScreen extends StatelessWidget {
   Future<void> _clearAllData(BuildContext context) async {
     try {
       await rust_settings.deleteAllData();
+      await _loadStats();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('所有数据已清除')),
