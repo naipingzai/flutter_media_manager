@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../bloc/bloc.dart';
 import '../widgets/media_grid.dart';
 import '../widgets/search_bar.dart';
@@ -401,10 +402,10 @@ class _MediaScreenState extends State<MediaScreen> {
                   ListTile(
                     leading: const Icon(Icons.file_upload),
                     title: const Text('浏览选择文件'),
-                    subtitle: const Text('直接浏览文件系统选择文件'),
+                    subtitle: const Text('直接浏览文件系统，显示所有文件'),
                     onTap: () async {
                       Navigator.pop(ctx);
-                      await _importFiles(context);
+                      await _requestPermissionAndImport(context);
                     },
                   ),
                 ],
@@ -464,6 +465,31 @@ class _MediaScreenState extends State<MediaScreen> {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('扫描失败: $e')));
     }
+  }
+
+  Future<void> _requestPermissionAndImport(BuildContext context) async {
+    // 请求存储权限
+    if (Platform.isAndroid) {
+      var status = await Permission.manageExternalStorage.status;
+      if (!status.isGranted) {
+        status = await Permission.manageExternalStorage.request();
+      }
+      if (!status.isGranted) {
+        status = await Permission.storage.request();
+      }
+      if (!status.isGranted && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('需要存储权限才能浏览文件'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+        return;
+      }
+    }
+    if (!context.mounted) return;
+    // 权限已获取，打开文件管理器
+    await _importFiles(context);
   }
 
   Future<void> _importFiles(BuildContext context) async {

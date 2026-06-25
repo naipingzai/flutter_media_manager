@@ -1,11 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:permission_handler/permission_handler.dart';
 
-/// 全屏文件浏览器对话框
+/// 全屏文件浏览器对话框（文件管理器风格）
 ///
-/// 直接从文件管理器浏览所有文件并导入，不再经过媒体渠道扫描。
-/// 自动请求存储权限，Android 上从 /storage/emulated/0 开始浏览。
+/// 直接浏览文件系统的全部文件，不再经过媒体渠道扫描。
+/// 显示目录树和文件列表，用户可以自由浏览和选择文件导入。
+/// 
+/// 注意：请在打开此页面之前确保已获取 MANAGE_EXTERNAL_STORAGE 权限。
 class FileBrowserDialog extends StatefulWidget {
   final void Function(List<String> filePaths) onImport;
 
@@ -20,24 +21,31 @@ class FileBrowserDialog extends StatefulWidget {
 
 class _FileBrowserDialogState extends State<FileBrowserDialog> {
   List<FileSystemEntity> _currentItems = [];
-  List<String> _selectedFiles = [];
+  final Set<String> _selectedFiles = {};
   String _currentPath = '';
-  List<String> _pathSegments = [];
+  final List<String> _pathHistory = [];
   bool _isLoading = true;
   String? _errorMessage;
-  bool _permissionGranted = false;
+  String _sortMode = 'name'; // 'name' or 'type'
 
-  /// 获取默认起始路径（Android 上用外部存储，其他用 /）
+  /// Android 常用可访问目录
+  static const List<String> _favoritePaths = [
+    '/storage/emulated/0',
+    '/storage/emulated/0/DCIM',
+    '/storage/emulated/0/Download',
+    '/storage/emulated/0/Documents',
+    '/storage/emulated/0/Pictures',
+    '/storage/emulated/0/Music',
+    '/storage/emulated/0/Movies',
+    '/storage',
+  ];
+
   String get _defaultPath {
     if (Platform.isAndroid) {
-      // Android 常见的外部存储路径
-      const candidates = [
-        '/storage/emulated/0',
-        '/sdcard',
-        '/storage',
-      ];
-      for (final p in candidates) {
-        if (Directory(p).existsSync()) return p;
+      for (final p in _favoritePaths) {
+        try {
+          if (Directory(p).existsSync()) return p;
+        } catch (_) {}
       }
     }
     return '/';
@@ -46,39 +54,7 @@ class _FileBrowserDialogState extends State<FileBrowserDialog> {
   @override
   void initState() {
     super.initState();
-    _requestPermissionAndLoad();
-  }
-
-  Future<void> _requestPermissionAndLoad() async {
-    if (Platform.isAndroid) {
-      var status = await Permission.manageExternalStorage.status;
-      if (!status.isGranted) {
-        status = await Permission.manageExternalStorage.request();
-      }
-      if (!status.isGranted) {
-        // 尝试旧的存储权限
-        status = await Permission.storage.request();
-      }
-      if (mounted) {
-        setState(() => _permissionGranted = status.isGranted);
-        if (status.isGranted) {
-          _loadPath(_defaultPath);
-        } else {
-          setState(() {
-            _errorMessage = '需要存储权限才能浏览文件。请在系统设置中手动授予"管理所有文件"权限。';
-            _isLoading = false;
-          });
-        }
-        return;
-      }
-    }
-    // 非 Android 直接加载
     _loadPath(_defaultPath);
-  }
-
-  void _resetSession() {
-    _selectedFiles = [];
-    _loadPath(_currentPath.isNotEmpty ? _currentPath : _defaultPath);
   }
 
   Future<void> _loadPath(String path) async {
@@ -88,35 +64,52 @@ class _FileBrowserDialogState extends State<FileBrowserDialog> {
     });
     try {
       final dir = Directory(path);
-      if (!await dir.exists()) {
+      final exists = await dir.exists();
+      if (!exists) {
         setState(() {
-          _errorMessage = '目录不存在: $path';
+          _errorMessage = '目录不可访问: $path';
           _isLoading = false;
         });
         return;
       }
 
-      final entities = dir.listSync();
-      final items = <FileSystemEntity>[];
-      // 先列目录，再列文件
+      final entities = await dir.list().toList();
       final folders = <Directory>[];
       final files = <File>[];
+
       for (final e in entities) {
-        if (e is Directory) {
-          folders.add(e);
-        } else if (e is File) {
-          files.add(e);
+        try {
+          if (e is Directory) {
+            folders.add(e);
+          } else if (e is File) {
+            files.add(e);
+          }
+        } catch (_) {
+          // 忽略无法访问的条目
         }
       }
-      folders.sort((a, b) => a.path.compareTo(b.path));
-      files.sort((a, b) => a.path.compareTo(b.path));
-      items.addAll(folders);
-      items.addAll(files);
+
+      if (_sortMode == 'name') {
+        folders.sort((a, b) => a.path.toLowerCase().compareTo(b.path.toLowerCase()));
+        files.sort((a, b) => a.path.toLowerCase().compareTo(b.path.toLowerCase()));
+      } else {
+        // type sort: 按扩展名分组
+        folders.sort((a, b) => a.path.toLowerCase().compareTo(b.path.toLowerCase()));
+        files.sort((a, b) {
+          final extA = a.path.split('.').last.toLowerCase();
+          final extB = b.path.split('.').last.toLowerCase();
+          final cmp = extA.compareTo(extB);
+          if (cmp != 0) return cmp;
+          return a.path.toLowerCase().compareTo(b.path.toLowerCase());
+        });
+      }
 
       setState(() {
-        _currentItems = items;
+        _currentItems = [...folders, ...files];
         _currentPath = path;
-        _pathSegments = _buildPathSegments(path);
+        if (!_pathHistory.contains(path)) {
+          _pathHistory.add(path);
+        }
         _isLoading = false;
       });
     } catch (e) {
@@ -124,38 +117,46 @@ class _FileBrowserDialogState extends State<FileBrowserDialog> {
         _isLoading = false;
         _errorMessage = '无法访问目录: $e';
       });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('无法访问目录: $e')),
-        );
-      }
     }
   }
-
-  List<String> _buildPathSegments(String path) {
-    if (path.isEmpty) return [];
-    final parts = path.split('/').where((p) => p.isNotEmpty).toList();
-    return parts;
-  }
-
-  String _buildPathFromSegments(int index) {
-    if (index < 0) return _defaultPath;
-    final segments = _pathSegments.sublist(0, index + 1);
-    return '/' + segments.join('/');
-  }
-
-  bool get _canNavigateUp => _pathSegments.isNotEmpty;
 
   bool _isFileSelected(String path) => _selectedFiles.contains(path);
 
   void _toggleFileSelection(String path) {
     setState(() {
-      if (_isFileSelected(path)) {
+      if (_selectedFiles.contains(path)) {
         _selectedFiles.remove(path);
       } else {
         _selectedFiles.add(path);
       }
     });
+  }
+
+  String _getFileName(String path) {
+    return path.split('/').last;
+  }
+
+  String _getFileExtension(String path) {
+    final parts = path.split('.');
+    return parts.length > 1 ? parts.last.toLowerCase() : '';
+  }
+
+  IconData _getFileIcon(FileSystemEntity entity) {
+    if (entity is Directory) return Icons.folder;
+    final ext = _getFileExtension(entity.path);
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic'].contains(ext)) {
+      return Icons.image;
+    }
+    if (['mp4', 'mkv', 'avi', 'mov', 'webm'].contains(ext)) {
+      return Icons.videocam;
+    }
+    if (['mp3', 'wav', 'flac', 'aac', 'ogg'].contains(ext)) {
+      return Icons.audiotrack;
+    }
+    if (['pdf', 'doc', 'docx', 'txt', 'md'].contains(ext)) {
+      return Icons.description;
+    }
+    return Icons.insert_drive_file;
   }
 
   @override
@@ -164,33 +165,109 @@ class _FileBrowserDialogState extends State<FileBrowserDialog> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('文件浏览器'),
+        title: const Text('文件管理器'),
         actions: [
           if (_selectedFiles.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Center(
-                child: Text(
-                  '已选 ${_selectedFiles.length} 个文件',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.primary,
-                    fontWeight: FontWeight.bold,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    '${_selectedFiles.length}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onPrimaryContainer,
+                    ),
                   ),
                 ),
               ),
             ),
-          // 刷新按钮
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.sort),
+            tooltip: '排序',
+            onSelected: (val) {
+              setState(() => _sortMode = val);
+              if (_currentPath.isNotEmpty) _loadPath(_currentPath);
+            },
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                value: 'name',
+                child: Row(
+                  children: [
+                    if (_sortMode == 'name') const Icon(Icons.check, size: 18),
+                    const SizedBox(width: 8),
+                    const Text('按名称排序'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'type',
+                child: Row(
+                  children: [
+                    if (_sortMode == 'type') const Icon(Icons.check, size: 18),
+                    const SizedBox(width: 8),
+                    const Text('按类型排序'),
+                  ],
+                ),
+              ),
+            ],
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: '刷新',
-            onPressed: _resetSession,
+            onPressed: () => _currentPath.isNotEmpty ? _loadPath(_currentPath) : null,
           ),
         ],
       ),
-      body: _buildBody(theme),
+      body: Column(
+        children: [
+          // 当前位置与快速访问
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  ActionChip(
+                    avatar: const Icon(Icons.home, size: 16),
+                    label: Text(
+                      Platform.isAndroid ? '内部存储' : '根目录',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    onPressed: () => _loadPath(_defaultPath),
+                  ),
+                  ..._buildBreadcrumbs(),
+                  const SizedBox(width: 8),
+                  if (_pathHistory.length > 1)
+                    ActionChip(
+                      avatar: const Icon(Icons.arrow_back, size: 16),
+                      label: const Text('返回', style: TextStyle(fontSize: 12)),
+                      onPressed: () {
+                        if (_pathHistory.length >= 2) {
+                          final prev = _pathHistory[_pathHistory.length - 2];
+                          _pathHistory.removeLast();
+                          _loadPath(prev);
+                        }
+                      },
+                    ),
+                ],
+              ),
+            ),
+          ),
+          const Divider(height: 1),
+          // 文件列表
+          Expanded(child: _buildFileList(theme)),
+        ],
+      ),
       bottomNavigationBar: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
           child: Row(
             children: [
               Expanded(
@@ -201,17 +278,19 @@ class _FileBrowserDialogState extends State<FileBrowserDialog> {
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: FilledButton(
+                flex: 2,
+                child: FilledButton.icon(
+                  icon: const Icon(Icons.file_upload, size: 18),
                   onPressed: _selectedFiles.isEmpty
                       ? null
                       : () {
-                          // 先关闭文件浏览器，再执行导入
-                          // 确保 onImport 在原始页面的上下文中运行
                           final paths = List<String>.from(_selectedFiles);
+                          // 先关闭文件管理器，回到 MediaScreen
                           Navigator.pop(context);
+                          // 再触发导入回调
                           widget.onImport(paths);
                         },
-                  child: Text(
+                  label: Text(
                     '导入${_selectedFiles.isEmpty ? "" : " (${_selectedFiles.length})"}',
                   ),
                 ),
@@ -223,8 +302,32 @@ class _FileBrowserDialogState extends State<FileBrowserDialog> {
     );
   }
 
-  Widget _buildBody(ThemeData theme) {
-    if (_errorMessage != null && !_isLoading) {
+  List<Widget> _buildBreadcrumbs() {
+    if (_currentPath.isEmpty) return [];
+    final parts = _currentPath.split('/').where((p) => p.isNotEmpty).toList();
+    final widgets = <Widget>[];
+    String accumulated = '';
+
+    for (int i = 0; i < parts.length; i++) {
+      accumulated += '/${parts[i]}';
+      final path = accumulated;
+      widgets.add(const Icon(Icons.chevron_right, size: 16, color: Colors.grey));
+      widgets.add(
+        ActionChip(
+          label: Text(parts[i], style: const TextStyle(fontSize: 11)),
+          onPressed: () => _loadPath(path),
+        ),
+      );
+    }
+    return widgets;
+  }
+
+  Widget _buildFileList(ThemeData theme) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_errorMessage != null) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
@@ -233,16 +336,12 @@ class _FileBrowserDialogState extends State<FileBrowserDialog> {
             children: [
               const Icon(Icons.error_outline, size: 64, color: Colors.red),
               const SizedBox(height: 16),
-              Text(
-                _errorMessage!,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 16),
-              ),
+              Text(_errorMessage!, textAlign: TextAlign.center, style: const TextStyle(fontSize: 15)),
               const SizedBox(height: 24),
               ElevatedButton.icon(
                 icon: const Icon(Icons.refresh),
                 label: const Text('重试'),
-                onPressed: _requestPermissionAndLoad,
+                onPressed: () => _loadPath(_defaultPath),
               ),
             ],
           ),
@@ -250,112 +349,62 @@ class _FileBrowserDialogState extends State<FileBrowserDialog> {
       );
     }
 
-    return Column(
-      children: [
-        // 路径面包屑
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                ActionChip(
-                  avatar: const Icon(Icons.home, size: 18),
-                  label: Text(Platform.isAndroid ? '内部存储' : '根目录'),
-                  onPressed: () => _loadPath(_defaultPath),
-                ),
-                ...List.generate(_pathSegments.length, (index) {
-                  return Row(
-                    children: [
-                      const Icon(Icons.chevron_right, size: 18, color: Colors.grey),
-                      ActionChip(
-                        label: Text(_pathSegments[index]),
-                        onPressed: () => _loadPath(_buildPathFromSegments(index)),
-                      ),
-                    ],
-                  );
-                }),
-              ],
-            ),
+    if (_currentItems.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.folder_off, size: 64, color: Colors.grey),
+            SizedBox(height: 16),
+            Text('此目录为空', style: TextStyle(fontSize: 16, color: Colors.grey)),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      itemCount: _currentItems.length,
+      itemBuilder: (context, index) {
+        final entity = _currentItems[index];
+        final isDir = entity is Directory;
+        final entityPath = entity.path;
+        final name = _getFileName(entityPath);
+        final isSelected = _isFileSelected(entityPath);
+
+        return ListTile(
+          leading: Icon(
+            _getFileIcon(entity),
+            color: isDir
+                ? Colors.amber.shade700
+                : (isSelected ? theme.colorScheme.primary : Colors.grey),
+            size: 28,
           ),
-        ),
-        const Divider(height: 1),
-        // 内容区域
-        Expanded(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _currentItems.isEmpty
-                  ? const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.folder_off, size: 64, color: Colors.grey),
-                          SizedBox(height: 16),
-                          Text('此目录为空', style: TextStyle(color: Colors.grey)),
-                        ],
-                      ),
-                    )
-                  : ListView.builder(
-                      itemCount: _currentItems.length + (_canNavigateUp ? 1 : 0),
-                      itemBuilder: (context, index) {
-                        // 第一个是"返回上级"按钮
-                        if (_canNavigateUp && index == 0) {
-                          return ListTile(
-                            leading: const Icon(Icons.arrow_upward, color: Colors.blue),
-                            title: const Text('.. (返回上级)'),
-                            onTap: () {
-                              if (_pathSegments.length <= 1) {
-                                _loadPath(_defaultPath);
-                              } else {
-                                _loadPath(_buildPathFromSegments(_pathSegments.length - 2));
-                              }
-                            },
-                          );
-                        }
-
-                        final itemIndex = _canNavigateUp ? index - 1 : index;
-                        if (itemIndex >= _currentItems.length) {
-                          return const SizedBox.shrink();
-                        }
-
-                        final entity = _currentItems[itemIndex];
-                        final isDir = entity is Directory;
-                        final entityPath = entity.path;
-                        final name = entity.path.split('/').last;
-                        final isSelected = _isFileSelected(entityPath);
-
-                        return ListTile(
-                          leading: Icon(
-                            isDir ? Icons.folder : Icons.insert_drive_file,
-                            color: isDir
-                                ? Colors.amber
-                                : (isSelected
-                                    ? theme.colorScheme.primary
-                                    : Colors.grey),
-                          ),
-                          title: Text(
-                            name,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          trailing: isDir
-                              ? const Icon(Icons.chevron_right)
-                              : (isSelected
-                                  ? Icon(Icons.check_circle,
-                                      color: theme.colorScheme.primary)
-                                  : null),
-                          selected: isSelected,
-                          onTap: () {
-                            if (isDir) {
-                              _loadPath(entityPath);
-                            } else {
-                              _toggleFileSelection(entityPath);
-                            }
-                          },
-                        );
-                      },
-                    ),
-        ),
-      ],
+          title: Text(
+            name,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 14),
+          ),
+          subtitle: isDir
+              ? null
+              : Text(
+                  _getFileExtension(entityPath).toUpperCase(),
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                ),
+          trailing: isDir
+              ? const Icon(Icons.chevron_right)
+              : (isSelected
+                  ? Icon(Icons.check_circle, color: theme.colorScheme.primary)
+                  : const Icon(Icons.circle_outlined, color: Colors.grey, size: 20)),
+          selected: isSelected,
+          onTap: () {
+            if (isDir) {
+              _loadPath(entityPath);
+            } else {
+              _toggleFileSelection(entityPath);
+            }
+          },
+        );
+      },
     );
   }
 }
