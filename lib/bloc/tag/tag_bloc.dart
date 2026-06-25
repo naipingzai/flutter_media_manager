@@ -1,3 +1,5 @@
+// ignore_for_file: invalid_use_of_internal_member
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:advance_media_kb/src/rust/api/tag.dart';
@@ -13,6 +15,7 @@ final _logger = Logger();
 /// 标签管理 Bloc
 class TagBloc extends Bloc<TagEvent, TagState> {
   TagBloc() : super(const TagState()) {
+    on<TagLoadEvent>(_onLoadAll);
     on<TagLoadAllEvent>(_onLoadAll);
     on<TagLoadRootsEvent>(_onLoadRoots);
     on<TagLoadChildrenEvent>(_onLoadChildren);
@@ -29,7 +32,7 @@ class TagBloc extends Bloc<TagEvent, TagState> {
   }
 
   Future<void> _onLoadAll(
-    TagLoadAllEvent event,
+    TagEvent event,
     Emitter<TagState> emit,
   ) async {
     emit(state.copyWith(status: TagStatus.loading));

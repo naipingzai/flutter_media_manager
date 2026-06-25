@@ -9,6 +9,10 @@ abstract class TagEvent extends Equatable {
 }
 
 /// 加载所有标签
+class TagLoadEvent extends TagEvent {
+  const TagLoadEvent();
+}
+
 class TagLoadAllEvent extends TagEvent {
   const TagLoadAllEvent();
 }

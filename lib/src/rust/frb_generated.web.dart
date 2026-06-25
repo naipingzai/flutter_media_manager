@@ -971,9 +971,22 @@ class RustLibWire implements BaseWire {
       wasmModule.wire__crate__api__import_export__import_package(
           port_, package_path, conflict_strategy);
 
+  void wire__crate__api__scanner__import_single_file(
+          NativePortType port_, String file_path) =>
+      wasmModule.wire__crate__api__scanner__import_single_file(
+          port_, file_path);
+
+  void wire__crate__api__settings__init_app(
+          NativePortType port_, String app_dir) =>
+      wasmModule.wire__crate__api__settings__init_app(port_, app_dir);
+
   void wire__crate__api__scanner__is_hash_exists(
           NativePortType port_, String hash) =>
       wasmModule.wire__crate__api__scanner__is_hash_exists(port_, hash);
+
+  void wire__crate__api__media__media_type_as_i32(
+          NativePortType port_, int that) =>
+      wasmModule.wire__crate__api__media__media_type_as_i32(port_, that);
 
   void wire__crate__api__album__remove_media_from_album(
           NativePortType port_, JSAny media_ids, String album_id) =>
@@ -1150,8 +1163,17 @@ extension type RustLibWasmModule._(JSObject _) implements JSObject {
   external void wire__crate__api__import_export__import_package(
       NativePortType port_, String package_path, int conflict_strategy);
 
+  external void wire__crate__api__scanner__import_single_file(
+      NativePortType port_, String file_path);
+
+  external void wire__crate__api__settings__init_app(
+      NativePortType port_, String app_dir);
+
   external void wire__crate__api__scanner__is_hash_exists(
       NativePortType port_, String hash);
+
+  external void wire__crate__api__media__media_type_as_i32(
+      NativePortType port_, int that);
 
   external void wire__crate__api__album__remove_media_from_album(
       NativePortType port_, JSAny media_ids, String album_id);

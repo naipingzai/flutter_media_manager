@@ -38,7 +38,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueNom,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.12.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 332825005;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1728653654;
 
 // Section: executor
 
@@ -1041,6 +1041,55 @@ fn wire__crate__api__import_export__import_package_impl(
         },
     )
 }
+fn wire__crate__api__scanner__import_single_file_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    file_path: impl CstDecode<String>,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::DcoCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "import_single_file",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let api_file_path = file_path.cst_decode();
+            move |context| async move {
+                transform_result_dco::<_, _, String>(
+                    (move || async move {
+                        let output_ok =
+                            crate::api::scanner::import_single_file(api_file_path).await?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__settings__init_app_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    app_dir: impl CstDecode<String>,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::DcoCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "init_app",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let api_app_dir = app_dir.cst_decode();
+            move |context| async move {
+                transform_result_dco::<_, _, String>(
+                    (move || async move {
+                        let output_ok = crate::api::settings::init_app(api_app_dir).await?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
 fn wire__crate__api__scanner__is_hash_exists_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     hash: impl CstDecode<String>,
@@ -1061,6 +1110,28 @@ fn wire__crate__api__scanner__is_hash_exists_impl(
                     })()
                     .await,
                 )
+            }
+        },
+    )
+}
+fn wire__crate__api__media__media_type_as_i32_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    that: impl CstDecode<crate::api::media::MediaType>,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::DcoCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "media_type_as_i32",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let api_that = that.cst_decode();
+            move |context| {
+                transform_result_dco::<_, _, ()>((move || {
+                    let output_ok =
+                        Result::<_, ()>::Ok(crate::api::media::MediaType::as_i32(&api_that))?;
+                    Ok(output_ok)
+                })())
             }
         },
     )
@@ -1408,7 +1479,8 @@ impl CstDecode<crate::api::media::MediaType> for i32 {
             0 => crate::api::media::MediaType::Image,
             1 => crate::api::media::MediaType::Video,
             2 => crate::api::media::MediaType::Audio,
-            3 => crate::api::media::MediaType::Unknown,
+            3 => crate::api::media::MediaType::Document,
+            4 => crate::api::media::MediaType::Other,
             _ => unreachable!("Invalid variant for MediaType: {}", self),
         }
     }
@@ -1728,7 +1800,8 @@ impl SseDecode for crate::api::media::MediaType {
             0 => crate::api::media::MediaType::Image,
             1 => crate::api::media::MediaType::Video,
             2 => crate::api::media::MediaType::Audio,
-            3 => crate::api::media::MediaType::Unknown,
+            3 => crate::api::media::MediaType::Document,
+            4 => crate::api::media::MediaType::Other,
             _ => unreachable!("Invalid variant for MediaType: {}", inner),
         };
     }
@@ -2197,7 +2270,8 @@ impl flutter_rust_bridge::IntoDart for crate::api::media::MediaType {
             Self::Image => 0.into_dart(),
             Self::Video => 1.into_dart(),
             Self::Audio => 2.into_dart(),
-            Self::Unknown => 3.into_dart(),
+            Self::Document => 3.into_dart(),
+            Self::Other => 4.into_dart(),
             _ => unreachable!(),
         }
     }
@@ -2608,7 +2682,8 @@ impl SseEncode for crate::api::media::MediaType {
                 crate::api::media::MediaType::Image => 0,
                 crate::api::media::MediaType::Video => 1,
                 crate::api::media::MediaType::Audio => 2,
-                crate::api::media::MediaType::Unknown => 3,
+                crate::api::media::MediaType::Document => 3,
+                crate::api::media::MediaType::Other => 4,
                 _ => {
                     unimplemented!("");
                 }
@@ -3677,11 +3752,35 @@ mod io {
     }
 
     #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__scanner__import_single_file(
+        port_: i64,
+        file_path: *mut wire_cst_list_prim_u_8_strict,
+    ) {
+        wire__crate__api__scanner__import_single_file_impl(port_, file_path)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__settings__init_app(
+        port_: i64,
+        app_dir: *mut wire_cst_list_prim_u_8_strict,
+    ) {
+        wire__crate__api__settings__init_app_impl(port_, app_dir)
+    }
+
+    #[unsafe(no_mangle)]
     pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__scanner__is_hash_exists(
         port_: i64,
         hash: *mut wire_cst_list_prim_u_8_strict,
     ) {
         wire__crate__api__scanner__is_hash_exists_impl(port_, hash)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__media__media_type_as_i32(
+        port_: i64,
+        that: i32,
+    ) {
+        wire__crate__api__media__media_type_as_i32_impl(port_, that)
     }
 
     #[unsafe(no_mangle)]
@@ -4978,11 +5077,35 @@ mod web {
     }
 
     #[wasm_bindgen]
+    pub fn wire__crate__api__scanner__import_single_file(
+        port_: flutter_rust_bridge::for_generated::MessagePort,
+        file_path: String,
+    ) {
+        wire__crate__api__scanner__import_single_file_impl(port_, file_path)
+    }
+
+    #[wasm_bindgen]
+    pub fn wire__crate__api__settings__init_app(
+        port_: flutter_rust_bridge::for_generated::MessagePort,
+        app_dir: String,
+    ) {
+        wire__crate__api__settings__init_app_impl(port_, app_dir)
+    }
+
+    #[wasm_bindgen]
     pub fn wire__crate__api__scanner__is_hash_exists(
         port_: flutter_rust_bridge::for_generated::MessagePort,
         hash: String,
     ) {
         wire__crate__api__scanner__is_hash_exists_impl(port_, hash)
+    }
+
+    #[wasm_bindgen]
+    pub fn wire__crate__api__media__media_type_as_i32(
+        port_: flutter_rust_bridge::for_generated::MessagePort,
+        that: i32,
+    ) {
+        wire__crate__api__media__media_type_as_i32_impl(port_, that)
     }
 
     #[wasm_bindgen]

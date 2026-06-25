@@ -13,6 +13,8 @@ import 'api/settings.dart';
 import 'api/tag.dart';
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ffi' as ffi;
+import 'package:ffi/ffi.dart';
 import 'frb_generated.dart';
 import 'frb_generated.io.dart'
     if (dart.library.js_interop) 'frb_generated.web.dart';
@@ -75,7 +77,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.12.0';
 
   @override
-  int get rustContentHash => 332825005;
+  int get rustContentHash => -1728653654;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -95,7 +97,7 @@ abstract class RustLibApi extends BaseApi {
 
   Future<String> crateApiScannerCalculateFileHash({required String filePath});
 
-  Future<void> crateApiSettingsClearThumbnailCache();
+  Future<int> crateApiSettingsClearThumbnailCache();
 
   Future<String> crateApiAlbumCreateAlbum(
       {required String name, String? parentId});
@@ -185,7 +187,13 @@ abstract class RustLibApi extends BaseApi {
       {required String packagePath,
       required ConflictStrategy conflictStrategy});
 
+  Future<MediaItem> crateApiScannerImportSingleFile({required String filePath});
+
+  Future<void> crateApiSettingsInitApp({required String appDir});
+
   Future<bool> crateApiScannerIsHashExists({required String hash});
+
+  Future<int> crateApiMediaMediaTypeAsI32({required MediaType that});
 
   Future<void> crateApiAlbumRemoveMediaFromAlbum(
       {required List<String> mediaIds, required String albumId});
@@ -301,13 +309,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<void> crateApiSettingsClearThumbnailCache() {
+  Future<int> crateApiSettingsClearThumbnailCache() {
     return handler.executeNormal(NormalTask(
       callFfi: (port_) {
         return wire.wire__crate__api__settings__clear_thumbnail_cache(port_);
       },
       codec: DcoCodec(
-        decodeSuccessData: dco_decode_unit,
+        decodeSuccessData: dco_decode_i_32,
         decodeErrorData: dco_decode_String,
       ),
       constMeta: kCrateApiSettingsClearThumbnailCacheConstMeta,
@@ -558,7 +566,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     return handler.executeNormal(NormalTask(
       callFfi: (port_) {
         var arg0 = cst_encode_String(exportPath);
-        var arg1 = cst_encode_bool(includeMedia);
+        final arg1Ptr = calloc<ffi.Int8>();
+        arg1Ptr.value = includeMedia ? 1 : 0;
+        var arg1 = arg1Ptr;
         return wire.wire__crate__api__import_export__export_package(
             port_, arg0, arg1);
       },
@@ -1175,6 +1185,52 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<MediaItem> crateApiScannerImportSingleFile(
+      {required String filePath}) {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        var arg0 = cst_encode_String(filePath);
+        return wire.wire__crate__api__scanner__import_single_file(port_, arg0);
+      },
+      codec: DcoCodec(
+        decodeSuccessData: dco_decode_media_item,
+        decodeErrorData: dco_decode_String,
+      ),
+      constMeta: kCrateApiScannerImportSingleFileConstMeta,
+      argValues: [filePath],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiScannerImportSingleFileConstMeta =>
+      const TaskConstMeta(
+        debugName: "import_single_file",
+        argNames: ["filePath"],
+      );
+
+  @override
+  Future<void> crateApiSettingsInitApp({required String appDir}) {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        var arg0 = cst_encode_String(appDir);
+        return wire.wire__crate__api__settings__init_app(port_, arg0);
+      },
+      codec: DcoCodec(
+        decodeSuccessData: dco_decode_unit,
+        decodeErrorData: dco_decode_String,
+      ),
+      constMeta: kCrateApiSettingsInitAppConstMeta,
+      argValues: [appDir],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiSettingsInitAppConstMeta => const TaskConstMeta(
+        debugName: "init_app",
+        argNames: ["appDir"],
+      );
+
+  @override
   Future<bool> crateApiScannerIsHashExists({required String hash}) {
     return handler.executeNormal(NormalTask(
       callFfi: (port_) {
@@ -1195,6 +1251,29 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(
         debugName: "is_hash_exists",
         argNames: ["hash"],
+      );
+
+  @override
+  Future<int> crateApiMediaMediaTypeAsI32({required MediaType that}) {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        var arg0 = cst_encode_media_type(that);
+        return wire.wire__crate__api__media__media_type_as_i32(port_, arg0);
+      },
+      codec: DcoCodec(
+        decodeSuccessData: dco_decode_i_32,
+        decodeErrorData: null,
+      ),
+      constMeta: kCrateApiMediaMediaTypeAsI32ConstMeta,
+      argValues: [that],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiMediaMediaTypeAsI32ConstMeta =>
+      const TaskConstMeta(
+        debugName: "media_type_as_i32",
+        argNames: ["that"],
       );
 
   @override

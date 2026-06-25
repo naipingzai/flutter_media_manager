@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:file_picker/file_picker.dart';
 import '../bloc/bloc.dart';
 import '../widgets/media_grid.dart';
 import '../widgets/search_bar.dart';
+import '../src/rust/api/media.dart';
+import '../src/rust/api/scanner.dart';
 
 /// 媒体浏览页面
 class MediaScreen extends StatefulWidget {
@@ -98,6 +101,7 @@ class _MediaScreenState extends State<MediaScreen> {
               return MediaGrid(
                 mediaList: state.filteredList,
                 selectedIds: state.selectedMediaIds,
+                crossAxisCount: state.gridColumns,
               );
           }
         },
@@ -177,7 +181,7 @@ class _MediaScreenState extends State<MediaScreen> {
                 title: const Text('选择模式'),
                 onTap: () {
                   Navigator.pop(context);
-                  // TODO: 实现选择模式
+                  context.read<MediaBloc>().add(const MediaToggleSelectionModeEvent());
                 },
               ),
               ListTile(
@@ -185,15 +189,15 @@ class _MediaScreenState extends State<MediaScreen> {
                 title: const Text('排序'),
                 onTap: () {
                   Navigator.pop(context);
-                  // TODO: 实现排序
+                  _showSortOptions(context);
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.settings),
+                leading: const Icon(Icons.grid_on),
                 title: const Text('网格设置'),
                 onTap: () {
                   Navigator.pop(context);
-                  // TODO: 实现网格设置
+                  _showGridOptions(context);
                 },
               ),
             ],
@@ -214,19 +218,201 @@ class _MediaScreenState extends State<MediaScreen> {
               ListTile(
                 leading: const Icon(Icons.folder_open),
                 title: const Text('扫描文件夹'),
-                onTap: () {
+                onTap: () async {
                   Navigator.pop(context);
-                  // TODO: 实现文件夹扫描
+                  await _scanDirectory(context);
                 },
               ),
               ListTile(
                 leading: const Icon(Icons.file_upload),
                 title: const Text('导入文件'),
-                onTap: () {
+                onTap: () async {
                   Navigator.pop(context);
-                  // TODO: 实现文件导入
+                  await _importFiles(context);
                 },
               ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _scanDirectory(BuildContext context) async {
+    final result = await FilePicker.platform.getDirectoryPath();
+    if (result == null) return;
+
+    if (!context.mounted) return;
+
+    // 显示扫描进度对话框
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return const AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('正在扫描文件夹...'),
+            ],
+          ),
+        );
+      },
+    );
+
+    try {
+      final scanResult = await scanDirectory(path: result);
+
+      if (!context.mounted) return;
+      Navigator.pop(context); // 关闭进度对话框
+
+      // 显示结果
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('扫描完成'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('导入: ${scanResult.importedCount}'),
+                Text('重复: ${scanResult.duplicateCount}'),
+                Text('失败: ${scanResult.failedCount}'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  context.read<MediaBloc>().add(const MediaLoadAllEvent());
+                },
+                child: const Text('确定'),
+              ),
+            ],
+          );
+        },
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      Navigator.pop(context); // 关闭进度对话框
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('扫描失败: $e')),
+      );
+    }
+  }
+
+  Future<void> _importFiles(BuildContext context) async {
+    final result = await FilePicker.platform.pickFiles(
+      allowMultiple: true,
+      type: FileType.any,
+    );
+    if (result == null || result.files.isEmpty) return;
+
+    if (!context.mounted) return;
+
+    final bloc = context.read<MediaBloc>();
+    int successCount = 0;
+    int failCount = 0;
+
+    for (final file in result.files) {
+      if (file.path != null) {
+        try {
+          bloc.add(MediaImportFileEvent(file.path!));
+          successCount++;
+        } catch (e) {
+          failCount++;
+        }
+      }
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('导入请求已发送: $successCount 成功, $failCount 失败'),
+      ),
+    );
+  }
+
+  void _showSortOptions(BuildContext context) {
+    final bloc = context.read<MediaBloc>();
+    final currentField = bloc.state.sortField;
+    final currentOrder = bloc.state.sortOrder;
+
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const ListTile(
+                title: Text('排序方式', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+              _buildSortTile(context, '按日期', SortField.date, currentField, currentOrder, bloc),
+              _buildSortTile(context, '按名称', SortField.name, currentField, currentOrder, bloc),
+              _buildSortTile(context, '按大小', SortField.size, currentField, currentOrder, bloc),
+              _buildSortTile(context, '按类型', SortField.type, currentField, currentOrder, bloc),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSortTile(
+    BuildContext context,
+    String title,
+    SortField field,
+    SortField currentField,
+    SortOrder currentOrder,
+    MediaBloc bloc,
+  ) {
+    final isSelected = field == currentField;
+    final icon = isSelected
+        ? (currentOrder == SortOrder.ascending ? Icons.arrow_upward : Icons.arrow_downward)
+        : null;
+
+    return ListTile(
+      leading: isSelected ? Icon(icon, color: Theme.of(context).primaryColor) : const SizedBox(width: 24),
+      title: Text(title),
+      trailing: isSelected ? const Icon(Icons.check) : null,
+      onTap: () {
+        Navigator.pop(context);
+        final newOrder = isSelected && currentOrder == SortOrder.descending
+            ? SortOrder.ascending
+            : SortOrder.descending;
+        bloc.add(MediaSortEvent(field, newOrder));
+      },
+    );
+  }
+
+  void _showGridOptions(BuildContext context) {
+    final bloc = context.read<MediaBloc>();
+    final currentColumns = bloc.state.gridColumns;
+
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const ListTile(
+                title: Text('网格列数', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+              for (int i = 2; i <= 6; i++)
+                ListTile(
+                  leading: Icon(Icons.grid_view, color: i == currentColumns ? Theme.of(context).primaryColor : null),
+                  title: Text('$i 列'),
+                  trailing: i == currentColumns ? const Icon(Icons.check) : null,
+                  onTap: () {
+                    Navigator.pop(context);
+                    bloc.add(MediaSetGridColumnsEvent(i));
+                  },
+                ),
             ],
           ),
         );

@@ -45,10 +45,10 @@ NoteDao：
 - observeAll() → Flow<List<NoteEntity>>
 - deleteByMediaId(mediaId)
 
-**待选择方案**：
-- [ ] 数据库访问库：rusqlite vs sqlx vs diesel
-- [ ] 数据库迁移工具：refinery vs diesel_migration vs 手动管理
-- [ ] Flow 实现：自定义 Stream 封装 vs rust_stream 库
+**已选择方案**：
+- [x] 数据库访问库：**sqlx** 0.7
+- [x] 数据库迁移工具：**refinery** 0.8
+- [ ] Flow 实现：自定义 Stream 封装 vs rust_stream 库（待确认）
 
 ---
 
@@ -83,10 +83,10 @@ NoteDao：
 - 复合筛选：类型、日期范围、相册、标签（多标签交集）
 - 搜索结果排序：相关度 + 时间
 
-**待选择方案**：
-- [ ] 视频缩略图方案：ffmpeg 绑定 vs 系统 API vs opencv
-- [ ] 图片处理库：image crate vs photon-rs vs 系统 API
-- [ ] 异步运行时：tokio vs async-std vs smol
+**已选择方案**：
+- [ ] 视频缩略图方案：ffmpeg 绑定 vs 系统 API vs opencv（待确认）
+- [x] 图片处理库：**image** crate 0.24
+- [x] 异步运行时：**tokio** 1.x
 
 ---
 
@@ -101,8 +101,8 @@ NoteDao：
 - ARB 文件管理翻译字符串
 - 所有用户可见字符串必须通过 localized strings 获取
 
-**待选择方案**：
-- [ ] 国际化方案：Flutter 内置 vs easy_localization vs slang
+**已选择方案**：
+- [x] 国际化方案：**Flutter 内置**（flutter_localizations + intl）
 
 ---
 
@@ -119,9 +119,9 @@ NoteDao：
 - 字体：使用 Material 3 字体比例
 - 图标：Material Icons（Outlined / Filled / Rounded）
 
-**待选择方案**：
-- [ ] 动态颜色支持：完全支持 vs 固定配色方案
-- [ ] 字体方案：系统默认 vs 自定义字体
+**已选择方案**：
+- [ ] 动态颜色支持：完全支持 vs 固定配色方案（待确认）
+- [ ] 字体方案：系统默认 vs 自定义字体（待确认）
 
 ---
 
@@ -160,28 +160,28 @@ NoteDao：
 
 ## 六、待选择方案汇总（需用户决策）
 
-### 6.1 架构层面
-- [ ] **状态管理框架**：Riverpod vs Bloc vs MobX
-- [ ] **Rust-Flutter 通信**：flutter_rust_bridge vs 手动 FFI vs ffigen
-- [ ] **数据库访问库**：rusqlite vs sqlx vs diesel
-- [ ] **异步运行时**：tokio vs async-std
+### 6.1 架构层面（已确定）
+- [x] **状态管理框架**：**Bloc**（flutter_bloc 8.1.6）
+- [x] **Rust-Flutter 通信**：**flutter_rust_bridge** 2.12.0
+- [x] **数据库访问库**：**sqlx** 0.7
+- [x] **异步运行时**：**tokio** 1.x
 
-### 6.2 功能层面
-- [ ] **视频播放**：video_player 插件 vs 自定义 PlatformView
-- [ ] **图片查看**：photo_view 插件 vs 自定义实现
-- [ ] **文件选择**：file_picker 插件 vs 自定义文件浏览器
-- [ ] **搜索算法**：SQL LIKE vs FTS5 vs 自定义索引
+### 6.2 功能层面（已确定）
+- [x] **视频播放**：**video_player** 2.9.1 + **chewie** 1.8.5
+- [x] **图片查看**：**photo_view** 0.15.0
+- [x] **文件选择**：**file_picker** 8.0.7
+- [x] **搜索算法**：**SQL LIKE**（当前实现）
 
 ### 6.3 UI 层面
-- [ ] **详情模式按钮布局**：7 按钮 vs 9 按钮
-- [ ] **玻璃效果实现**：BackdropFilter vs 渐变蒙层
-- [ ] **标签颜色功能**：保留 vs 移除
-- [ ] **动态主题**：完全支持 vs 固定配色
+- [ ] **详情模式按钮布局**：7 按钮 vs 9 按钮（待确认）
+- [ ] **玻璃效果实现**：BackdropFilter vs 渐变蒙层（待确认）
+- [x] **标签颜色功能**：**保留**
+- [ ] **动态主题**：完全支持 vs 固定配色（待确认）
 
 ### 6.4 性能层面
-- [ ] **图片处理库**：image crate vs photon-rs
-- [ ] **视频缩略图**：ffmpeg vs 系统 API vs opencv
-- [ ] **导入并发**：串行 vs 并行（限制并发数）
+- [x] **图片处理库**：**image** crate 0.24
+- [ ] **视频缩略图**：ffmpeg vs 系统 API vs opencv（待确认）
+- [ ] **导入并发**：串行 vs 并行（限制并发数）（待确认）
 
 ---
 

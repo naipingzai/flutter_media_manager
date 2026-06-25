@@ -24,13 +24,15 @@
 - 应用设置（主题、网格列数、缩略图质量、冲突策略等）
 - 数据备份/恢复/清理/导出
 
-**技术栈**：
-- 前端：Flutter 3.x + Dart
-- 后端核心：Rust（通过 flutter_rust_bridge FFI 与 Flutter 通信）
-- 状态管理：Riverpod / Bloc（待选择方案）
-- 数据库：SQLite（通过 Rust 的 rusqlite 或 sqlx 管理）
+**技术栈**（已确定）：
+- 前端：Flutter 3.24.5 + Dart 3.5.4
+- 后端核心：Rust（通过 flutter_rust_bridge 2.12.0 FFI 与 Flutter 通信）
+- 状态管理：**Bloc**（flutter_bloc 8.1.6）
+- 数据库：SQLite（通过 Rust 的 **sqlx** 0.7 管理）
 - 媒体解码：Rust 端处理（图片缩略图、视频信息提取、EXIF 读取）
 - UI 框架：Material 3
+
+> 📋 实施状态详见 [SKILLS_IMPLEMENTATION.md](SKILLS_IMPLEMENTATION.md)
 
 ---
 
@@ -217,10 +219,10 @@ fun SelectionBottomBar(
 )
 ```
 
-**待选择方案**：
-- [ ] 状态管理框架：Riverpod vs Bloc（需用户选择）
-- [ ] 网格列数配置范围：2-6 列 vs 其他范围
-- [ ] 多选模式下是否支持滑动连续选择
+**已选择方案**：
+- [x] 状态管理框架：**Bloc**（flutter_bloc 8.1.6）
+- [ ] 网格列数配置范围：2-6 列 vs 其他范围（待确认）
+- [ ] 多选模式下是否支持滑动连续选择（待确认）
 
 ---
 
@@ -327,10 +329,10 @@ class ImageTransform {
 - 文件名冲突时自动重命名（name_1.ext）
 - 导出进度覆盖层
 
-**待选择方案**：
-- [ ] 视频播放器实现方案：video_player 插件 vs 自定义 PlatformView
-- [ ] 图片查看器实现方案：photo_view 插件 vs 自定义实现
-- [ ] 详情模式按钮布局：7 个（当前设计）vs 9 个（九宫格含左右移动）
+**已选择方案**：
+- [x] 视频播放器：**video_player** 2.9.1 + **chewie** 1.8.5
+- [x] 图片查看器：**photo_view** 0.15.0
+- [ ] 详情模式按钮布局：7 个（当前设计）vs 9 个（九宫格含左右移动）（待确认）
 
 ---
 

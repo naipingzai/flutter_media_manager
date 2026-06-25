@@ -6,6 +6,7 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
+// These functions are ignored because they are not marked as `pub`: `get_albums_by_parent`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`
 
 /// 获取根相册列表
@@ -21,7 +22,7 @@ Future<String> createAlbum({required String name, String? parentId}) =>
     RustLib.instance.api
         .crateApiAlbumCreateAlbum(name: name, parentId: parentId);
 
-/// 删除相册
+/// 删除相册（级联删除子相册和媒体关联）
 Future<void> deleteAlbum({required String id}) =>
     RustLib.instance.api.crateApiAlbumDeleteAlbum(id: id);
 
@@ -51,7 +52,7 @@ Future<void> setAlbumCover(
     RustLib.instance.api
         .crateApiAlbumSetAlbumCover(albumId: albumId, mediaId: mediaId);
 
-/// 确保默认相册存在
+/// 确保默认相册存在（如果不存在则创建）
 Future<String> ensureDefaultAlbum({required String name}) =>
     RustLib.instance.api.crateApiAlbumEnsureDefaultAlbum(name: name);
 

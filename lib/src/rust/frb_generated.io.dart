@@ -533,7 +533,7 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
     wireObj.media_count = cst_encode_i_32(apiObj.mediaCount);
     wireObj.cover_thumbnail_path =
         cst_encode_opt_String(apiObj.coverThumbnailPath);
-    wireObj.has_children = cst_encode_bool(apiObj.hasChildren);
+    wireObj.has_children = apiObj.hasChildren ? 1 : 0;
   }
 
   @protected
@@ -542,7 +542,7 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
     wireObj.theme_mode = cst_encode_theme_mode(apiObj.themeMode);
     wireObj.grid_columns = cst_encode_i_32(apiObj.gridColumns);
     wireObj.album_grid_columns = cst_encode_i_32(apiObj.albumGridColumns);
-    wireObj.show_content_previews = cst_encode_bool(apiObj.showContentPreviews);
+    wireObj.show_content_previews = apiObj.showContentPreviews ? 1 : 0;
     wireObj.thumbnail_quality = cst_encode_i_32(apiObj.thumbnailQuality);
     wireObj.language = cst_encode_String(apiObj.language);
   }
@@ -683,7 +683,7 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
     wireObj.media_count = cst_encode_i_32(apiObj.mediaCount);
     wireObj.cover_thumbnail_path =
         cst_encode_opt_String(apiObj.coverThumbnailPath);
-    wireObj.has_children = cst_encode_bool(apiObj.hasChildren);
+    wireObj.has_children = apiObj.hasChildren ? 1 : 0;
   }
 
   @protected
@@ -905,6 +905,1293 @@ class RustLibWire implements BaseWire {
   late final _store_dart_post_cobject =
       _store_dart_post_cobjectPtr.asFunction<void Function(int)>();
 
+  void wire__crate__api__album__add_media_to_album(
+    int port_,
+    ffi.Pointer<wire_cst_list_String> media_ids,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> album_id,
+  ) {
+    return _wire__crate__api__album__add_media_to_album(
+      port_,
+      media_ids,
+      album_id,
+    );
+  }
+
+  late final _wire__crate__api__album__add_media_to_albumPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(ffi.Int64, ffi.Pointer<wire_cst_list_String>,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__album__add_media_to_album');
+  late final _wire__crate__api__album__add_media_to_album =
+      _wire__crate__api__album__add_media_to_albumPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_String>,
+              ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__tag__add_tag_to_media(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> media_id,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> tag_id,
+  ) {
+    return _wire__crate__api__tag__add_tag_to_media(
+      port_,
+      media_id,
+      tag_id,
+    );
+  }
+
+  late final _wire__crate__api__tag__add_tag_to_mediaPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__tag__add_tag_to_media');
+  late final _wire__crate__api__tag__add_tag_to_media =
+      _wire__crate__api__tag__add_tag_to_mediaPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+              ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__scanner__calculate_file_hash(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> file_path,
+  ) {
+    return _wire__crate__api__scanner__calculate_file_hash(
+      port_,
+      file_path,
+    );
+  }
+
+  late final _wire__crate__api__scanner__calculate_file_hashPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__scanner__calculate_file_hash');
+  late final _wire__crate__api__scanner__calculate_file_hash =
+      _wire__crate__api__scanner__calculate_file_hashPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__settings__clear_thumbnail_cache(
+    int port_,
+  ) {
+    return _wire__crate__api__settings__clear_thumbnail_cache(
+      port_,
+    );
+  }
+
+  late final _wire__crate__api__settings__clear_thumbnail_cachePtr = _lookup<
+          ffi.NativeFunction<ffi.Void Function(ffi.Int64)>>(
+      'frbgen_advance_media_kb_wire__crate__api__settings__clear_thumbnail_cache');
+  late final _wire__crate__api__settings__clear_thumbnail_cache =
+      _wire__crate__api__settings__clear_thumbnail_cachePtr
+          .asFunction<void Function(int)>();
+
+  void wire__crate__api__album__create_album(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> name,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> parent_id,
+  ) {
+    return _wire__crate__api__album__create_album(
+      port_,
+      name,
+      parent_id,
+    );
+  }
+
+  late final _wire__crate__api__album__create_albumPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__album__create_album');
+  late final _wire__crate__api__album__create_album =
+      _wire__crate__api__album__create_albumPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+              ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__tag__create_tag(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> name,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> color,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> parent_id,
+  ) {
+    return _wire__crate__api__tag__create_tag(
+      port_,
+      name,
+      color,
+      parent_id,
+    );
+  }
+
+  late final _wire__crate__api__tag__create_tagPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__tag__create_tag');
+  late final _wire__crate__api__tag__create_tag =
+      _wire__crate__api__tag__create_tagPtr.asFunction<
+          void Function(
+              int,
+              ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+              ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+              ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__album__delete_album(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> id,
+  ) {
+    return _wire__crate__api__album__delete_album(
+      port_,
+      id,
+    );
+  }
+
+  late final _wire__crate__api__album__delete_albumPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__album__delete_album');
+  late final _wire__crate__api__album__delete_album =
+      _wire__crate__api__album__delete_albumPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__settings__delete_all_data(
+    int port_,
+  ) {
+    return _wire__crate__api__settings__delete_all_data(
+      port_,
+    );
+  }
+
+  late final _wire__crate__api__settings__delete_all_dataPtr = _lookup<
+          ffi.NativeFunction<ffi.Void Function(ffi.Int64)>>(
+      'frbgen_advance_media_kb_wire__crate__api__settings__delete_all_data');
+  late final _wire__crate__api__settings__delete_all_data =
+      _wire__crate__api__settings__delete_all_dataPtr
+          .asFunction<void Function(int)>();
+
+  void wire__crate__api__media__delete_media(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> id,
+  ) {
+    return _wire__crate__api__media__delete_media(
+      port_,
+      id,
+    );
+  }
+
+  late final _wire__crate__api__media__delete_mediaPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__media__delete_media');
+  late final _wire__crate__api__media__delete_media =
+      _wire__crate__api__media__delete_mediaPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__note__delete_note(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> id,
+  ) {
+    return _wire__crate__api__note__delete_note(
+      port_,
+      id,
+    );
+  }
+
+  late final _wire__crate__api__note__delete_notePtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__note__delete_note');
+  late final _wire__crate__api__note__delete_note =
+      _wire__crate__api__note__delete_notePtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__tag__delete_tag(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> id,
+  ) {
+    return _wire__crate__api__tag__delete_tag(
+      port_,
+      id,
+    );
+  }
+
+  late final _wire__crate__api__tag__delete_tagPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__tag__delete_tag');
+  late final _wire__crate__api__tag__delete_tag =
+      _wire__crate__api__tag__delete_tagPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__album__ensure_default_album(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> name,
+  ) {
+    return _wire__crate__api__album__ensure_default_album(
+      port_,
+      name,
+    );
+  }
+
+  late final _wire__crate__api__album__ensure_default_albumPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__album__ensure_default_album');
+  late final _wire__crate__api__album__ensure_default_album =
+      _wire__crate__api__album__ensure_default_albumPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__tag__ensure_default_tag(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> name,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> color,
+  ) {
+    return _wire__crate__api__tag__ensure_default_tag(
+      port_,
+      name,
+      color,
+    );
+  }
+
+  late final _wire__crate__api__tag__ensure_default_tagPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__tag__ensure_default_tag');
+  late final _wire__crate__api__tag__ensure_default_tag =
+      _wire__crate__api__tag__ensure_default_tagPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+              ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__settings__export_data(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> export_path,
+  ) {
+    return _wire__crate__api__settings__export_data(
+      port_,
+      export_path,
+    );
+  }
+
+  late final _wire__crate__api__settings__export_dataPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__settings__export_data');
+  late final _wire__crate__api__settings__export_data =
+      _wire__crate__api__settings__export_dataPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__import_export__export_package(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> export_path,
+    ffi.Pointer<ffi.Int8> include_media,
+  ) {
+    return _wire__crate__api__import_export__export_package(
+      port_,
+      export_path,
+      include_media,
+    );
+  }
+
+  late final _wire__crate__api__import_export__export_packagePtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+                  ffi.Pointer<ffi.Int8>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__import_export__export_package');
+  late final _wire__crate__api__import_export__export_package =
+      _wire__crate__api__import_export__export_packagePtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+              ffi.Pointer<ffi.Int8>)>();
+
+  void wire__crate__api__import_export__export_to_download(
+    int port_,
+    ffi.Pointer<wire_cst_list_String> media_ids,
+  ) {
+    return _wire__crate__api__import_export__export_to_download(
+      port_,
+      media_ids,
+    );
+  }
+
+  late final _wire__crate__api__import_export__export_to_downloadPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(ffi.Int64, ffi.Pointer<wire_cst_list_String>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__import_export__export_to_download');
+  late final _wire__crate__api__import_export__export_to_download =
+      _wire__crate__api__import_export__export_to_downloadPtr
+          .asFunction<void Function(int, ffi.Pointer<wire_cst_list_String>)>();
+
+  void wire__crate__api__media__filter_media_by_type(
+    int port_,
+    int media_type,
+  ) {
+    return _wire__crate__api__media__filter_media_by_type(
+      port_,
+      media_type,
+    );
+  }
+
+  late final _wire__crate__api__media__filter_media_by_typePtr = _lookup<
+          ffi.NativeFunction<ffi.Void Function(ffi.Int64, ffi.Int32)>>(
+      'frbgen_advance_media_kb_wire__crate__api__media__filter_media_by_type');
+  late final _wire__crate__api__media__filter_media_by_type =
+      _wire__crate__api__media__filter_media_by_typePtr
+          .asFunction<void Function(int, int)>();
+
+  void wire__crate__api__scanner__generate_thumbnail(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> file_path,
+    int quality,
+  ) {
+    return _wire__crate__api__scanner__generate_thumbnail(
+      port_,
+      file_path,
+      quality,
+    );
+  }
+
+  late final _wire__crate__api__scanner__generate_thumbnailPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(ffi.Int64,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>, ffi.Int32)>>(
+      'frbgen_advance_media_kb_wire__crate__api__scanner__generate_thumbnail');
+  late final _wire__crate__api__scanner__generate_thumbnail =
+      _wire__crate__api__scanner__generate_thumbnailPtr.asFunction<
+          void Function(
+              int, ffi.Pointer<wire_cst_list_prim_u_8_strict>, int)>();
+
+  void wire__crate__api__media__get_adjacent_media(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> id,
+  ) {
+    return _wire__crate__api__media__get_adjacent_media(
+      port_,
+      id,
+    );
+  }
+
+  late final _wire__crate__api__media__get_adjacent_mediaPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__media__get_adjacent_media');
+  late final _wire__crate__api__media__get_adjacent_media =
+      _wire__crate__api__media__get_adjacent_mediaPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__album__get_album_breadcrumb(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> album_id,
+  ) {
+    return _wire__crate__api__album__get_album_breadcrumb(
+      port_,
+      album_id,
+    );
+  }
+
+  late final _wire__crate__api__album__get_album_breadcrumbPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__album__get_album_breadcrumb');
+  late final _wire__crate__api__album__get_album_breadcrumb =
+      _wire__crate__api__album__get_album_breadcrumbPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__media__get_all_media(
+    int port_,
+  ) {
+    return _wire__crate__api__media__get_all_media(
+      port_,
+    );
+  }
+
+  late final _wire__crate__api__media__get_all_mediaPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Int64)>>(
+          'frbgen_advance_media_kb_wire__crate__api__media__get_all_media');
+  late final _wire__crate__api__media__get_all_media =
+      _wire__crate__api__media__get_all_mediaPtr
+          .asFunction<void Function(int)>();
+
+  void wire__crate__api__tag__get_all_tags(
+    int port_,
+  ) {
+    return _wire__crate__api__tag__get_all_tags(
+      port_,
+    );
+  }
+
+  late final _wire__crate__api__tag__get_all_tagsPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Int64)>>(
+          'frbgen_advance_media_kb_wire__crate__api__tag__get_all_tags');
+  late final _wire__crate__api__tag__get_all_tags =
+      _wire__crate__api__tag__get_all_tagsPtr.asFunction<void Function(int)>();
+
+  void wire__crate__api__album__get_child_albums(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> parent_id,
+  ) {
+    return _wire__crate__api__album__get_child_albums(
+      port_,
+      parent_id,
+    );
+  }
+
+  late final _wire__crate__api__album__get_child_albumsPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__album__get_child_albums');
+  late final _wire__crate__api__album__get_child_albums =
+      _wire__crate__api__album__get_child_albumsPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__tag__get_child_tags(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> parent_id,
+  ) {
+    return _wire__crate__api__tag__get_child_tags(
+      port_,
+      parent_id,
+    );
+  }
+
+  late final _wire__crate__api__tag__get_child_tagsPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__tag__get_child_tags');
+  late final _wire__crate__api__tag__get_child_tags =
+      _wire__crate__api__tag__get_child_tagsPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__media__get_media_by_id(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> id,
+  ) {
+    return _wire__crate__api__media__get_media_by_id(
+      port_,
+      id,
+    );
+  }
+
+  late final _wire__crate__api__media__get_media_by_idPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__media__get_media_by_id');
+  late final _wire__crate__api__media__get_media_by_id =
+      _wire__crate__api__media__get_media_by_idPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__tag__get_media_by_tags_and(
+    int port_,
+    ffi.Pointer<wire_cst_list_String> tag_ids,
+  ) {
+    return _wire__crate__api__tag__get_media_by_tags_and(
+      port_,
+      tag_ids,
+    );
+  }
+
+  late final _wire__crate__api__tag__get_media_by_tags_andPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(ffi.Int64, ffi.Pointer<wire_cst_list_String>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__tag__get_media_by_tags_and');
+  late final _wire__crate__api__tag__get_media_by_tags_and =
+      _wire__crate__api__tag__get_media_by_tags_andPtr
+          .asFunction<void Function(int, ffi.Pointer<wire_cst_list_String>)>();
+
+  void wire__crate__api__tag__get_media_by_tags_or(
+    int port_,
+    ffi.Pointer<wire_cst_list_String> tag_ids,
+  ) {
+    return _wire__crate__api__tag__get_media_by_tags_or(
+      port_,
+      tag_ids,
+    );
+  }
+
+  late final _wire__crate__api__tag__get_media_by_tags_orPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(ffi.Int64, ffi.Pointer<wire_cst_list_String>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__tag__get_media_by_tags_or');
+  late final _wire__crate__api__tag__get_media_by_tags_or =
+      _wire__crate__api__tag__get_media_by_tags_orPtr
+          .asFunction<void Function(int, ffi.Pointer<wire_cst_list_String>)>();
+
+  void wire__crate__api__tag__get_media_tags(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> media_id,
+  ) {
+    return _wire__crate__api__tag__get_media_tags(
+      port_,
+      media_id,
+    );
+  }
+
+  late final _wire__crate__api__tag__get_media_tagsPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__tag__get_media_tags');
+  late final _wire__crate__api__tag__get_media_tags =
+      _wire__crate__api__tag__get_media_tagsPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__search__get_media_with_any_album(
+    int port_,
+  ) {
+    return _wire__crate__api__search__get_media_with_any_album(
+      port_,
+    );
+  }
+
+  late final _wire__crate__api__search__get_media_with_any_albumPtr = _lookup<
+          ffi.NativeFunction<ffi.Void Function(ffi.Int64)>>(
+      'frbgen_advance_media_kb_wire__crate__api__search__get_media_with_any_album');
+  late final _wire__crate__api__search__get_media_with_any_album =
+      _wire__crate__api__search__get_media_with_any_albumPtr
+          .asFunction<void Function(int)>();
+
+  void wire__crate__api__search__get_media_with_any_tag(
+    int port_,
+  ) {
+    return _wire__crate__api__search__get_media_with_any_tag(
+      port_,
+    );
+  }
+
+  late final _wire__crate__api__search__get_media_with_any_tagPtr = _lookup<
+          ffi.NativeFunction<ffi.Void Function(ffi.Int64)>>(
+      'frbgen_advance_media_kb_wire__crate__api__search__get_media_with_any_tag');
+  late final _wire__crate__api__search__get_media_with_any_tag =
+      _wire__crate__api__search__get_media_with_any_tagPtr
+          .asFunction<void Function(int)>();
+
+  void wire__crate__api__search__get_media_without_any_album(
+    int port_,
+  ) {
+    return _wire__crate__api__search__get_media_without_any_album(
+      port_,
+    );
+  }
+
+  late final _wire__crate__api__search__get_media_without_any_albumPtr = _lookup<
+          ffi.NativeFunction<ffi.Void Function(ffi.Int64)>>(
+      'frbgen_advance_media_kb_wire__crate__api__search__get_media_without_any_album');
+  late final _wire__crate__api__search__get_media_without_any_album =
+      _wire__crate__api__search__get_media_without_any_albumPtr
+          .asFunction<void Function(int)>();
+
+  void wire__crate__api__search__get_media_without_any_tag(
+    int port_,
+  ) {
+    return _wire__crate__api__search__get_media_without_any_tag(
+      port_,
+    );
+  }
+
+  late final _wire__crate__api__search__get_media_without_any_tagPtr = _lookup<
+          ffi.NativeFunction<ffi.Void Function(ffi.Int64)>>(
+      'frbgen_advance_media_kb_wire__crate__api__search__get_media_without_any_tag');
+  late final _wire__crate__api__search__get_media_without_any_tag =
+      _wire__crate__api__search__get_media_without_any_tagPtr
+          .asFunction<void Function(int)>();
+
+  void wire__crate__api__note__get_note_by_media_id(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> media_id,
+  ) {
+    return _wire__crate__api__note__get_note_by_media_id(
+      port_,
+      media_id,
+    );
+  }
+
+  late final _wire__crate__api__note__get_note_by_media_idPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__note__get_note_by_media_id');
+  late final _wire__crate__api__note__get_note_by_media_id =
+      _wire__crate__api__note__get_note_by_media_idPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__album__get_root_albums(
+    int port_,
+  ) {
+    return _wire__crate__api__album__get_root_albums(
+      port_,
+    );
+  }
+
+  late final _wire__crate__api__album__get_root_albumsPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Int64)>>(
+          'frbgen_advance_media_kb_wire__crate__api__album__get_root_albums');
+  late final _wire__crate__api__album__get_root_albums =
+      _wire__crate__api__album__get_root_albumsPtr
+          .asFunction<void Function(int)>();
+
+  void wire__crate__api__tag__get_root_tags(
+    int port_,
+  ) {
+    return _wire__crate__api__tag__get_root_tags(
+      port_,
+    );
+  }
+
+  late final _wire__crate__api__tag__get_root_tagsPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Int64)>>(
+          'frbgen_advance_media_kb_wire__crate__api__tag__get_root_tags');
+  late final _wire__crate__api__tag__get_root_tags =
+      _wire__crate__api__tag__get_root_tagsPtr.asFunction<void Function(int)>();
+
+  void wire__crate__api__settings__get_settings(
+    int port_,
+  ) {
+    return _wire__crate__api__settings__get_settings(
+      port_,
+    );
+  }
+
+  late final _wire__crate__api__settings__get_settingsPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Int64)>>(
+          'frbgen_advance_media_kb_wire__crate__api__settings__get_settings');
+  late final _wire__crate__api__settings__get_settings =
+      _wire__crate__api__settings__get_settingsPtr
+          .asFunction<void Function(int)>();
+
+  void wire__crate__api__settings__get_storage_stats(
+    int port_,
+  ) {
+    return _wire__crate__api__settings__get_storage_stats(
+      port_,
+    );
+  }
+
+  late final _wire__crate__api__settings__get_storage_statsPtr = _lookup<
+          ffi.NativeFunction<ffi.Void Function(ffi.Int64)>>(
+      'frbgen_advance_media_kb_wire__crate__api__settings__get_storage_stats');
+  late final _wire__crate__api__settings__get_storage_stats =
+      _wire__crate__api__settings__get_storage_statsPtr
+          .asFunction<void Function(int)>();
+
+  void wire__crate__api__scanner__get_supported_extensions(
+    int port_,
+  ) {
+    return _wire__crate__api__scanner__get_supported_extensions(
+      port_,
+    );
+  }
+
+  late final _wire__crate__api__scanner__get_supported_extensionsPtr = _lookup<
+          ffi.NativeFunction<ffi.Void Function(ffi.Int64)>>(
+      'frbgen_advance_media_kb_wire__crate__api__scanner__get_supported_extensions');
+  late final _wire__crate__api__scanner__get_supported_extensions =
+      _wire__crate__api__scanner__get_supported_extensionsPtr
+          .asFunction<void Function(int)>();
+
+  void wire__crate__api__tag__get_tag_breadcrumb(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> tag_id,
+  ) {
+    return _wire__crate__api__tag__get_tag_breadcrumb(
+      port_,
+      tag_id,
+    );
+  }
+
+  late final _wire__crate__api__tag__get_tag_breadcrumbPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__tag__get_tag_breadcrumb');
+  late final _wire__crate__api__tag__get_tag_breadcrumb =
+      _wire__crate__api__tag__get_tag_breadcrumbPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__settings__import_data(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> import_path,
+  ) {
+    return _wire__crate__api__settings__import_data(
+      port_,
+      import_path,
+    );
+  }
+
+  late final _wire__crate__api__settings__import_dataPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__settings__import_data');
+  late final _wire__crate__api__settings__import_data =
+      _wire__crate__api__settings__import_dataPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__import_export__import_package(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> package_path,
+    int conflict_strategy,
+  ) {
+    return _wire__crate__api__import_export__import_package(
+      port_,
+      package_path,
+      conflict_strategy,
+    );
+  }
+
+  late final _wire__crate__api__import_export__import_packagePtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(ffi.Int64,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>, ffi.Int32)>>(
+      'frbgen_advance_media_kb_wire__crate__api__import_export__import_package');
+  late final _wire__crate__api__import_export__import_package =
+      _wire__crate__api__import_export__import_packagePtr.asFunction<
+          void Function(
+              int, ffi.Pointer<wire_cst_list_prim_u_8_strict>, int)>();
+
+  void wire__crate__api__scanner__import_single_file(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> file_path,
+  ) {
+    return _wire__crate__api__scanner__import_single_file(
+      port_,
+      file_path,
+    );
+  }
+
+  late final _wire__crate__api__scanner__import_single_filePtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__scanner__import_single_file');
+  late final _wire__crate__api__scanner__import_single_file =
+      _wire__crate__api__scanner__import_single_filePtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__settings__init_app(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> app_dir,
+  ) {
+    return _wire__crate__api__settings__init_app(
+      port_,
+      app_dir,
+    );
+  }
+
+  late final _wire__crate__api__settings__init_appPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__settings__init_app');
+  late final _wire__crate__api__settings__init_app =
+      _wire__crate__api__settings__init_appPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__scanner__is_hash_exists(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> hash,
+  ) {
+    return _wire__crate__api__scanner__is_hash_exists(
+      port_,
+      hash,
+    );
+  }
+
+  late final _wire__crate__api__scanner__is_hash_existsPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__scanner__is_hash_exists');
+  late final _wire__crate__api__scanner__is_hash_exists =
+      _wire__crate__api__scanner__is_hash_existsPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__media__media_type_as_i32(
+    int port_,
+    int that,
+  ) {
+    return _wire__crate__api__media__media_type_as_i32(
+      port_,
+      that,
+    );
+  }
+
+  late final _wire__crate__api__media__media_type_as_i32Ptr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Int64, ffi.Int32)>>(
+          'frbgen_advance_media_kb_wire__crate__api__media__media_type_as_i32');
+  late final _wire__crate__api__media__media_type_as_i32 =
+      _wire__crate__api__media__media_type_as_i32Ptr
+          .asFunction<void Function(int, int)>();
+
+  void wire__crate__api__album__remove_media_from_album(
+    int port_,
+    ffi.Pointer<wire_cst_list_String> media_ids,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> album_id,
+  ) {
+    return _wire__crate__api__album__remove_media_from_album(
+      port_,
+      media_ids,
+      album_id,
+    );
+  }
+
+  late final _wire__crate__api__album__remove_media_from_albumPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(ffi.Int64, ffi.Pointer<wire_cst_list_String>,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__album__remove_media_from_album');
+  late final _wire__crate__api__album__remove_media_from_album =
+      _wire__crate__api__album__remove_media_from_albumPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_String>,
+              ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__tag__remove_tag_from_media(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> media_id,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> tag_id,
+  ) {
+    return _wire__crate__api__tag__remove_tag_from_media(
+      port_,
+      media_id,
+      tag_id,
+    );
+  }
+
+  late final _wire__crate__api__tag__remove_tag_from_mediaPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__tag__remove_tag_from_media');
+  late final _wire__crate__api__tag__remove_tag_from_media =
+      _wire__crate__api__tag__remove_tag_from_mediaPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+              ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__album__rename_album(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> id,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> new_name,
+  ) {
+    return _wire__crate__api__album__rename_album(
+      port_,
+      id,
+      new_name,
+    );
+  }
+
+  late final _wire__crate__api__album__rename_albumPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__album__rename_album');
+  late final _wire__crate__api__album__rename_album =
+      _wire__crate__api__album__rename_albumPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+              ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__tag__rename_tag(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> id,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> new_name,
+  ) {
+    return _wire__crate__api__tag__rename_tag(
+      port_,
+      id,
+      new_name,
+    );
+  }
+
+  late final _wire__crate__api__tag__rename_tagPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__tag__rename_tag');
+  late final _wire__crate__api__tag__rename_tag =
+      _wire__crate__api__tag__rename_tagPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+              ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__note__save_note(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> media_id,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> content,
+  ) {
+    return _wire__crate__api__note__save_note(
+      port_,
+      media_id,
+      content,
+    );
+  }
+
+  late final _wire__crate__api__note__save_notePtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__note__save_note');
+  late final _wire__crate__api__note__save_note =
+      _wire__crate__api__note__save_notePtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+              ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__settings__save_settings(
+    int port_,
+    ffi.Pointer<wire_cst_app_settings> settings,
+  ) {
+    return _wire__crate__api__settings__save_settings(
+      port_,
+      settings,
+    );
+  }
+
+  late final _wire__crate__api__settings__save_settingsPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64, ffi.Pointer<wire_cst_app_settings>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__settings__save_settings');
+  late final _wire__crate__api__settings__save_settings =
+      _wire__crate__api__settings__save_settingsPtr
+          .asFunction<void Function(int, ffi.Pointer<wire_cst_app_settings>)>();
+
+  void wire__crate__api__scanner__scan_directory(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> path,
+  ) {
+    return _wire__crate__api__scanner__scan_directory(
+      port_,
+      path,
+    );
+  }
+
+  late final _wire__crate__api__scanner__scan_directoryPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__scanner__scan_directory');
+  late final _wire__crate__api__scanner__scan_directory =
+      _wire__crate__api__scanner__scan_directoryPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__search__search_filter_default(
+    int port_,
+  ) {
+    return _wire__crate__api__search__search_filter_default(
+      port_,
+    );
+  }
+
+  late final _wire__crate__api__search__search_filter_defaultPtr = _lookup<
+          ffi.NativeFunction<ffi.Void Function(ffi.Int64)>>(
+      'frbgen_advance_media_kb_wire__crate__api__search__search_filter_default');
+  late final _wire__crate__api__search__search_filter_default =
+      _wire__crate__api__search__search_filter_defaultPtr
+          .asFunction<void Function(int)>();
+
+  void wire__crate__api__media__search_media(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> query,
+  ) {
+    return _wire__crate__api__media__search_media(
+      port_,
+      query,
+    );
+  }
+
+  late final _wire__crate__api__media__search_mediaPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__media__search_media');
+  late final _wire__crate__api__media__search_media =
+      _wire__crate__api__media__search_mediaPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__search__search_media_advanced(
+    int port_,
+    ffi.Pointer<wire_cst_search_filter> filter,
+  ) {
+    return _wire__crate__api__search__search_media_advanced(
+      port_,
+      filter,
+    );
+  }
+
+  late final _wire__crate__api__search__search_media_advancedPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64, ffi.Pointer<wire_cst_search_filter>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__search__search_media_advanced');
+  late final _wire__crate__api__search__search_media_advanced =
+      _wire__crate__api__search__search_media_advancedPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_search_filter>)>();
+
+  void wire__crate__api__album__set_album_cover(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> album_id,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> media_id,
+  ) {
+    return _wire__crate__api__album__set_album_cover(
+      port_,
+      album_id,
+      media_id,
+    );
+  }
+
+  late final _wire__crate__api__album__set_album_coverPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__album__set_album_cover');
+  late final _wire__crate__api__album__set_album_cover =
+      _wire__crate__api__album__set_album_coverPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+              ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__media__update_media(
+    int port_,
+    ffi.Pointer<wire_cst_media_item> media,
+  ) {
+    return _wire__crate__api__media__update_media(
+      port_,
+      media,
+    );
+  }
+
+  late final _wire__crate__api__media__update_mediaPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(ffi.Int64, ffi.Pointer<wire_cst_media_item>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__media__update_media');
+  late final _wire__crate__api__media__update_media =
+      _wire__crate__api__media__update_mediaPtr
+          .asFunction<void Function(int, ffi.Pointer<wire_cst_media_item>)>();
+
+  ffi.Pointer<wire_cst_adjacent_media> cst_new_box_autoadd_adjacent_media() {
+    return _cst_new_box_autoadd_adjacent_media();
+  }
+
+  late final _cst_new_box_autoadd_adjacent_mediaPtr = _lookup<
+          ffi.NativeFunction<ffi.Pointer<wire_cst_adjacent_media> Function()>>(
+      'frbgen_advance_media_kb_cst_new_box_autoadd_adjacent_media');
+  late final _cst_new_box_autoadd_adjacent_media =
+      _cst_new_box_autoadd_adjacent_mediaPtr
+          .asFunction<ffi.Pointer<wire_cst_adjacent_media> Function()>();
+
+  ffi.Pointer<wire_cst_app_settings> cst_new_box_autoadd_app_settings() {
+    return _cst_new_box_autoadd_app_settings();
+  }
+
+  late final _cst_new_box_autoadd_app_settingsPtr = _lookup<
+          ffi.NativeFunction<ffi.Pointer<wire_cst_app_settings> Function()>>(
+      'frbgen_advance_media_kb_cst_new_box_autoadd_app_settings');
+  late final _cst_new_box_autoadd_app_settings =
+      _cst_new_box_autoadd_app_settingsPtr
+          .asFunction<ffi.Pointer<wire_cst_app_settings> Function()>();
+
+  ffi.Pointer<ffi.Int32> cst_new_box_autoadd_i_32(
+    int value,
+  ) {
+    return _cst_new_box_autoadd_i_32(
+      value,
+    );
+  }
+
+  late final _cst_new_box_autoadd_i_32Ptr =
+      _lookup<ffi.NativeFunction<ffi.Pointer<ffi.Int32> Function(ffi.Int32)>>(
+          'frbgen_advance_media_kb_cst_new_box_autoadd_i_32');
+  late final _cst_new_box_autoadd_i_32 = _cst_new_box_autoadd_i_32Ptr
+      .asFunction<ffi.Pointer<ffi.Int32> Function(int)>();
+
+  ffi.Pointer<ffi.Int64> cst_new_box_autoadd_i_64(
+    int value,
+  ) {
+    return _cst_new_box_autoadd_i_64(
+      value,
+    );
+  }
+
+  late final _cst_new_box_autoadd_i_64Ptr =
+      _lookup<ffi.NativeFunction<ffi.Pointer<ffi.Int64> Function(ffi.Int64)>>(
+          'frbgen_advance_media_kb_cst_new_box_autoadd_i_64');
+  late final _cst_new_box_autoadd_i_64 = _cst_new_box_autoadd_i_64Ptr
+      .asFunction<ffi.Pointer<ffi.Int64> Function(int)>();
+
+  ffi.Pointer<wire_cst_media_item> cst_new_box_autoadd_media_item() {
+    return _cst_new_box_autoadd_media_item();
+  }
+
+  late final _cst_new_box_autoadd_media_itemPtr =
+      _lookup<ffi.NativeFunction<ffi.Pointer<wire_cst_media_item> Function()>>(
+          'frbgen_advance_media_kb_cst_new_box_autoadd_media_item');
+  late final _cst_new_box_autoadd_media_item =
+      _cst_new_box_autoadd_media_itemPtr
+          .asFunction<ffi.Pointer<wire_cst_media_item> Function()>();
+
+  ffi.Pointer<wire_cst_note> cst_new_box_autoadd_note() {
+    return _cst_new_box_autoadd_note();
+  }
+
+  late final _cst_new_box_autoadd_notePtr =
+      _lookup<ffi.NativeFunction<ffi.Pointer<wire_cst_note> Function()>>(
+          'frbgen_advance_media_kb_cst_new_box_autoadd_note');
+  late final _cst_new_box_autoadd_note = _cst_new_box_autoadd_notePtr
+      .asFunction<ffi.Pointer<wire_cst_note> Function()>();
+
+  ffi.Pointer<wire_cst_search_filter> cst_new_box_autoadd_search_filter() {
+    return _cst_new_box_autoadd_search_filter();
+  }
+
+  late final _cst_new_box_autoadd_search_filterPtr = _lookup<
+          ffi.NativeFunction<ffi.Pointer<wire_cst_search_filter> Function()>>(
+      'frbgen_advance_media_kb_cst_new_box_autoadd_search_filter');
+  late final _cst_new_box_autoadd_search_filter =
+      _cst_new_box_autoadd_search_filterPtr
+          .asFunction<ffi.Pointer<wire_cst_search_filter> Function()>();
+
+  ffi.Pointer<wire_cst_list_String> cst_new_list_String(
+    int len,
+  ) {
+    return _cst_new_list_String(
+      len,
+    );
+  }
+
+  late final _cst_new_list_StringPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<wire_cst_list_String> Function(
+              ffi.Int32)>>('frbgen_advance_media_kb_cst_new_list_String');
+  late final _cst_new_list_String = _cst_new_list_StringPtr
+      .asFunction<ffi.Pointer<wire_cst_list_String> Function(int)>();
+
+  ffi.Pointer<wire_cst_list_album_with_info> cst_new_list_album_with_info(
+    int len,
+  ) {
+    return _cst_new_list_album_with_info(
+      len,
+    );
+  }
+
+  late final _cst_new_list_album_with_infoPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Pointer<wire_cst_list_album_with_info> Function(ffi.Int32)>>(
+      'frbgen_advance_media_kb_cst_new_list_album_with_info');
+  late final _cst_new_list_album_with_info = _cst_new_list_album_with_infoPtr
+      .asFunction<ffi.Pointer<wire_cst_list_album_with_info> Function(int)>();
+
+  ffi.Pointer<wire_cst_list_breadcrumb_item> cst_new_list_breadcrumb_item(
+    int len,
+  ) {
+    return _cst_new_list_breadcrumb_item(
+      len,
+    );
+  }
+
+  late final _cst_new_list_breadcrumb_itemPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Pointer<wire_cst_list_breadcrumb_item> Function(ffi.Int32)>>(
+      'frbgen_advance_media_kb_cst_new_list_breadcrumb_item');
+  late final _cst_new_list_breadcrumb_item = _cst_new_list_breadcrumb_itemPtr
+      .asFunction<ffi.Pointer<wire_cst_list_breadcrumb_item> Function(int)>();
+
+  ffi.Pointer<wire_cst_list_media_item> cst_new_list_media_item(
+    int len,
+  ) {
+    return _cst_new_list_media_item(
+      len,
+    );
+  }
+
+  late final _cst_new_list_media_itemPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<wire_cst_list_media_item> Function(
+              ffi.Int32)>>('frbgen_advance_media_kb_cst_new_list_media_item');
+  late final _cst_new_list_media_item = _cst_new_list_media_itemPtr
+      .asFunction<ffi.Pointer<wire_cst_list_media_item> Function(int)>();
+
+  ffi.Pointer<wire_cst_list_prim_u_8_strict> cst_new_list_prim_u_8_strict(
+    int len,
+  ) {
+    return _cst_new_list_prim_u_8_strict(
+      len,
+    );
+  }
+
+  late final _cst_new_list_prim_u_8_strictPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Pointer<wire_cst_list_prim_u_8_strict> Function(ffi.Int32)>>(
+      'frbgen_advance_media_kb_cst_new_list_prim_u_8_strict');
+  late final _cst_new_list_prim_u_8_strict = _cst_new_list_prim_u_8_strictPtr
+      .asFunction<ffi.Pointer<wire_cst_list_prim_u_8_strict> Function(int)>();
+
+  ffi.Pointer<wire_cst_list_tag> cst_new_list_tag(
+    int len,
+  ) {
+    return _cst_new_list_tag(
+      len,
+    );
+  }
+
+  late final _cst_new_list_tagPtr = _lookup<
+          ffi
+          .NativeFunction<ffi.Pointer<wire_cst_list_tag> Function(ffi.Int32)>>(
+      'frbgen_advance_media_kb_cst_new_list_tag');
+  late final _cst_new_list_tag = _cst_new_list_tagPtr
+      .asFunction<ffi.Pointer<wire_cst_list_tag> Function(int)>();
+
+  ffi.Pointer<wire_cst_list_tag_breadcrumb> cst_new_list_tag_breadcrumb(
+    int len,
+  ) {
+    return _cst_new_list_tag_breadcrumb(
+      len,
+    );
+  }
+
+  late final _cst_new_list_tag_breadcrumbPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Pointer<wire_cst_list_tag_breadcrumb> Function(ffi.Int32)>>(
+      'frbgen_advance_media_kb_cst_new_list_tag_breadcrumb');
+  late final _cst_new_list_tag_breadcrumb = _cst_new_list_tag_breadcrumbPtr
+      .asFunction<ffi.Pointer<wire_cst_list_tag_breadcrumb> Function(int)>();
+
+  ffi.Pointer<wire_cst_list_tag_with_info> cst_new_list_tag_with_info(
+    int len,
+  ) {
+    return _cst_new_list_tag_with_info(
+      len,
+    );
+  }
+
+  late final _cst_new_list_tag_with_infoPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Pointer<wire_cst_list_tag_with_info> Function(ffi.Int32)>>(
+      'frbgen_advance_media_kb_cst_new_list_tag_with_info');
+  late final _cst_new_list_tag_with_info = _cst_new_list_tag_with_infoPtr
+      .asFunction<ffi.Pointer<wire_cst_list_tag_with_info> Function(int)>();
+
   int dummy_method_to_enforce_bundling() {
     return _dummy_method_to_enforce_bundling();
   }
@@ -914,4 +2201,267 @@ class RustLibWire implements BaseWire {
           'dummy_method_to_enforce_bundling');
   late final _dummy_method_to_enforce_bundling =
       _dummy_method_to_enforce_bundlingPtr.asFunction<int Function()>();
+}
+
+final class wire_cst_list_prim_u_8_strict extends ffi.Struct {
+  external ffi.Pointer<ffi.Uint8> ptr;
+
+  @ffi.Int32()
+  external int len;
+}
+
+final class wire_cst_list_String extends ffi.Struct {
+  external ffi.Pointer<ffi.Pointer<wire_cst_list_prim_u_8_strict>> ptr;
+
+  @ffi.Int32()
+  external int len;
+}
+
+final class wire_cst_app_settings extends ffi.Struct {
+  @ffi.Int32()
+  external int theme_mode;
+
+  @ffi.Int32()
+  external int grid_columns;
+
+  @ffi.Int32()
+  external int album_grid_columns;
+
+  @ffi.Int8()
+  external int show_content_previews;
+
+  @ffi.Int32()
+  external int thumbnail_quality;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> language;
+}
+
+final class wire_cst_search_filter extends ffi.Struct {
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> query;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> media_type;
+
+  external ffi.Pointer<ffi.Int64> start_date;
+
+  external ffi.Pointer<ffi.Int64> end_date;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> album_id;
+
+  external ffi.Pointer<wire_cst_list_String> tag_ids;
+
+  external ffi.Pointer<ffi.Int32> tag_count;
+}
+
+final class wire_cst_media_item extends ffi.Struct {
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> id;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> original_name;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> storage_name;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> file_path;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> thumbnail_path;
+
+  @ffi.Int32()
+  external int media_type;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> mime_type;
+
+  @ffi.Int64()
+  external int size;
+
+  external ffi.Pointer<ffi.Int32> width;
+
+  external ffi.Pointer<ffi.Int32> height;
+
+  external ffi.Pointer<ffi.Int64> duration;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> sha256_hash;
+
+  @ffi.Int64()
+  external int created_at;
+
+  @ffi.Int64()
+  external int updated_at;
+}
+
+final class wire_cst_adjacent_media extends ffi.Struct {
+  external ffi.Pointer<wire_cst_media_item> previous;
+
+  external wire_cst_media_item current;
+
+  external ffi.Pointer<wire_cst_media_item> next;
+}
+
+final class wire_cst_note extends ffi.Struct {
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> id;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> media_id;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> content;
+
+  @ffi.Int64()
+  external int created_at;
+
+  @ffi.Int64()
+  external int updated_at;
+}
+
+final class wire_cst_album extends ffi.Struct {
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> id;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> name;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> parent_id;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> cover_media_id;
+
+  @ffi.Int32()
+  external int sort_order;
+
+  @ffi.Int64()
+  external int created_at;
+}
+
+final class wire_cst_album_with_info extends ffi.Struct {
+  external wire_cst_album album;
+
+  @ffi.Int32()
+  external int media_count;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> cover_thumbnail_path;
+
+  @ffi.Int8()
+  external int has_children;
+}
+
+final class wire_cst_list_album_with_info extends ffi.Struct {
+  external ffi.Pointer<wire_cst_album_with_info> ptr;
+
+  @ffi.Int32()
+  external int len;
+}
+
+final class wire_cst_breadcrumb_item extends ffi.Struct {
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> id;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> name;
+}
+
+final class wire_cst_list_breadcrumb_item extends ffi.Struct {
+  external ffi.Pointer<wire_cst_breadcrumb_item> ptr;
+
+  @ffi.Int32()
+  external int len;
+}
+
+final class wire_cst_list_media_item extends ffi.Struct {
+  external ffi.Pointer<wire_cst_media_item> ptr;
+
+  @ffi.Int32()
+  external int len;
+}
+
+final class wire_cst_tag extends ffi.Struct {
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> id;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> name;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> color;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> parent_id;
+
+  @ffi.Int64()
+  external int created_at;
+}
+
+final class wire_cst_list_tag extends ffi.Struct {
+  external ffi.Pointer<wire_cst_tag> ptr;
+
+  @ffi.Int32()
+  external int len;
+}
+
+final class wire_cst_tag_breadcrumb extends ffi.Struct {
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> id;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> name;
+}
+
+final class wire_cst_list_tag_breadcrumb extends ffi.Struct {
+  external ffi.Pointer<wire_cst_tag_breadcrumb> ptr;
+
+  @ffi.Int32()
+  external int len;
+}
+
+final class wire_cst_tag_with_info extends ffi.Struct {
+  external wire_cst_tag tag;
+
+  @ffi.Int32()
+  external int media_count;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> cover_thumbnail_path;
+
+  @ffi.Int8()
+  external int has_children;
+}
+
+final class wire_cst_list_tag_with_info extends ffi.Struct {
+  external ffi.Pointer<wire_cst_tag_with_info> ptr;
+
+  @ffi.Int32()
+  external int len;
+}
+
+final class wire_cst_export_progress extends ffi.Struct {
+  @ffi.Int32()
+  external int total_files;
+
+  @ffi.Int32()
+  external int processed_files;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> current_file;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> status;
+}
+
+final class wire_cst_import_progress extends ffi.Struct {
+  @ffi.Int32()
+  external int total_files;
+
+  @ffi.Int32()
+  external int processed_files;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> current_phase;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> status;
+}
+
+final class wire_cst_scan_result extends ffi.Struct {
+  @ffi.Int32()
+  external int imported_count;
+
+  @ffi.Int32()
+  external int duplicate_count;
+
+  @ffi.Int32()
+  external int failed_count;
+
+  external ffi.Pointer<wire_cst_list_media_item> media_items;
+}
+
+final class wire_cst_storage_stats extends ffi.Struct {
+  @ffi.Int32()
+  external int total_media_count;
+
+  @ffi.Int64()
+  external int total_size;
+
+  @ffi.Int64()
+  external int thumbnail_cache_size;
+
+  @ffi.Int64()
+  external int database_size;
 }

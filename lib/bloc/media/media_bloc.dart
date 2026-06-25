@@ -1,3 +1,5 @@
+// ignore_for_file: invalid_use_of_internal_member
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:advance_media_kb/src/rust/api/media.dart';
@@ -22,7 +24,11 @@ class MediaBloc extends Bloc<MediaEvent, MediaState> {
     on<MediaRefreshEvent>(_onRefresh);
     on<MediaSelectEvent>(_onSelect);
     on<MediaClearSelectionEvent>(_onClearSelection);
+    on<MediaToggleSelectionModeEvent>(_onToggleSelectionMode);
     on<MediaLoadAdjacentEvent>(_onLoadAdjacent);
+    on<MediaSortEvent>(_onSort);
+    on<MediaSetGridColumnsEvent>(_onSetGridColumns);
+    on<MediaImportFileEvent>(_onImportFile);
   }
 
   Future<void> _onLoadAll(
@@ -190,6 +196,16 @@ class MediaBloc extends Bloc<MediaEvent, MediaState> {
     emit(state.copyWith(selectedMediaIds: {}));
   }
 
+  void _onToggleSelectionMode(
+    MediaToggleSelectionModeEvent event,
+    Emitter<MediaState> emit,
+  ) {
+    emit(state.copyWith(
+      isSelectionMode: !state.isSelectionMode,
+      selectedMediaIds: state.isSelectionMode ? {} : state.selectedMediaIds,
+    ));
+  }
+
   Future<void> _onLoadAdjacent(
     MediaLoadAdjacentEvent event,
     Emitter<MediaState> emit,
@@ -200,6 +216,60 @@ class MediaBloc extends Bloc<MediaEvent, MediaState> {
       emit(state.copyWith(adjacentMedia: adjacent));
     } catch (e) {
       _logger.e('加载相邻媒体失败: $e');
+    }
+  }
+
+  void _onSort(
+    MediaSortEvent event,
+    Emitter<MediaState> emit,
+  ) {
+    final sortedList = List<MediaItem>.from(state.filteredList);
+    
+    sortedList.sort((a, b) {
+      int comparison;
+      switch (event.field) {
+        case SortField.name:
+          comparison = a.originalName.compareTo(b.originalName);
+          break;
+        case SortField.size:
+          comparison = a.size.compareTo(b.size);
+          break;
+        case SortField.type:
+          comparison = a.mediaType.index.compareTo(b.mediaType.index);
+          break;
+        case SortField.date:
+        default:
+          comparison = a.createdAt.compareTo(b.createdAt);
+          break;
+      }
+      return event.order == SortOrder.ascending ? comparison : -comparison;
+    });
+
+    emit(state.copyWith(
+      filteredList: sortedList,
+      sortField: event.field,
+      sortOrder: event.order,
+    ));
+  }
+
+  void _onSetGridColumns(
+    MediaSetGridColumnsEvent event,
+    Emitter<MediaState> emit,
+  ) {
+    emit(state.copyWith(gridColumns: event.columns.clamp(2, 6)));
+  }
+
+  Future<void> _onImportFile(
+    MediaImportFileEvent event,
+    Emitter<MediaState> emit,
+  ) async {
+    try {
+      await RustLib.instance.api
+          .crateApiScannerImportSingleFile(filePath: event.filePath);
+      add(const MediaRefreshEvent());
+    } catch (e) {
+      _logger.e('导入文件失败: $e');
+      emit(state.copyWith(errorMessage: '导入失败: $e'));
     }
   }
 }

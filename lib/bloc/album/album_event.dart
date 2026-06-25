@@ -8,6 +8,11 @@ abstract class AlbumEvent extends Equatable {
   List<Object?> get props => [];
 }
 
+/// 加载所有相册（根相册）
+class AlbumLoadEvent extends AlbumEvent {
+  const AlbumLoadEvent();
+}
+
 /// 加载根相册
 class AlbumLoadRootsEvent extends AlbumEvent {
   const AlbumLoadRootsEvent();

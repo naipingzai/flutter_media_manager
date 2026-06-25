@@ -3,24 +3,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/bloc.dart';
 import '../src/rust/api/media.dart';
+import '../screens/media_detail_screen.dart';
 
 /// 媒体网格展示组件
 class MediaGrid extends StatelessWidget {
   final List<MediaItem> mediaList;
   final Set<String> selectedIds;
+  final int crossAxisCount;
 
   const MediaGrid({
     super.key,
     required this.mediaList,
     required this.selectedIds,
+    this.crossAxisCount = 3,
   });
 
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
       padding: const EdgeInsets.all(8),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
         crossAxisSpacing: 4,
         mainAxisSpacing: 4,
         childAspectRatio: 1.0,
@@ -55,28 +58,14 @@ class MediaGrid extends StatelessWidget {
   }
 
   void _openMediaDetail(BuildContext context, MediaItem media) {
-    // TODO: 导航到媒体详情页
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(media.originalName),
-              const SizedBox(height: 8),
-              Text('类型: ${media.mediaType.name}'),
-              Text('大小: ${media.size} bytes'),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('关闭'),
-            ),
-          ],
-        );
-      },
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MediaDetailScreen(
+          media: media,
+          mediaList: mediaList,
+        ),
+      ),
     );
   }
 }

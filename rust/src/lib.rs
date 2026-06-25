@@ -1,4 +1,5 @@
 pub mod api;
+pub mod db;
 mod frb_generated;
 
 // 重新导出所有 API 模块，使 flutter_rust_bridge 能正确生成绑定

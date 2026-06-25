@@ -92,3 +92,53 @@ class MediaLoadAdjacentEvent extends MediaEvent {
   @override
   List<Object?> get props => [mediaId];
 }
+
+/// 切换选择模式
+class MediaToggleSelectionModeEvent extends MediaEvent {
+  const MediaToggleSelectionModeEvent();
+}
+
+/// 排序媒体
+class MediaSortEvent extends MediaEvent {
+  final SortField field;
+  final SortOrder order;
+
+  const MediaSortEvent(this.field, this.order);
+
+  @override
+  List<Object?> get props => [field, order];
+}
+
+/// 设置网格列数
+class MediaSetGridColumnsEvent extends MediaEvent {
+  final int columns;
+
+  const MediaSetGridColumnsEvent(this.columns);
+
+  @override
+  List<Object?> get props => [columns];
+}
+
+/// 导入单个文件
+class MediaImportFileEvent extends MediaEvent {
+  final String filePath;
+
+  const MediaImportFileEvent(this.filePath);
+
+  @override
+  List<Object?> get props => [filePath];
+}
+
+/// 排序字段
+enum SortField {
+  date,
+  name,
+  size,
+  type,
+}
+
+/// 排序顺序
+enum SortOrder {
+  ascending,
+  descending,
+}

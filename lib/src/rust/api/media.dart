@@ -8,7 +8,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `clone`, `clone`, `clone`, `eq`, `fmt`, `fmt`, `fmt`
 
-/// 获取所有媒体列表
+/// 获取所有媒体列表（按创建时间倒序）
 Future<List<MediaItem>> getAllMedia() =>
     RustLib.instance.api.crateApiMediaGetAllMedia();
 
@@ -16,15 +16,15 @@ Future<List<MediaItem>> getAllMedia() =>
 Future<MediaItem?> getMediaById({required String id}) =>
     RustLib.instance.api.crateApiMediaGetMediaById(id: id);
 
-/// 删除媒体
+/// 删除媒体（同时删除关联的相册、标签、笔记关系）
 Future<void> deleteMedia({required String id}) =>
     RustLib.instance.api.crateApiMediaDeleteMedia(id: id);
 
-/// 获取相邻媒体
+/// 获取相邻媒体（按创建时间排序）
 Future<AdjacentMedia?> getAdjacentMedia({required String id}) =>
     RustLib.instance.api.crateApiMediaGetAdjacentMedia(id: id);
 
-/// 搜索媒体
+/// 搜索媒体（按原始名称模糊匹配）
 Future<List<MediaItem>> searchMedia({required String query}) =>
     RustLib.instance.api.crateApiMediaSearchMedia(query: query);
 
@@ -32,7 +32,7 @@ Future<List<MediaItem>> searchMedia({required String query}) =>
 Future<List<MediaItem>> filterMediaByType({required MediaType mediaType}) =>
     RustLib.instance.api.crateApiMediaFilterMediaByType(mediaType: mediaType);
 
-/// 更新媒体信息
+/// 更新媒体信息（仅更新名称）
 Future<void> updateMedia({required MediaItem media}) =>
     RustLib.instance.api.crateApiMediaUpdateMedia(media: media);
 
@@ -138,6 +138,11 @@ enum MediaType {
   image,
   video,
   audio,
-  unknown,
+  document,
+  other,
   ;
+
+  Future<int> asI32() => RustLib.instance.api.crateApiMediaMediaTypeAsI32(
+        that: this,
+      );
 }

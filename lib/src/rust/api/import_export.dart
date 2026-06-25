@@ -8,20 +8,20 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `clone`, `clone`, `clone`, `eq`, `fmt`, `fmt`, `fmt`
 
-/// 导入包
+/// 导入包（ZIP 格式的数据库备份 + 媒体文件）
 Future<ImportProgress> importPackage(
         {required String packagePath,
         required ConflictStrategy conflictStrategy}) =>
     RustLib.instance.api.crateApiImportExportImportPackage(
         packagePath: packagePath, conflictStrategy: conflictStrategy);
 
-/// 导出数据包
+/// 导出数据包（导出数据库 + 媒体文件为 ZIP）
 Future<ExportProgress> exportPackage(
         {required String exportPath, required bool includeMedia}) =>
     RustLib.instance.api.crateApiImportExportExportPackage(
         exportPath: exportPath, includeMedia: includeMedia);
 
-/// 导出到下载目录
+/// 导出指定媒体到下载目录
 Future<String> exportToDownload({required List<String> mediaIds}) =>
     RustLib.instance.api
         .crateApiImportExportExportToDownload(mediaIds: mediaIds);

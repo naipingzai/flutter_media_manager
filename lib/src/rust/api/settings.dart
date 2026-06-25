@@ -6,6 +6,7 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
+// These functions are ignored because they are not marked as `pub`: `estimate_thumbnail_size`, `get_db_path`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `clone`, `clone`, `clone`, `eq`, `fmt`, `fmt`, `fmt`
 
 /// 获取设置
@@ -20,21 +21,28 @@ Future<void> saveSettings({required AppSettings settings}) =>
 Future<StorageStats> getStorageStats() =>
     RustLib.instance.api.crateApiSettingsGetStorageStats();
 
-/// 清理缩略图缓存
-Future<void> clearThumbnailCache() =>
+/// 清理缩略图缓存（删除未被引用的缩略图文件）
+Future<int> clearThumbnailCache() =>
     RustLib.instance.api.crateApiSettingsClearThumbnailCache();
 
-/// 导出数据
+/// 导出数据（导出数据库备份）
 Future<void> exportData({required String exportPath}) =>
     RustLib.instance.api.crateApiSettingsExportData(exportPath: exportPath);
 
-/// 导入数据
+/// 导入数据（从 SQLite 备份文件恢复）
 Future<void> importData({required String importPath}) =>
     RustLib.instance.api.crateApiSettingsImportData(importPath: importPath);
 
 /// 删除所有数据
 Future<void> deleteAllData() =>
     RustLib.instance.api.crateApiSettingsDeleteAllData();
+
+/// 初始化应用（初始化数据库连接池）
+///
+/// 在 Android 上，app_dir 应该传入应用的私有目录（如 getApplicationDocumentsDirectory）
+/// 在桌面上，可以传入当前工作目录或用户数据目录
+Future<void> initApp({required String appDir}) =>
+    RustLib.instance.api.crateApiSettingsInitApp(appDir: appDir);
 
 /// 应用设置
 class AppSettings {

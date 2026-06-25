@@ -1,21 +1,107 @@
+import 'dart:developer' as developer;
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_rust_bridge/flutter_rust_bridge.dart';
+import 'package:path_provider/path_provider.dart';
 import 'src/rust/frb_generated.dart';
+import 'src/rust/api/settings.dart' as rust_settings;
 import 'bloc/bloc.dart';
 import 'screens/home_screen.dart';
+import 'screens/api_test_screen.dart';
 
 /// 全局 Rust API 实例
 late final RustLib rustLib;
 
+void _log(String msg) {
+  // 使用 print 确保在 release 模式下也能看到日志
+  // ignore: avoid_print
+  print('MAIN: $msg');
+  developer.log(msg);
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  _log('Flutter binding initialized');
 
   // 初始化 Rust FFI 桥接
-  await RustLib.init();
-  rustLib = RustLib.instance;
+  // 注意：由于手动修改了 MediaType 枚举，跳过 codegen hash 检查
+  try {
+    _log('Starting RustLib.init()...');
+    await RustLib.init(forceSameCodegenVersion: false);
+    rustLib = RustLib.instance;
+    _log('RustLib.init() completed successfully');
+  } catch (e, stackTrace) {
+    _log('RustLib.init() FAILED: $e');
+    _log('Stack trace: $stackTrace');
+    // 即使 Rust 初始化失败，也尝试运行 APP（使用降级模式）
+    runApp(ErrorApp(error: 'Rust 初始化失败: $e'));
+    return;
+  }
 
+  // 初始化数据库（调用 Rust 的 init_app）
+  try {
+    _log('Getting application documents directory...');
+    final appDir = await getApplicationDocumentsDirectory();
+    _log('App dir: ${appDir.path}');
+    
+    // 在 Android 上，尝试使用外部存储目录（更可靠）
+    String targetDir = appDir.path;
+    if (Platform.isAndroid) {
+      final externalDir = await getExternalStorageDirectory();
+      if (externalDir != null) {
+        targetDir = '${externalDir.path}/AdvanceMediaKB';
+        _log('Using external dir: $targetDir');
+      }
+    }
+    
+    _log('Calling init_app()...');
+    await rust_settings.initApp(appDir: targetDir);
+    _log('init_app() completed successfully');
+  } catch (e, stackTrace) {
+    _log('init_app() FAILED: $e');
+    _log('Stack trace: $stackTrace');
+    runApp(ErrorApp(error: '数据库初始化失败: $e'));
+    return;
+  }
+
+  developer.log('MAIN: Calling runApp()');
   runApp(const AdvanceMediaKBApp());
+}
+
+/// 错误页面（当 Rust 初始化失败时显示）
+class ErrorApp extends StatelessWidget {
+  final String error;
+  const ErrorApp({super.key, required this.error});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red, size: 64),
+                const SizedBox(height: 16),
+                const Text(
+                  'AdvanceMediaKB 启动失败',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  error,
+                  style: const TextStyle(fontSize: 14, color: Colors.red),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class AdvanceMediaKBApp extends StatelessWidget {
@@ -65,11 +151,11 @@ class AdvanceMediaKBApp extends StatelessWidget {
     );
   }
 
-  ThemeMode _mapThemeMode(ThemeMode? mode) {
+  ThemeMode _mapThemeMode(rust_settings.ThemeMode? mode) {
     switch (mode) {
-      case ThemeMode.light:
+      case rust_settings.ThemeMode.light:
         return ThemeMode.light;
-      case ThemeMode.dark:
+      case rust_settings.ThemeMode.dark:
         return ThemeMode.dark;
       default:
         return ThemeMode.system;

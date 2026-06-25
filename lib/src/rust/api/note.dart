@@ -12,7 +12,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 Future<Note?> getNoteByMediaId({required String mediaId}) =>
     RustLib.instance.api.crateApiNoteGetNoteByMediaId(mediaId: mediaId);
 
-/// 创建或更新笔记
+/// 创建或更新笔记（UPSERT）
 Future<void> saveNote({required String mediaId, required String content}) =>
     RustLib.instance.api
         .crateApiNoteSaveNote(mediaId: mediaId, content: content);

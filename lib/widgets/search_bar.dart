@@ -45,7 +45,7 @@ class _MediaSearchBarState extends State<MediaSearchBar> {
           setState(() {});
           // 防抖搜索：延迟 300ms 执行
           Future.delayed(const Duration(milliseconds: 300), () {
-            if (mounted && _controller.text == value) {
+            if (context.mounted && _controller.text == value) {
               context.read<MediaBloc>().add(MediaSearchEvent(value));
             }
           });

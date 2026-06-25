@@ -7,6 +7,7 @@ import '../frb_generated.dart';
 import 'media.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
+// These functions are ignored because they are not marked as `pub`: `calculate_file_hash_sync`, `determine_media_type`, `generate_thumbnail_path`, `generate_thumbnail_sync`, `get_image_dimensions`, `get_supported_extensions_set`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `ScanProgress`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `fmt`, `fmt`
 
@@ -31,6 +32,10 @@ Future<bool> isHashExists({required String hash}) =>
 /// 支持的媒体扩展名列表
 Future<List<String>> getSupportedExtensions() =>
     RustLib.instance.api.crateApiScannerGetSupportedExtensions();
+
+/// 导入单个文件
+Future<MediaItem> importSingleFile({required String filePath}) =>
+    RustLib.instance.api.crateApiScannerImportSingleFile(filePath: filePath);
 
 /// 扫描结果
 class ScanResult {

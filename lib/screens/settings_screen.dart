@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:file_picker/file_picker.dart';
 import '../bloc/bloc.dart';
 import '../src/rust/api/settings.dart' as rust_settings;
+import 'api_test_screen.dart';
 
 /// 设置页面
 class SettingsScreen extends StatelessWidget {
@@ -23,7 +25,7 @@ class SettingsScreen extends StatelessWidget {
 
           return ListView(
             children: [
-              _SectionHeader(title: '外观'),
+              const _SectionHeader(title: '外观'),
               ListTile(
                 leading: const Icon(Icons.palette),
                 title: const Text('主题模式'),
@@ -37,20 +39,16 @@ class SettingsScreen extends StatelessWidget {
                 onTap: () => _showGridColumnsDialog(context, settings),
               ),
               const Divider(),
-              _SectionHeader(title: '数据'),
+              const _SectionHeader(title: '数据'),
               ListTile(
                 leading: const Icon(Icons.import_export),
                 title: const Text('导入数据'),
-                onTap: () {
-                  // TODO: 实现数据导入
-                },
+                onTap: () => _showImportDialog(context),
               ),
               ListTile(
                 leading: const Icon(Icons.backup),
                 title: const Text('导出数据'),
-                onTap: () {
-                  // TODO: 实现数据导出
-                },
+                onTap: () => _showExportDialog(context),
               ),
               ListTile(
                 leading: const Icon(Icons.delete_forever, color: Colors.red),
@@ -61,16 +59,31 @@ class SettingsScreen extends StatelessWidget {
                 onTap: () => _showClearDataConfirmDialog(context),
               ),
               const Divider(),
-              _SectionHeader(title: '关于'),
+              const _SectionHeader(title: '开发'),
               ListTile(
-                leading: const Icon(Icons.info),
-                title: const Text('版本'),
-                subtitle: const Text('1.0.0'),
+                leading: const Icon(Icons.bug_report),
+                title: const Text('API 接口测试'),
+                subtitle: const Text('测试所有 Rust FFI 接口'),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ApiTestScreen(),
+                    ),
+                  );
+                },
               ),
-              ListTile(
-                leading: const Icon(Icons.code),
-                title: const Text('技术栈'),
-                subtitle: const Text('Flutter + Rust'),
+              const Divider(),
+              const _SectionHeader(title: '关于'),
+              const ListTile(
+                leading: Icon(Icons.info),
+                title: Text('版本'),
+                subtitle: Text('1.0.0'),
+              ),
+              const ListTile(
+                leading: Icon(Icons.code),
+                title: Text('技术栈'),
+                subtitle: Text('Flutter + Rust'),
               ),
             ],
           );
@@ -177,6 +190,101 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
+  void _showImportDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('导入数据'),
+          content: const Text(
+            '导入功能将替换当前数据库。请确保已备份重要数据。\n\n'
+            '选择之前导出的数据库文件（.db）进行导入。',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('取消'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                final result = await FilePicker.platform.pickFiles(
+                  type: FileType.any,
+                  allowedExtensions: ['db', 'sqlite', 'sqlite3'],
+                );
+                if (result != null && result.files.single.path != null) {
+                  final path = result.files.single.path!;
+                  try {
+                    await rust_settings.importData(importPath: path);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('数据导入成功')),
+                      );
+                      context.read<AppBloc>().add(const AppInitializeEvent());
+                      context.read<MediaBloc>().add(const MediaLoadAllEvent());
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('导入失败: $e')),
+                      );
+                    }
+                  }
+                }
+              },
+              child: const Text('选择文件'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showExportDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('导出数据'),
+          content: const Text(
+            '导出将创建当前数据库的备份副本。\n\n'
+            '请选择保存位置。',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('取消'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                final result = await FilePicker.platform.getDirectoryPath();
+                if (result != null) {
+                  final exportPath = '$result/advance_media_kb_backup.db';
+                  try {
+                    await rust_settings.exportData(exportPath: exportPath);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('已导出到: $exportPath')),
+                      );
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('导出失败: $e')),
+                      );
+                    }
+                  }
+                }
+              },
+              child: const Text('导出'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showClearDataConfirmDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -195,9 +303,9 @@ class SettingsScreen extends StatelessWidget {
               style: FilledButton.styleFrom(
                 backgroundColor: Colors.red,
               ),
-              onPressed: () {
+              onPressed: () async {
                 Navigator.pop(context);
-                // TODO: 调用清除数据 API
+                await _clearAllData(context);
               },
               child: const Text('清除'),
             ),
@@ -205,6 +313,27 @@ class SettingsScreen extends StatelessWidget {
         );
       },
     );
+  }
+
+  Future<void> _clearAllData(BuildContext context) async {
+    try {
+      await rust_settings.deleteAllData();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('所有数据已清除')),
+        );
+        context.read<AppBloc>().add(const AppInitializeEvent());
+        context.read<MediaBloc>().add(const MediaLoadAllEvent());
+        context.read<AlbumBloc>().add(const AlbumLoadEvent());
+        context.read<TagBloc>().add(const TagLoadEvent());
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('清除失败: $e')),
+        );
+      }
+    }
   }
 }
 

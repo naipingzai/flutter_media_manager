@@ -1,3 +1,5 @@
+// ignore_for_file: invalid_use_of_internal_member
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:advance_media_kb/src/rust/api/album.dart';
@@ -12,6 +14,7 @@ final _logger = Logger();
 /// 相册管理 Bloc
 class AlbumBloc extends Bloc<AlbumEvent, AlbumState> {
   AlbumBloc() : super(const AlbumState()) {
+    on<AlbumLoadEvent>(_onLoadRoots);
     on<AlbumLoadRootsEvent>(_onLoadRoots);
     on<AlbumLoadChildrenEvent>(_onLoadChildren);
     on<AlbumCreateEvent>(_onCreate);
@@ -26,7 +29,7 @@ class AlbumBloc extends Bloc<AlbumEvent, AlbumState> {
   }
 
   Future<void> _onLoadRoots(
-    AlbumLoadRootsEvent event,
+    AlbumEvent event,
     Emitter<AlbumState> emit,
   ) async {
     emit(state.copyWith(status: AlbumStatus.loading));

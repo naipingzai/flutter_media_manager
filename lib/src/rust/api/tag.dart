@@ -7,6 +7,7 @@ import '../frb_generated.dart';
 import 'media.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
+// These functions are ignored because they are not marked as `pub`: `get_tags_by_parent`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `FilterMode`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`
 
@@ -27,7 +28,7 @@ Future<String> createTag(
     RustLib.instance.api
         .crateApiTagCreateTag(name: name, color: color, parentId: parentId);
 
-/// 删除标签
+/// 删除标签（级联删除子标签和媒体关联）
 Future<void> deleteTag({required String id}) =>
     RustLib.instance.api.crateApiTagDeleteTag(id: id);
 
@@ -54,15 +55,15 @@ Future<void> removeTagFromMedia(
 Future<List<Tag>> getMediaTags({required String mediaId}) =>
     RustLib.instance.api.crateApiTagGetMediaTags(mediaId: mediaId);
 
-/// 按标签筛选媒体（AND 模式）
+/// 按标签筛选媒体（AND 模式 - 媒体必须包含所有指定标签）
 Future<List<MediaItem>> getMediaByTagsAnd({required List<String> tagIds}) =>
     RustLib.instance.api.crateApiTagGetMediaByTagsAnd(tagIds: tagIds);
 
-/// 按标签筛选媒体（OR 模式）
+/// 按标签筛选媒体（OR 模式 - 媒体包含任意指定标签）
 Future<List<MediaItem>> getMediaByTagsOr({required List<String> tagIds}) =>
     RustLib.instance.api.crateApiTagGetMediaByTagsOr(tagIds: tagIds);
 
-/// 确保默认标签存在
+/// 确保默认标签存在（如果不存在则创建）
 Future<String> ensureDefaultTag({required String name, String? color}) =>
     RustLib.instance.api.crateApiTagEnsureDefaultTag(name: name, color: color);
 
