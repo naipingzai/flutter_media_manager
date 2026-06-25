@@ -468,98 +468,78 @@ class _MediaScreenState extends State<MediaScreen> {
   }
 
   Future<void> _requestPermissionAndImport(BuildContext context) async {
-    // 请求存储权限
-    if (Platform.isAndroid) {
-      var status = await Permission.manageExternalStorage.status;
-      if (!status.isGranted) {
-        status = await Permission.manageExternalStorage.request();
-      }
-      if (!status.isGranted) {
-        status = await Permission.storage.request();
-      }
-      if (!status.isGranted && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('需要存储权限才能浏览文件'),
-            duration: Duration(seconds: 3),
-          ),
-        );
-        return;
+    // openFileBrowser 会自动处理权限请求
+    final filePaths = await openFileBrowser(context);
+    if (filePaths.isEmpty) return; // 用户取消或权限被拒
+    if (!context.mounted) return;
+
+    // 显示导入进度
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _ImportProgressDialog(totalCount: filePaths.length),
+    );
+
+    // 逐个导入文件
+    int successCount = 0;
+    int failCount = 0;
+    final errors = <String>[];
+    for (final path in filePaths) {
+      try {
+        final file = File(path);
+        if (!await file.exists()) {
+          failCount++;
+          errors.add('文件不存在: $path');
+          continue;
+        }
+        await importSingleFile(filePath: path);
+        successCount++;
+      } catch (e) {
+        failCount++;
+        errors.add('$path: $e');
       }
     }
-    if (!context.mounted) return;
-    // 权限已获取，打开文件管理器
-    await _importFiles(context);
-  }
 
-  Future<void> _importFiles(BuildContext context) async {
-    Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (_) => FileBrowserDialog(
-                  onImport: (filePaths) async {
-                    if (!context.mounted) return;
-                    showDialog(
-                        context: context,
-                        barrierDismissible: false,
-                        builder: (_) => _ImportProgressDialog(
-                            totalCount: filePaths.length));
-                    int successCount = 0;
-                    int failCount = 0;
-                    final errors = <String>[];
-                    for (final path in filePaths) {
-                      try {
-                        final file = File(path);
-                        if (!await file.exists()) {
-                          failCount++;
-                          errors.add('文件不存在: $path');
-                          continue;
-                        }
-                        await importSingleFile(filePath: path);
-                        successCount++;
-                      } catch (e) {
-                        failCount++;
-                        errors.add('$path: $e');
-                      }
-                    }
-                    if (!context.mounted) return;
-                    try { Navigator.pop(context); } catch (_) {}
-                    context
-                        .read<MediaBloc>()
-                        .add(const MediaLoadAllEvent());
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text(
-                            '导入完成: $successCount 成功, $failCount 失败'),
-                        duration: const Duration(seconds: 3)));
-                    if (errors.isNotEmpty) {
-                      showDialog(
-                          context: context,
-                          builder: (_) => AlertDialog(
-                                title: const Text('导入错误详情'),
-                                content: SizedBox(
-                                  width: double.maxFinite,
-                                  child: ListView.builder(
-                                    shrinkWrap: true,
-                                    itemCount: errors.length.clamp(0, 20),
-                                    itemBuilder: (_, index) => Padding(
-                                      padding:
-                                          const EdgeInsets.symmetric(vertical: 2),
-                                      child: Text(errors[index],
-                                          style: const TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.red)),
-                                    ),
-                                  ),
-                                ),
-                                actions: [
-                                  TextButton(
-                                      onPressed: () => Navigator.pop(context),
-                                      child: const Text('关闭')),
-                                ],
-                              ));
-                    }
-                  },
-                )));
+    if (!context.mounted) return;
+    // 关闭进度对话框
+    try { Navigator.pop(context); } catch (_) {}
+
+    // 刷新媒体列表
+    context.read<MediaBloc>().add(const MediaLoadAllEvent());
+
+    // 显示结果
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('导入完成: $successCount 成功, $failCount 失败'),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+
+    if (errors.isNotEmpty) {
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('导入错误详情'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: errors.length.clamp(0, 20),
+              itemBuilder: (_, index) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Text(errors[index], style: const TextStyle(fontSize: 12, color: Colors.red)),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('关闭'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   void _showSortOptions(BuildContext context) {

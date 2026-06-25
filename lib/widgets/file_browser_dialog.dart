@@ -1,35 +1,89 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 
-/// 全屏文件浏览器对话框（文件管理器风格）
+/// 文件浏览器对话框 - 返回选择的文件路径列表
 ///
-/// 直接浏览文件系统的全部文件，不再经过媒体渠道扫描。
-/// 显示目录树和文件列表，用户可以自由浏览和选择文件导入。
-/// 
-/// 注意：请在打开此页面之前确保已获取 MANAGE_EXTERNAL_STORAGE 权限。
-class FileBrowserDialog extends StatefulWidget {
-  final void Function(List<String> filePaths) onImport;
-
-  const FileBrowserDialog({
-    super.key,
-    required this.onImport,
-  });
-
-  @override
-  State<FileBrowserDialog> createState() => _FileBrowserDialogState();
+/// 使用方式: final files = await Navigator.push<List<String>>(context, MaterialPageRoute(builder: (_) => FileBrowserDialog()));
+Future<List<String>> openFileBrowser(BuildContext context) async {
+  // 先检查并请求权限
+  if (Platform.isAndroid) {
+    final granted = await _ensureStoragePermission(context);
+    if (!granted) return [];
+  }
+  if (!context.mounted) return [];
+  // 打开文件浏览器
+  final result = await Navigator.push<List<String>>(
+    context,
+    MaterialPageRoute(builder: (_) => const FileBrowserPage()),
+  );
+  return result ?? [];
 }
 
-class _FileBrowserDialogState extends State<FileBrowserDialog> {
-  List<FileSystemEntity> _currentItems = [];
-  final Set<String> _selectedFiles = {};
+/// 确保 Android 存储权限（MANAGE_EXTERNAL_STORAGE）
+Future<bool> _ensureStoragePermission(BuildContext context) async {
+  // 检查 MANAGE_EXTERNAL_STORAGE
+  var status = await Permission.manageExternalStorage.status;
+  if (status.isGranted) return true;
+
+  // 请求权限（Android 11+ 会显示系统对话框）
+  status = await Permission.manageExternalStorage.request();
+  if (status.isGranted) return true;
+
+  // 尝试普通存储权限（Android 10 及以下）
+  status = await Permission.storage.request();
+  if (status.isGranted) return true;
+
+  // 权限被拒绝 - 引导用户去系统设置手动开启
+  if (context.mounted) {
+    final shouldOpenSettings = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('需要存储权限'),
+        content: const Text(
+            '浏览文件需要"管理所有文件"权限。\n\n'
+            '请点击"去设置"，然后在应用详情中开启"允许管理所有文件"。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('去设置'),
+          ),
+        ],
+      ),
+    );
+    if (shouldOpenSettings == true) {
+      await openAppSettings();
+      // 再次检查
+      status = await Permission.manageExternalStorage.status;
+      return status.isGranted;
+    }
+  }
+  return false;
+}
+
+/// 文件浏览器页面（全屏，完整文件管理器）
+class FileBrowserPage extends StatefulWidget {
+  const FileBrowserPage({super.key});
+
+  @override
+  State<FileBrowserPage> createState() => _FileBrowserPageState();
+}
+
+class _FileBrowserPageState extends State<FileBrowserPage> {
+  List<FileSystemEntity> _items = [];
+  final Set<String> _selected = {};
   String _currentPath = '';
   final List<String> _pathHistory = [];
-  bool _isLoading = true;
-  String? _errorMessage;
-  String _sortMode = 'name'; // 'name' or 'type'
+  bool _loading = true;
+  String? _error;
+  String _sortBy = 'name'; // name / type
 
-  /// Android 常用可访问目录
-  static const List<String> _favoritePaths = [
+  static const _quickPaths = [
     '/storage/emulated/0',
     '/storage/emulated/0/DCIM',
     '/storage/emulated/0/Download',
@@ -37,16 +91,13 @@ class _FileBrowserDialogState extends State<FileBrowserDialog> {
     '/storage/emulated/0/Pictures',
     '/storage/emulated/0/Music',
     '/storage/emulated/0/Movies',
-    '/storage',
   ];
 
-  String get _defaultPath {
-    if (Platform.isAndroid) {
-      for (final p in _favoritePaths) {
-        try {
-          if (Directory(p).existsSync()) return p;
-        } catch (_) {}
-      }
+  String get _homePath {
+    for (final p in _quickPaths) {
+      try {
+        if (Directory(p).existsSync()) return p;
+      } catch (_) {}
     }
     return '/';
   }
@@ -54,109 +105,106 @@ class _FileBrowserDialogState extends State<FileBrowserDialog> {
   @override
   void initState() {
     super.initState();
-    _loadPath(_defaultPath);
+    _navigateTo(_homePath);
   }
 
-  Future<void> _loadPath(String path) async {
+  void _navigateTo(String path) {
     setState(() {
-      _isLoading = true;
-      _errorMessage = null;
+      _loading = true;
+      _error = null;
+      _currentPath = path;
+      if (!_pathHistory.contains(path)) _pathHistory.add(path);
     });
+    _loadDir(path);
+  }
+
+  void _goBack() {
+    if (_pathHistory.length >= 2) {
+      _pathHistory.removeLast();
+      _navigateTo(_pathHistory.last);
+    }
+  }
+
+  void _loadDir(String path) {
     try {
       final dir = Directory(path);
-      final exists = await dir.exists();
-      if (!exists) {
+      if (!dir.existsSync()) {
         setState(() {
-          _errorMessage = '目录不可访问: $path';
-          _isLoading = false;
+          _error = '目录不可访问';
+          _loading = false;
         });
         return;
       }
 
-      final entities = await dir.list().toList();
-      final folders = <Directory>[];
-      final files = <File>[];
+      var entities = dir.listSync();
+      final dirs = <Directory>[];
+      final fils = <File>[];
 
       for (final e in entities) {
         try {
-          if (e is Directory) {
-            folders.add(e);
-          } else if (e is File) {
-            files.add(e);
-          }
-        } catch (_) {
-          // 忽略无法访问的条目
-        }
+          if (e is Directory) dirs.add(e);
+          else if (e is File) fils.add(e);
+        } catch (_) {}
       }
 
-      if (_sortMode == 'name') {
-        folders.sort((a, b) => a.path.toLowerCase().compareTo(b.path.toLowerCase()));
-        files.sort((a, b) => a.path.toLowerCase().compareTo(b.path.toLowerCase()));
+      if (_sortBy == 'name') {
+        dirs.sort((a, b) => a.path.toLowerCase().compareTo(b.path.toLowerCase()));
+        fils.sort((a, b) => a.path.toLowerCase().compareTo(b.path.toLowerCase()));
       } else {
-        // type sort: 按扩展名分组
-        folders.sort((a, b) => a.path.toLowerCase().compareTo(b.path.toLowerCase()));
-        files.sort((a, b) {
-          final extA = a.path.split('.').last.toLowerCase();
-          final extB = b.path.split('.').last.toLowerCase();
-          final cmp = extA.compareTo(extB);
-          if (cmp != 0) return cmp;
-          return a.path.toLowerCase().compareTo(b.path.toLowerCase());
+        dirs.sort((a, b) => a.path.toLowerCase().compareTo(b.path.toLowerCase()));
+        fils.sort((a, b) {
+          final ea = a.path.split('.').last.toLowerCase();
+          final eb = b.path.split('.').last.toLowerCase();
+          return ea != eb ? ea.compareTo(eb) : a.path.compareTo(b.path);
         });
       }
 
       setState(() {
-        _currentItems = [...folders, ...files];
-        _currentPath = path;
-        if (!_pathHistory.contains(path)) {
-          _pathHistory.add(path);
-        }
-        _isLoading = false;
+        _items = [...dirs, ...fils];
+        _loading = false;
       });
     } catch (e) {
       setState(() {
-        _isLoading = false;
-        _errorMessage = '无法访问目录: $e';
+        _error = '无法读取目录: $e';
+        _loading = false;
       });
     }
   }
 
-  bool _isFileSelected(String path) => _selectedFiles.contains(path);
-
-  void _toggleFileSelection(String path) {
-    setState(() {
-      if (_selectedFiles.contains(path)) {
-        _selectedFiles.remove(path);
-      } else {
-        _selectedFiles.add(path);
-      }
-    });
-  }
-
-  String _getFileName(String path) {
-    return path.split('/').last;
-  }
-
-  String _getFileExtension(String path) {
+  String _ext(String path) {
     final parts = path.split('.');
     return parts.length > 1 ? parts.last.toLowerCase() : '';
   }
 
-  IconData _getFileIcon(FileSystemEntity entity) {
-    if (entity is Directory) return Icons.folder;
-    final ext = _getFileExtension(entity.path);
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic'].contains(ext)) {
-      return Icons.image;
-    }
-    if (['mp4', 'mkv', 'avi', 'mov', 'webm'].contains(ext)) {
-      return Icons.videocam;
-    }
-    if (['mp3', 'wav', 'flac', 'aac', 'ogg'].contains(ext)) {
-      return Icons.audiotrack;
-    }
-    if (['pdf', 'doc', 'docx', 'txt', 'md'].contains(ext)) {
-      return Icons.description;
-    }
+  IconData _icon(FileSystemEntity e) {
+    if (e is Directory) return Icons.folder;
+    final ext = _ext(e.path);
+    if (['jpg','jpeg','png','gif','webp','bmp','heic','heif'].contains(ext)) return Icons.image;
+    if (['mp4','mkv','avi','mov','webm','flv'].contains(ext)) return Icons.videocam;
+    if (['mp3','wav','flac','aac','ogg'].contains(ext)) return Icons.audiotrack;
+    if (['pdf','doc','docx','txt','md','epub'].contains(ext)) return Icons.description;
+    if (['zip','rar','7z','tar','gz'].contains(ext)) return Icons.archive;
     return Icons.insert_drive_file;
+  }
+
+  List<Widget> _breadcrumbs() {
+    if (_currentPath.isEmpty) return [];
+    final parts = _currentPath.split('/').where((p) => p.isNotEmpty).toList();
+    final chips = <Widget>[];
+    String acc = '';
+    for (int i = 0; i < parts.length; i++) {
+      acc += '/${parts[i]}';
+      final p = acc;
+      chips.add(const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 2),
+        child: Icon(Icons.chevron_right, size: 14, color: Colors.grey),
+      ));
+      chips.add(ActionChip(
+        label: Text(parts[i], style: const TextStyle(fontSize: 11)),
+        onPressed: () => _navigateTo(p),
+      ));
+    }
+    return chips;
   }
 
   @override
@@ -166,69 +214,48 @@ class _FileBrowserDialogState extends State<FileBrowserDialog> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('文件管理器'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context, <String>[]),
+        ),
         actions: [
-          if (_selectedFiles.isNotEmpty)
+          if (_selected.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(
-                    '${_selectedFiles.length}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onPrimaryContainer,
-                    ),
-                  ),
-                ),
+              child: Chip(
+                avatar: Icon(Icons.check, size: 16, color: theme.colorScheme.onPrimaryContainer),
+                label: Text('${_selected.length}'),
+                backgroundColor: theme.colorScheme.primaryContainer,
               ),
             ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.sort),
-            tooltip: '排序',
-            onSelected: (val) {
-              setState(() => _sortMode = val);
-              if (_currentPath.isNotEmpty) _loadPath(_currentPath);
+            onSelected: (v) {
+              setState(() => _sortBy = v);
+              _loadDir(_currentPath);
             },
             itemBuilder: (_) => [
-              PopupMenuItem(
-                value: 'name',
-                child: Row(
-                  children: [
-                    if (_sortMode == 'name') const Icon(Icons.check, size: 18),
-                    const SizedBox(width: 8),
-                    const Text('按名称排序'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'type',
-                child: Row(
-                  children: [
-                    if (_sortMode == 'type') const Icon(Icons.check, size: 18),
-                    const SizedBox(width: 8),
-                    const Text('按类型排序'),
-                  ],
-                ),
-              ),
+              PopupMenuItem(value: 'name', child: Row(children: [
+                if (_sortBy == 'name') const Icon(Icons.check, size: 18),
+                const SizedBox(width: 8), const Text('按名称'),
+              ])),
+              PopupMenuItem(value: 'type', child: Row(children: [
+                if (_sortBy == 'type') const Icon(Icons.check, size: 18),
+                const SizedBox(width: 8), const Text('按类型'),
+              ])),
             ],
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
-            tooltip: '刷新',
-            onPressed: () => _currentPath.isNotEmpty ? _loadPath(_currentPath) : null,
+            onPressed: () => _loadDir(_currentPath),
           ),
         ],
       ),
       body: Column(
         children: [
-          // 当前位置与快速访问
+          // 导航栏
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -236,33 +263,25 @@ class _FileBrowserDialogState extends State<FileBrowserDialog> {
                 children: [
                   ActionChip(
                     avatar: const Icon(Icons.home, size: 16),
-                    label: Text(
-                      Platform.isAndroid ? '内部存储' : '根目录',
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                    onPressed: () => _loadPath(_defaultPath),
+                    label: Text('内部存储', style: const TextStyle(fontSize: 11)),
+                    onPressed: () => _navigateTo(_homePath),
                   ),
-                  ..._buildBreadcrumbs(),
-                  const SizedBox(width: 8),
-                  if (_pathHistory.length > 1)
+                  ..._breadcrumbs(),
+                  if (_pathHistory.length > 1) ...[
+                    const SizedBox(width: 8),
                     ActionChip(
-                      avatar: const Icon(Icons.arrow_back, size: 16),
-                      label: const Text('返回', style: TextStyle(fontSize: 12)),
-                      onPressed: () {
-                        if (_pathHistory.length >= 2) {
-                          final prev = _pathHistory[_pathHistory.length - 2];
-                          _pathHistory.removeLast();
-                          _loadPath(prev);
-                        }
-                      },
+                      avatar: const Icon(Icons.arrow_back, size: 14),
+                      label: const Text('返回', style: TextStyle(fontSize: 11)),
+                      onPressed: _goBack,
                     ),
+                  ],
                 ],
               ),
             ),
           ),
           const Divider(height: 1),
           // 文件列表
-          Expanded(child: _buildFileList(theme)),
+          Expanded(child: _buildList(theme)),
         ],
       ),
       bottomNavigationBar: SafeArea(
@@ -272,7 +291,7 @@ class _FileBrowserDialogState extends State<FileBrowserDialog> {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () => Navigator.pop(context, <String>[]),
                   child: const Text('取消'),
                 ),
               ),
@@ -281,18 +300,11 @@ class _FileBrowserDialogState extends State<FileBrowserDialog> {
                 flex: 2,
                 child: FilledButton.icon(
                   icon: const Icon(Icons.file_upload, size: 18),
-                  onPressed: _selectedFiles.isEmpty
-                      ? null
-                      : () {
-                          final paths = List<String>.from(_selectedFiles);
-                          // 先关闭文件管理器，回到 MediaScreen
-                          Navigator.pop(context);
-                          // 再触发导入回调
-                          widget.onImport(paths);
-                        },
-                  label: Text(
-                    '导入${_selectedFiles.isEmpty ? "" : " (${_selectedFiles.length})"}',
-                  ),
+                  onPressed: _selected.isEmpty ? null : () {
+                    final paths = _selected.toList();
+                    Navigator.pop(context, paths);
+                  },
+                  label: Text('导入${_selected.isEmpty ? "" : " (${_selected.length})"}'),
                 ),
               ),
             ],
@@ -302,32 +314,11 @@ class _FileBrowserDialogState extends State<FileBrowserDialog> {
     );
   }
 
-  List<Widget> _buildBreadcrumbs() {
-    if (_currentPath.isEmpty) return [];
-    final parts = _currentPath.split('/').where((p) => p.isNotEmpty).toList();
-    final widgets = <Widget>[];
-    String accumulated = '';
-
-    for (int i = 0; i < parts.length; i++) {
-      accumulated += '/${parts[i]}';
-      final path = accumulated;
-      widgets.add(const Icon(Icons.chevron_right, size: 16, color: Colors.grey));
-      widgets.add(
-        ActionChip(
-          label: Text(parts[i], style: const TextStyle(fontSize: 11)),
-          onPressed: () => _loadPath(path),
-        ),
-      );
-    }
-    return widgets;
-  }
-
-  Widget _buildFileList(ThemeData theme) {
-    if (_isLoading) {
+  Widget _buildList(ThemeData theme) {
+    if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
-
-    if (_errorMessage != null) {
+    if (_error != null) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
@@ -336,20 +327,18 @@ class _FileBrowserDialogState extends State<FileBrowserDialog> {
             children: [
               const Icon(Icons.error_outline, size: 64, color: Colors.red),
               const SizedBox(height: 16),
-              Text(_errorMessage!, textAlign: TextAlign.center, style: const TextStyle(fontSize: 15)),
+              Text(_error!, textAlign: TextAlign.center),
               const SizedBox(height: 24),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.refresh),
-                label: const Text('重试'),
-                onPressed: () => _loadPath(_defaultPath),
+              ElevatedButton(
+                onPressed: () => _navigateTo(_homePath),
+                child: const Text('返回首页'),
               ),
             ],
           ),
         ),
       );
     }
-
-    if (_currentItems.isEmpty) {
+    if (_items.isEmpty) {
       return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -363,44 +352,27 @@ class _FileBrowserDialogState extends State<FileBrowserDialog> {
     }
 
     return ListView.builder(
-      itemCount: _currentItems.length,
-      itemBuilder: (context, index) {
-        final entity = _currentItems[index];
-        final isDir = entity is Directory;
-        final entityPath = entity.path;
-        final name = _getFileName(entityPath);
-        final isSelected = _isFileSelected(entityPath);
+      itemCount: _items.length,
+      itemBuilder: (_, i) {
+        final e = _items[i];
+        final isDir = e is Directory;
+        final path = e.path;
+        final name = path.split('/').last;
+        final sel = _selected.contains(path);
 
         return ListTile(
-          leading: Icon(
-            _getFileIcon(entity),
-            color: isDir
-                ? Colors.amber.shade700
-                : (isSelected ? theme.colorScheme.primary : Colors.grey),
-            size: 28,
-          ),
-          title: Text(
-            name,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 14),
-          ),
-          subtitle: isDir
-              ? null
-              : Text(
-                  _getFileExtension(entityPath).toUpperCase(),
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-                ),
-          trailing: isDir
-              ? const Icon(Icons.chevron_right)
-              : (isSelected
-                  ? Icon(Icons.check_circle, color: theme.colorScheme.primary)
-                  : const Icon(Icons.circle_outlined, color: Colors.grey, size: 20)),
-          selected: isSelected,
+          leading: Icon(_icon(e), color: isDir ? Colors.amber.shade700 : (sel ? theme.colorScheme.primary : Colors.grey), size: 28),
+          title: Text(name, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14)),
+          subtitle: isDir ? null : Text(_ext(path).toUpperCase(), style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+          trailing: isDir ? const Icon(Icons.chevron_right) : Icon(sel ? Icons.check_circle : Icons.circle_outlined, color: sel ? theme.colorScheme.primary : Colors.grey.shade400),
+          selected: sel,
           onTap: () {
             if (isDir) {
-              _loadPath(entityPath);
+              _navigateTo(path);
             } else {
-              _toggleFileSelection(entityPath);
+              setState(() {
+                if (sel) _selected.remove(path); else _selected.add(path);
+              });
             }
           },
         );
