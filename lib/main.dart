@@ -6,6 +6,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path_provider/path_provider.dart';
 import 'src/rust/frb_generated.dart';
 import 'src/rust/api/settings.dart' as rust_settings;
+import 'core/design_system/app_theme.dart';
+import 'core/i18n/app_localizations.dart';
+import 'core/navigation/app_router.dart';
 import 'bloc/bloc.dart';
 import 'screens/home_screen.dart';
 
@@ -123,37 +126,30 @@ class AdvanceMediaKBApp extends StatelessWidget {
         BlocProvider<TagBloc>(
           create: (context) => TagBloc(),
         ),
+        BlocProvider<NoteBloc>(
+          create: (context) => NoteBloc(),
+        ),
       ],
       child: BlocBuilder<AppBloc, AppState>(
         builder: (context, state) {
           return MaterialApp(
-            title: '媒体知识库',
+            title: 'AdvanceMediaKB',
             debugShowCheckedModeBanner: false,
-            locale: const Locale('zh', 'CN'),
+            locale: _resolveLocale(state.settings?.language),
             localizationsDelegates: const [
+              AppLocalizations.delegate,
               GlobalMaterialLocalizations.delegate,
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
             ],
             supportedLocales: const [
-              Locale('zh', 'CN'),
-              Locale('en', 'US'),
+              Locale('zh'),
+              Locale('en'),
             ],
-            theme: ThemeData(
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: const Color(0xFF6750A4),
-                brightness: Brightness.light,
-              ),
-              useMaterial3: true,
-            ),
-            darkTheme: ThemeData(
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: const Color(0xFF6750A4),
-                brightness: Brightness.dark,
-              ),
-              useMaterial3: true,
-            ),
+            theme: AppTheme.lightTheme(),
+            darkTheme: AppTheme.darkTheme(),
             themeMode: _mapThemeMode(state.settings?.themeMode),
+            onGenerateRoute: (settings) => generateRoute(settings),
             home: const HomeScreen(),
           );
         },
@@ -169,6 +165,23 @@ class AdvanceMediaKBApp extends StatelessWidget {
         return ThemeMode.dark;
       default:
         return ThemeMode.system;
+    }
+  }
+
+  /// 根据设置中的语言配置解析 Locale
+  Locale _resolveLocale(String? language) {
+    switch (language) {
+      case 'zh':
+        return const Locale('zh');
+      case 'en':
+        return const Locale('en');
+      default:
+        // 跟随系统语言
+        final systemLocale = WidgetsBinding.instance.platformDispatcher.locale;
+        if (['zh', 'en'].contains(systemLocale.languageCode)) {
+          return Locale(systemLocale.languageCode);
+        }
+        return const Locale('zh');
     }
   }
 }

@@ -87,6 +87,24 @@ set_target_properties(${BINARY_NAME}
 )
 
 
+# === Rust library build ===
+set(RUST_CRATE_DIR "${CMAKE_SOURCE_DIR}/../rust")
+set(RUST_LIB_NAME "libadvance_media_kb.so")
+set(RUST_LIB_DIR "${CMAKE_BINARY_DIR}/rust_build")
+
+# Build the Rust shared library using cargo
+add_custom_command(
+  OUTPUT "${RUST_LIB_DIR}/${RUST_LIB_NAME}"
+  COMMAND ${CMAKE_COMMAND} -E make_directory "${RUST_LIB_DIR}"
+  COMMAND cargo build --release --manifest-path "${RUST_CRATE_DIR}/Cargo.toml" --target-dir "${CMAKE_BINARY_DIR}/cargo_target"
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "${CMAKE_BINARY_DIR}/cargo_target/release/${RUST_LIB_NAME}"
+    "${RUST_LIB_DIR}/${RUST_LIB_NAME}"
+  COMMENT "Building Rust library..."
+)
+
+add_custom_target(rust_build ALL DEPENDS "${RUST_LIB_DIR}/${RUST_LIB_NAME}")
+
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.
 include(flutter/generated_plugins.cmake)
@@ -137,6 +155,11 @@ install(CODE "
   " COMPONENT Runtime)
 install(DIRECTORY "${PROJECT_BUILD_DIR}/${FLUTTER_ASSET_DIR_NAME}"
   DESTINATION "${INSTALL_BUNDLE_DATA_DIR}" COMPONENT Runtime)
+
+# Install the Rust shared library
+install(FILES "${RUST_LIB_DIR}/${RUST_LIB_NAME}"
+  DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+  COMPONENT Runtime)
 
 # Install the AOT library on non-Debug builds only.
 if(NOT CMAKE_BUILD_TYPE MATCHES "Debug")

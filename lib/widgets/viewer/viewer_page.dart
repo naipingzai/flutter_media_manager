@@ -97,9 +97,9 @@ class _ViewerPageState extends State<ViewerPage> {
 
   Future<void> _loadNote() async {
     try {
-      final note = await note_api.getNoteByMediaId(mediaId: _currentMedia.id);
+      final notes = await note_api.getNotesByMediaId(mediaId: _currentMedia.id);
       if (mounted) {
-        setState(() => _noteContent = note?.content);
+        setState(() => _noteContent = notes.isNotEmpty ? notes.first.content : null);
       }
     } catch (_) {}
   }

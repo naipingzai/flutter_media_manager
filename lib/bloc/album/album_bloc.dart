@@ -3,6 +3,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:advance_media_kb/src/rust/api/album.dart';
+import 'package:advance_media_kb/src/rust/api/media.dart';
 import 'package:advance_media_kb/src/rust/frb_generated.dart';
 import 'package:logger/logger.dart';
 
@@ -26,6 +27,10 @@ class AlbumBloc extends Bloc<AlbumEvent, AlbumState> {
     on<AlbumLoadBreadcrumbEvent>(_onLoadBreadcrumb);
     on<AlbumNavigateToEvent>(_onNavigateTo);
     on<AlbumNavigateUpEvent>(_onNavigateUp);
+    on<AlbumNavigateToRootEvent>(_onNavigateToRoot);
+    on<AlbumToggleMediaSelectionEvent>(_onToggleSelection);
+    on<AlbumClearSelectionEvent>(_onClearSelection);
+    on<AlbumRemoveSelectedMediaEvent>(_onRemoveSelectedMedia);
   }
 
   Future<void> _onLoadRoots(
@@ -56,10 +61,15 @@ class AlbumBloc extends Bloc<AlbumEvent, AlbumState> {
     try {
       final albums = await RustLib.instance.api
           .crateApiAlbumGetChildAlbums(parentId: event.parentId);
+      // 同时加载该相册的媒体
+      final media = await RustLib.instance.api
+          .crateApiAlbumGetMediaByAlbum(albumId: event.parentId);
       emit(state.copyWith(
         status: AlbumStatus.loaded,
         albums: albums,
         currentParentId: event.parentId,
+        albumMedia: media,
+        selectedMediaIds: const {},
       ));
     } catch (e) {
       _logger.e('加载子相册失败: $e');
@@ -119,6 +129,7 @@ class AlbumBloc extends Bloc<AlbumEvent, AlbumState> {
         id: event.albumId,
         newName: event.newName,
       );
+      _logger.i('重命名相册成功: ${event.newName}');
       // 刷新当前列表
       if (state.currentParentId != null) {
         add(AlbumLoadChildrenEvent(state.currentParentId!));
@@ -214,7 +225,6 @@ class AlbumBloc extends Bloc<AlbumEvent, AlbumState> {
     AlbumNavigateUpEvent event,
     Emitter<AlbumState> emit,
   ) {
-    // 导航到上一级，需要重新计算
     if (state.breadcrumb.length > 1) {
       final parentIndex = state.breadcrumb.length - 2;
       final parentId = state.breadcrumb[parentIndex].id;
@@ -227,11 +237,62 @@ class AlbumBloc extends Bloc<AlbumEvent, AlbumState> {
     } else {
       // 回到根
       emit(state.copyWith(
-        currentAlbumId: null,
-        currentParentId: null,
+        clearNavigation: true,
         breadcrumb: [],
       ));
       add(const AlbumLoadRootsEvent());
+    }
+  }
+
+  void _onNavigateToRoot(
+    AlbumNavigateToRootEvent event,
+    Emitter<AlbumState> emit,
+  ) {
+    emit(state.copyWith(
+      clearNavigation: true,
+      breadcrumb: [],
+      albumMedia: const [],
+      selectedMediaIds: const {},
+    ));
+    add(const AlbumLoadRootsEvent());
+  }
+
+  void _onToggleSelection(
+    AlbumToggleMediaSelectionEvent event,
+    Emitter<AlbumState> emit,
+  ) {
+    final newSet = Set<String>.from(state.selectedMediaIds);
+    if (newSet.contains(event.mediaId)) {
+      newSet.remove(event.mediaId);
+    } else {
+      newSet.add(event.mediaId);
+    }
+    emit(state.copyWith(selectedMediaIds: newSet));
+  }
+
+  void _onClearSelection(
+    AlbumClearSelectionEvent event,
+    Emitter<AlbumState> emit,
+  ) {
+    emit(state.copyWith(selectedMediaIds: const {}));
+  }
+
+  Future<void> _onRemoveSelectedMedia(
+    AlbumRemoveSelectedMediaEvent event,
+    Emitter<AlbumState> emit,
+  ) async {
+    if (state.currentParentId == null || state.selectedMediaIds.isEmpty) return;
+    try {
+      await RustLib.instance.api.crateApiAlbumRemoveMediaFromAlbum(
+        mediaIds: state.selectedMediaIds.toList(),
+        albumId: state.currentParentId!,
+      );
+      _logger.i('从相册移除 ${state.selectedMediaIds.length} 个媒体成功');
+      // 刷新
+      add(AlbumLoadChildrenEvent(state.currentParentId!));
+    } catch (e) {
+      _logger.e('从相册移除媒体失败: $e');
+      emit(state.copyWith(errorMessage: e.toString()));
     }
   }
 }

@@ -7,6 +7,7 @@
 // ignore_for_file: argument_type_not_assignable
 
 import 'api/album.dart';
+import 'api/enums.dart';
 import 'api/import_export.dart';
 import 'api/media.dart';
 import 'api/note.dart';
@@ -76,6 +77,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   ExportProgress dco_decode_export_progress(dynamic raw);
 
   @protected
+  FilterMode dco_decode_filter_mode(dynamic raw);
+
+  @protected
   int dco_decode_i_32(dynamic raw);
 
   @protected
@@ -83,6 +87,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   ImportProgress dco_decode_import_progress(dynamic raw);
+
+  @protected
+  LanguageSetting dco_decode_language_setting(dynamic raw);
 
   @protected
   List<String> dco_decode_list_String(dynamic raw);
@@ -95,6 +102,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<MediaItem> dco_decode_list_media_item(dynamic raw);
+
+  @protected
+  List<Note> dco_decode_list_note(dynamic raw);
 
   @protected
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
@@ -160,6 +170,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   ThemeMode dco_decode_theme_mode(dynamic raw);
 
   @protected
+  ThemeModeSetting dco_decode_theme_mode_setting(dynamic raw);
+
+  @protected
   int dco_decode_u_8(dynamic raw);
 
   @protected
@@ -216,6 +229,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   ExportProgress sse_decode_export_progress(SseDeserializer deserializer);
 
   @protected
+  FilterMode sse_decode_filter_mode(SseDeserializer deserializer);
+
+  @protected
   int sse_decode_i_32(SseDeserializer deserializer);
 
   @protected
@@ -223,6 +239,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   ImportProgress sse_decode_import_progress(SseDeserializer deserializer);
+
+  @protected
+  LanguageSetting sse_decode_language_setting(SseDeserializer deserializer);
 
   @protected
   List<String> sse_decode_list_String(SseDeserializer deserializer);
@@ -237,6 +256,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<MediaItem> sse_decode_list_media_item(SseDeserializer deserializer);
+
+  @protected
+  List<Note> sse_decode_list_note(SseDeserializer deserializer);
 
   @protected
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
@@ -305,6 +327,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   ThemeMode sse_decode_theme_mode(SseDeserializer deserializer);
 
   @protected
+  ThemeModeSetting sse_decode_theme_mode_setting(SseDeserializer deserializer);
+
+  @protected
   int sse_decode_u_8(SseDeserializer deserializer);
 
   @protected
@@ -359,7 +384,8 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
       cst_encode_i_32(raw.albumGridColumns),
       cst_encode_i_32(raw.showContentPreviews),
       cst_encode_i_32(raw.thumbnailQuality),
-      cst_encode_String(raw.language)
+      cst_encode_String(raw.language),
+      cst_encode_i_32(raw.dynamicColor)
     ].jsify()!;
   }
 
@@ -464,6 +490,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   }
 
   @protected
+  JSAny cst_encode_list_note(List<Note> raw) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    return raw.map(cst_encode_note).toList().jsify()!;
+  }
+
+  @protected
   JSAny cst_encode_list_prim_u_8_strict(Uint8List raw) {
     // Codec=Cst (C-struct based), see doc to use other codecs
     return raw.jsify()!;
@@ -513,7 +545,8 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
     // Codec=Cst (C-struct based), see doc to use other codecs
     return [
       cst_encode_String(raw.id),
-      cst_encode_String(raw.mediaId),
+      cst_encode_opt_String(raw.mediaId),
+      cst_encode_String(raw.title),
       cst_encode_String(raw.content),
       cst_encode_i_64(raw.createdAt),
       cst_encode_i_64(raw.updatedAt)
@@ -634,13 +667,22 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   int cst_encode_conflict_strategy(ConflictStrategy raw);
 
   @protected
+  int cst_encode_filter_mode(FilterMode raw);
+
+  @protected
   int cst_encode_i_32(int raw);
+
+  @protected
+  int cst_encode_language_setting(LanguageSetting raw);
 
   @protected
   int cst_encode_media_type(MediaType raw);
 
   @protected
   int cst_encode_theme_mode(ThemeMode raw);
+
+  @protected
+  int cst_encode_theme_mode_setting(ThemeModeSetting raw);
 
   @protected
   int cst_encode_u_8(int raw);
@@ -705,6 +747,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
       ExportProgress self, SseSerializer serializer);
 
   @protected
+  void sse_encode_filter_mode(FilterMode self, SseSerializer serializer);
+
+  @protected
   void sse_encode_i_32(int self, SseSerializer serializer);
 
   @protected
@@ -713,6 +758,10 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_import_progress(
       ImportProgress self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_language_setting(
+      LanguageSetting self, SseSerializer serializer);
 
   @protected
   void sse_encode_list_String(List<String> self, SseSerializer serializer);
@@ -728,6 +777,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_list_media_item(
       List<MediaItem> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_note(List<Note> self, SseSerializer serializer);
 
   @protected
   void sse_encode_list_prim_u_8_strict(
@@ -799,6 +851,10 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_theme_mode(ThemeMode self, SseSerializer serializer);
 
   @protected
+  void sse_encode_theme_mode_setting(
+      ThemeModeSetting self, SseSerializer serializer);
+
+  @protected
   void sse_encode_u_8(int self, SseSerializer serializer);
 
   @protected
@@ -820,6 +876,10 @@ class RustLibWire implements BaseWire {
       wasmModule.wire__crate__api__tag__add_tag_to_media(
           port_, media_id, tag_id);
 
+  void wire__crate__api__media__batch_delete_media(
+          NativePortType port_, JSAny ids) =>
+      wasmModule.wire__crate__api__media__batch_delete_media(port_, ids);
+
   void wire__crate__api__scanner__calculate_file_hash(
           NativePortType port_, String file_path) =>
       wasmModule.wire__crate__api__scanner__calculate_file_hash(
@@ -832,6 +892,11 @@ class RustLibWire implements BaseWire {
   void wire__crate__api__album__create_album(
           NativePortType port_, String name, String? parent_id) =>
       wasmModule.wire__crate__api__album__create_album(port_, name, parent_id);
+
+  void wire__crate__api__note__create_note(NativePortType port_,
+          String? media_id, String title, String content) =>
+      wasmModule.wire__crate__api__note__create_note(
+          port_, media_id, title, content);
 
   void wire__crate__api__tag__create_tag(NativePortType port_, String name,
           String? color, String? parent_id) =>
@@ -852,6 +917,10 @@ class RustLibWire implements BaseWire {
 
   void wire__crate__api__tag__delete_tag(NativePortType port_, String id) =>
       wasmModule.wire__crate__api__tag__delete_tag(port_, id);
+
+  void wire__crate__api__settings__delete_unreferenced_files(
+          NativePortType port_) =>
+      wasmModule.wire__crate__api__settings__delete_unreferenced_files(port_);
 
   void wire__crate__api__album__ensure_default_album(
           NativePortType port_, String name) =>
@@ -880,6 +949,18 @@ class RustLibWire implements BaseWire {
       wasmModule.wire__crate__api__media__filter_media_by_type(
           port_, media_type);
 
+  void wire__crate__api__enums__filter_mode_as_str(
+          NativePortType port_, int that) =>
+      wasmModule.wire__crate__api__enums__filter_mode_as_str(port_, that);
+
+  void wire__crate__api__enums__filter_mode_display_name(
+          NativePortType port_, int that) =>
+      wasmModule.wire__crate__api__enums__filter_mode_display_name(port_, that);
+
+  void wire__crate__api__settings__find_unreferenced_files(
+          NativePortType port_) =>
+      wasmModule.wire__crate__api__settings__find_unreferenced_files(port_);
+
   void wire__crate__api__scanner__generate_thumbnail(
           NativePortType port_, String file_path, int quality) =>
       wasmModule.wire__crate__api__scanner__generate_thumbnail(
@@ -896,6 +977,9 @@ class RustLibWire implements BaseWire {
   void wire__crate__api__media__get_all_media(NativePortType port_) =>
       wasmModule.wire__crate__api__media__get_all_media(port_);
 
+  void wire__crate__api__note__get_all_notes(NativePortType port_) =>
+      wasmModule.wire__crate__api__note__get_all_notes(port_);
+
   void wire__crate__api__tag__get_all_tags(NativePortType port_) =>
       wasmModule.wire__crate__api__tag__get_all_tags(port_);
 
@@ -907,9 +991,21 @@ class RustLibWire implements BaseWire {
           NativePortType port_, String parent_id) =>
       wasmModule.wire__crate__api__tag__get_child_tags(port_, parent_id);
 
+  void wire__crate__api__album__get_media_by_album(
+          NativePortType port_, String album_id) =>
+      wasmModule.wire__crate__api__album__get_media_by_album(port_, album_id);
+
+  void wire__crate__api__media__get_media_by_filter(
+          NativePortType port_, int filter) =>
+      wasmModule.wire__crate__api__media__get_media_by_filter(port_, filter);
+
   void wire__crate__api__media__get_media_by_id(
           NativePortType port_, String id) =>
       wasmModule.wire__crate__api__media__get_media_by_id(port_, id);
+
+  void wire__crate__api__tag__get_media_by_tag(
+          NativePortType port_, String tag_id) =>
+      wasmModule.wire__crate__api__tag__get_media_by_tag(port_, tag_id);
 
   void wire__crate__api__tag__get_media_by_tags_and(
           NativePortType port_, JSAny tag_ids) =>
@@ -930,6 +1026,10 @@ class RustLibWire implements BaseWire {
   void wire__crate__api__search__get_media_with_any_tag(NativePortType port_) =>
       wasmModule.wire__crate__api__search__get_media_with_any_tag(port_);
 
+  void wire__crate__api__media__get_media_with_tags(
+          NativePortType port_, String id) =>
+      wasmModule.wire__crate__api__media__get_media_with_tags(port_, id);
+
   void wire__crate__api__search__get_media_without_any_album(
           NativePortType port_) =>
       wasmModule.wire__crate__api__search__get_media_without_any_album(port_);
@@ -938,9 +1038,13 @@ class RustLibWire implements BaseWire {
           NativePortType port_) =>
       wasmModule.wire__crate__api__search__get_media_without_any_tag(port_);
 
-  void wire__crate__api__note__get_note_by_media_id(
+  void wire__crate__api__note__get_note_by_id(
+          NativePortType port_, String id) =>
+      wasmModule.wire__crate__api__note__get_note_by_id(port_, id);
+
+  void wire__crate__api__note__get_notes_by_media_id(
           NativePortType port_, String media_id) =>
-      wasmModule.wire__crate__api__note__get_note_by_media_id(port_, media_id);
+      wasmModule.wire__crate__api__note__get_notes_by_media_id(port_, media_id);
 
   void wire__crate__api__album__get_root_albums(NativePortType port_) =>
       wasmModule.wire__crate__api__album__get_root_albums(port_);
@@ -984,9 +1088,25 @@ class RustLibWire implements BaseWire {
           NativePortType port_, String hash) =>
       wasmModule.wire__crate__api__scanner__is_hash_exists(port_, hash);
 
+  void wire__crate__api__enums__language_setting_as_str(
+          NativePortType port_, int that) =>
+      wasmModule.wire__crate__api__enums__language_setting_as_str(port_, that);
+
+  void wire__crate__api__enums__language_setting_from_str(
+          NativePortType port_, String s) =>
+      wasmModule.wire__crate__api__enums__language_setting_from_str(port_, s);
+
   void wire__crate__api__media__media_type_as_i32(
           NativePortType port_, int that) =>
       wasmModule.wire__crate__api__media__media_type_as_i32(port_, that);
+
+  void wire__crate__api__media__media_type_as_str(
+          NativePortType port_, int that) =>
+      wasmModule.wire__crate__api__media__media_type_as_str(port_, that);
+
+  void wire__crate__api__media__media_type_from_str(
+          NativePortType port_, String s) =>
+      wasmModule.wire__crate__api__media__media_type_from_str(port_, s);
 
   void wire__crate__api__album__remove_media_from_album(
           NativePortType port_, JSAny media_ids, String album_id) =>
@@ -1029,14 +1149,31 @@ class RustLibWire implements BaseWire {
           NativePortType port_, JSAny filter) =>
       wasmModule.wire__crate__api__search__search_media_advanced(port_, filter);
 
+  void wire__crate__api__note__search_notes(
+          NativePortType port_, String query) =>
+      wasmModule.wire__crate__api__note__search_notes(port_, query);
+
   void wire__crate__api__album__set_album_cover(
           NativePortType port_, String album_id, String media_id) =>
       wasmModule.wire__crate__api__album__set_album_cover(
           port_, album_id, media_id);
 
+  void wire__crate__api__enums__theme_mode_setting_as_str(
+          NativePortType port_, int that) =>
+      wasmModule.wire__crate__api__enums__theme_mode_setting_as_str(
+          port_, that);
+
+  void wire__crate__api__enums__theme_mode_setting_from_str(
+          NativePortType port_, String s) =>
+      wasmModule.wire__crate__api__enums__theme_mode_setting_from_str(port_, s);
+
   void wire__crate__api__media__update_media(
           NativePortType port_, JSAny media) =>
       wasmModule.wire__crate__api__media__update_media(port_, media);
+
+  void wire__crate__api__note__update_note(
+          NativePortType port_, String id, String? title, String? content) =>
+      wasmModule.wire__crate__api__note__update_note(port_, id, title, content);
 }
 
 @JS('wasm_bindgen')
@@ -1051,6 +1188,9 @@ extension type RustLibWasmModule._(JSObject _) implements JSObject {
   external void wire__crate__api__tag__add_tag_to_media(
       NativePortType port_, String media_id, String tag_id);
 
+  external void wire__crate__api__media__batch_delete_media(
+      NativePortType port_, JSAny ids);
+
   external void wire__crate__api__scanner__calculate_file_hash(
       NativePortType port_, String file_path);
 
@@ -1059,6 +1199,9 @@ extension type RustLibWasmModule._(JSObject _) implements JSObject {
 
   external void wire__crate__api__album__create_album(
       NativePortType port_, String name, String? parent_id);
+
+  external void wire__crate__api__note__create_note(
+      NativePortType port_, String? media_id, String title, String content);
 
   external void wire__crate__api__tag__create_tag(
       NativePortType port_, String name, String? color, String? parent_id);
@@ -1078,6 +1221,9 @@ extension type RustLibWasmModule._(JSObject _) implements JSObject {
   external void wire__crate__api__tag__delete_tag(
       NativePortType port_, String id);
 
+  external void wire__crate__api__settings__delete_unreferenced_files(
+      NativePortType port_);
+
   external void wire__crate__api__album__ensure_default_album(
       NativePortType port_, String name);
 
@@ -1096,6 +1242,15 @@ extension type RustLibWasmModule._(JSObject _) implements JSObject {
   external void wire__crate__api__media__filter_media_by_type(
       NativePortType port_, int media_type);
 
+  external void wire__crate__api__enums__filter_mode_as_str(
+      NativePortType port_, int that);
+
+  external void wire__crate__api__enums__filter_mode_display_name(
+      NativePortType port_, int that);
+
+  external void wire__crate__api__settings__find_unreferenced_files(
+      NativePortType port_);
+
   external void wire__crate__api__scanner__generate_thumbnail(
       NativePortType port_, String file_path, int quality);
 
@@ -1107,6 +1262,8 @@ extension type RustLibWasmModule._(JSObject _) implements JSObject {
 
   external void wire__crate__api__media__get_all_media(NativePortType port_);
 
+  external void wire__crate__api__note__get_all_notes(NativePortType port_);
+
   external void wire__crate__api__tag__get_all_tags(NativePortType port_);
 
   external void wire__crate__api__album__get_child_albums(
@@ -1115,8 +1272,17 @@ extension type RustLibWasmModule._(JSObject _) implements JSObject {
   external void wire__crate__api__tag__get_child_tags(
       NativePortType port_, String parent_id);
 
+  external void wire__crate__api__album__get_media_by_album(
+      NativePortType port_, String album_id);
+
+  external void wire__crate__api__media__get_media_by_filter(
+      NativePortType port_, int filter);
+
   external void wire__crate__api__media__get_media_by_id(
       NativePortType port_, String id);
+
+  external void wire__crate__api__tag__get_media_by_tag(
+      NativePortType port_, String tag_id);
 
   external void wire__crate__api__tag__get_media_by_tags_and(
       NativePortType port_, JSAny tag_ids);
@@ -1133,13 +1299,19 @@ extension type RustLibWasmModule._(JSObject _) implements JSObject {
   external void wire__crate__api__search__get_media_with_any_tag(
       NativePortType port_);
 
+  external void wire__crate__api__media__get_media_with_tags(
+      NativePortType port_, String id);
+
   external void wire__crate__api__search__get_media_without_any_album(
       NativePortType port_);
 
   external void wire__crate__api__search__get_media_without_any_tag(
       NativePortType port_);
 
-  external void wire__crate__api__note__get_note_by_media_id(
+  external void wire__crate__api__note__get_note_by_id(
+      NativePortType port_, String id);
+
+  external void wire__crate__api__note__get_notes_by_media_id(
       NativePortType port_, String media_id);
 
   external void wire__crate__api__album__get_root_albums(NativePortType port_);
@@ -1172,8 +1344,20 @@ extension type RustLibWasmModule._(JSObject _) implements JSObject {
   external void wire__crate__api__scanner__is_hash_exists(
       NativePortType port_, String hash);
 
+  external void wire__crate__api__enums__language_setting_as_str(
+      NativePortType port_, int that);
+
+  external void wire__crate__api__enums__language_setting_from_str(
+      NativePortType port_, String s);
+
   external void wire__crate__api__media__media_type_as_i32(
       NativePortType port_, int that);
+
+  external void wire__crate__api__media__media_type_as_str(
+      NativePortType port_, int that);
+
+  external void wire__crate__api__media__media_type_from_str(
+      NativePortType port_, String s);
 
   external void wire__crate__api__album__remove_media_from_album(
       NativePortType port_, JSAny media_ids, String album_id);
@@ -1205,9 +1389,21 @@ extension type RustLibWasmModule._(JSObject _) implements JSObject {
   external void wire__crate__api__search__search_media_advanced(
       NativePortType port_, JSAny filter);
 
+  external void wire__crate__api__note__search_notes(
+      NativePortType port_, String query);
+
   external void wire__crate__api__album__set_album_cover(
       NativePortType port_, String album_id, String media_id);
 
+  external void wire__crate__api__enums__theme_mode_setting_as_str(
+      NativePortType port_, int that);
+
+  external void wire__crate__api__enums__theme_mode_setting_from_str(
+      NativePortType port_, String s);
+
   external void wire__crate__api__media__update_media(
       NativePortType port_, JSAny media);
+
+  external void wire__crate__api__note__update_note(
+      NativePortType port_, String id, String? title, String? content);
 }

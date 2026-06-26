@@ -1,5 +1,7 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:video_player/video_player.dart';
@@ -8,8 +10,10 @@ import '../bloc/bloc.dart';
 import '../src/rust/api/media.dart';
 import '../src/rust/api/note.dart' as note_api;
 import '../src/rust/api/tag.dart' as tag_api;
+import '../src/rust/api/scanner.dart' as scanner_api;
+import '../core/i18n/app_localizations.dart';
 
-/// 媒体详情查看页面
+/// 媒体详情查看页面 - 支持浏览模式 / 详情模式切换
 class MediaDetailScreen extends StatefulWidget {
   final MediaItem media;
   final List<MediaItem> mediaList;
@@ -24,39 +28,66 @@ class MediaDetailScreen extends StatefulWidget {
   State<MediaDetailScreen> createState() => _MediaDetailScreenState();
 }
 
-class _MediaDetailScreenState extends State<MediaDetailScreen> {
+class _MediaDetailScreenState extends State<MediaDetailScreen>
+    with WidgetsBindingObserver {
   late MediaItem _currentMedia;
   VideoPlayerController? _videoController;
   ChewieController? _chewieController;
   String? _noteContent;
   List<tag_api.Tag> _mediaTags = [];
-  bool _showInfo = false;
+
+  // 浏览模式 / 详情模式
+  bool _isDetailMode = false;
+  bool _showOverlay = true; // 浏览模式下 overlay 显隐
+
+  // 详情模式图片变换参数
+  double _scale = 1.0;
+  double _rotation = 0.0; // 角度
+  double _offsetX = 0.0;
+  double _offsetY = 0.0;
+
+  // PageView 控制器
+  late PageController _pageController;
+
+  // 多页计数器
+  late int _currentIndex;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _currentMedia = widget.media;
+    _currentIndex = widget.mediaList.indexWhere((m) => m.id == _currentMedia.id);
+    if (_currentIndex < 0) _currentIndex = 0;
+    _pageController = PageController(initialPage: _currentIndex);
     _loadMediaData();
     _initVideoIfNeeded();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _videoController?.dispose();
     _chewieController?.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
+  // 应用进入后台时暂停视频
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      _videoController?.pause();
+    }
+  }
+
   void _loadMediaData() async {
-    // 加载笔记
-    final note = await note_api.getNoteByMediaId(mediaId: _currentMedia.id);
+    final notes = await note_api.getNotesByMediaId(mediaId: _currentMedia.id);
     if (mounted) {
       setState(() {
-        _noteContent = note?.content;
+        _noteContent = notes.isNotEmpty ? notes.first.content : null;
       });
     }
-
-    // 加载标签
     final tags = await tag_api.getMediaTags(mediaId: _currentMedia.id);
     if (mounted) {
       setState(() {
@@ -67,9 +98,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> {
 
   void _initVideoIfNeeded() {
     if (_currentMedia.mediaType == MediaType.video) {
-      _videoController = VideoPlayerController.file(
-        File(_currentMedia.filePath),
-      );
+      _videoController = VideoPlayerController.file(File(_currentMedia.filePath));
       _videoController!.initialize().then((_) {
         if (mounted) {
           setState(() {
@@ -99,10 +128,18 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> {
       _currentMedia = media;
       _noteContent = null;
       _mediaTags = [];
-      _showInfo = false;
+      _resetTransform();
     });
     _loadMediaData();
     _initVideoIfNeeded();
+  }
+
+  /// 重置图片变换参数
+  void _resetTransform() {
+    _scale = 1.0;
+    _rotation = 0.0;
+    _offsetX = 0.0;
+    _offsetY = 0.0;
   }
 
   @override
@@ -110,43 +147,138 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.info_outline),
-            onPressed: () => setState(() => _showInfo = !_showInfo),
-          ),
-          IconButton(
-            icon: const Icon(Icons.more_vert),
-            onPressed: () => _showMediaOptions(context),
-          ),
-        ],
-      ),
+      // 浏览模式下显示 AppBar（点击切换 overlay）
+      appBar: _isDetailMode
+          ? null
+          : (_showOverlay
+              ? AppBar(
+                  backgroundColor: Colors.black54,
+                  elevation: 0,
+                  iconTheme: const IconThemeData(color: Colors.white),
+                  title: Text(
+                    _currentMedia.originalName,
+                    style: const TextStyle(fontSize: 14, color: Colors.white),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  actions: [
+                    // 多页计数器
+                    if (widget.mediaList.length > 1)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.black38,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              '${_currentIndex + 1} / ${widget.mediaList.length}',
+                              style: const TextStyle(color: Colors.white, fontSize: 13),
+                            ),
+                          ),
+                        ),
+                      ),
+                    // 切换到详情模式
+                    IconButton(
+                      icon: const Icon(Icons.tune),
+                      tooltip: '详情模式',
+                      onPressed: () {
+                        setState(() {
+                          _isDetailMode = true;
+                          _resetTransform();
+                        });
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.more_vert),
+                      onPressed: () => _showMediaOptions(context),
+                    ),
+                  ],
+                )
+              : null),
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // 媒体内容
-          _buildMediaContent(),
+          // 媒体内容（支持左右滑动）
+          if (widget.mediaList.length > 1 && !_isDetailMode)
+            PageView.builder(
+              controller: _pageController,
+              itemCount: widget.mediaList.length,
+              onPageChanged: (index) {
+                _switchMedia(widget.mediaList[index]);
+                setState(() => _currentIndex = index);
+              },
+              itemBuilder: (context, index) {
+                return _buildMediaContentForItem(widget.mediaList[index]);
+              },
+            )
+          else
+            GestureDetector(
+              onTap: _isDetailMode ? null : () => setState(() => _showOverlay = !_showOverlay),
+              child: _buildMediaContent(),
+            ),
 
-          // 底部信息面板
-          if (_showInfo) _buildInfoPanel(),
+          // 浏览模式底部操作栏
+          if (!_isDetailMode && _showOverlay) _buildBrowseBottomBar(),
 
-          // 导航按钮
-          if (widget.mediaList.length > 1) ...[
-            _buildPreviousButton(),
-            _buildNextButton(),
-          ],
+          // 详情模式底部控制面板
+          if (_isDetailMode) _buildDetailControlPanel(),
+
+          // 详情模式返回按钮
+          if (_isDetailMode)
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 8,
+              left: 8,
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () => setState(() => _isDetailMode = false),
+              ),
+            ),
         ],
       ),
     );
   }
 
+  /// 为 PageView 构建单个媒体内容
+  Widget _buildMediaContentForItem(MediaItem media) {
+    switch (media.mediaType) {
+      case MediaType.image:
+        return GestureDetector(
+          onTap: () => setState(() => _showOverlay = !_showOverlay),
+          child: PhotoView(
+            imageProvider: FileImage(File(media.filePath)),
+            minScale: PhotoViewComputedScale.contained,
+            maxScale: PhotoViewComputedScale.covered * 3,
+            initialScale: PhotoViewComputedScale.contained,
+            backgroundDecoration: const BoxDecoration(color: Colors.black),
+          ),
+        );
+      case MediaType.video:
+        return GestureDetector(
+          onTap: () => setState(() => _showOverlay = !_showOverlay),
+          child: _buildVideoPlayer(),
+        );
+      case MediaType.audio:
+        return GestureDetector(
+          onTap: () => setState(() => _showOverlay = !_showOverlay),
+          child: _buildAudioPlayer(),
+        );
+      case MediaType.document:
+      case MediaType.other:
+        return GestureDetector(
+          onTap: () => setState(() => _showOverlay = !_showOverlay),
+          child: _buildFilePreview(),
+        );
+    }
+  }
+
   Widget _buildMediaContent() {
     switch (_currentMedia.mediaType) {
       case MediaType.image:
+        if (_isDetailMode) {
+          return _buildTransformableImage();
+        }
         return _buildImageViewer();
       case MediaType.video:
         return _buildVideoPlayer();
@@ -158,6 +290,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> {
     }
   }
 
+  /// 浏览模式图片查看器（photo_view 自带缩放/平移）
   Widget _buildImageViewer() {
     return PhotoView(
       imageProvider: FileImage(File(_currentMedia.filePath)),
@@ -172,10 +305,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> {
             children: [
               const Icon(Icons.broken_image, size: 64, color: Colors.white54),
               const SizedBox(height: 16),
-              Text(
-                '无法加载图片',
-                style: TextStyle(color: Colors.white.withOpacity(0.7)),
-              ),
+              Text('无法加载图片', style: TextStyle(color: Colors.white.withOpacity(0.7))),
             ],
           ),
         );
@@ -183,16 +313,38 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> {
     );
   }
 
+  /// 详情模式可变换图片（用户控制缩放/旋转/平移）
+  Widget _buildTransformableImage() {
+    return Center(
+      child: Transform(
+        alignment: Alignment.center,
+        transform: Matrix4.identity()
+          ..translate(_offsetX, _offsetY)
+          ..rotateZ(_rotation * math.pi / 180)
+          ..scale(_scale),
+        child: Image.file(
+          File(_currentMedia.filePath),
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.broken_image, size: 64, color: Colors.white54),
+                const SizedBox(height: 16),
+                Text('无法加载图片', style: TextStyle(color: Colors.white.withOpacity(0.7))),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   Widget _buildVideoPlayer() {
     if (_chewieController == null || !_videoController!.value.isInitialized) {
-      return const Center(
-        child: CircularProgressIndicator(color: Colors.white),
-      );
+      return const Center(child: CircularProgressIndicator(color: Colors.white));
     }
-
-    return Center(
-      child: Chewie(controller: _chewieController!),
-    );
+    return Center(child: Chewie(controller: _chewieController!));
   }
 
   Widget _buildAudioPlayer() {
@@ -202,24 +354,15 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> {
         children: [
           const Icon(Icons.audiotrack, size: 96, color: Colors.white54),
           const SizedBox(height: 24),
-          Text(
-            _currentMedia.originalName,
-            style: const TextStyle(color: Colors.white, fontSize: 18),
-            textAlign: TextAlign.center,
-          ),
+          Text(_currentMedia.originalName, style: const TextStyle(color: Colors.white, fontSize: 18), textAlign: TextAlign.center),
           const SizedBox(height: 8),
-          Text(
-            _formatFileSize(_currentMedia.size),
-            style: TextStyle(color: Colors.white.withOpacity(0.6)),
-          ),
+          Text(_formatFileSize(_currentMedia.size), style: TextStyle(color: Colors.white.withOpacity(0.6))),
           const SizedBox(height: 32),
           if (_videoController != null && _videoController!.value.isInitialized)
             IconButton(
               iconSize: 64,
               icon: Icon(
-                _videoController!.value.isPlaying
-                    ? Icons.pause_circle_filled
-                    : Icons.play_circle_filled,
+                _videoController!.value.isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
                 color: Colors.white,
               ),
               onPressed: () {
@@ -242,76 +385,21 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            _getFileIcon(),
-            size: 96,
-            color: Colors.white54,
-          ),
+          Icon(_getFileIcon(), size: 96, color: Colors.white54),
           const SizedBox(height: 24),
-          Text(
-            _currentMedia.originalName,
-            style: const TextStyle(color: Colors.white, fontSize: 18),
-            textAlign: TextAlign.center,
-          ),
+          Text(_currentMedia.originalName, style: const TextStyle(color: Colors.white, fontSize: 18), textAlign: TextAlign.center),
           const SizedBox(height: 8),
-          Text(
-            _formatFileSize(_currentMedia.size),
-            style: TextStyle(color: Colors.white.withOpacity(0.6)),
-          ),
+          Text(_formatFileSize(_currentMedia.size), style: TextStyle(color: Colors.white.withOpacity(0.6))),
           const SizedBox(height: 16),
-          Text(
-            _currentMedia.mimeType,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.4),
-              fontSize: 12,
-            ),
-          ),
+          Text(_currentMedia.mimeType, style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12)),
         ],
       ),
     );
   }
 
-  Widget _buildPreviousButton() {
-    final currentIndex = widget.mediaList.indexWhere((m) => m.id == _currentMedia.id);
-    if (currentIndex <= 0) return const SizedBox.shrink();
-
-    return Positioned(
-      left: 8,
-      top: 0,
-      bottom: 0,
-      child: Center(
-        child: IconButton(
-          icon: const Icon(Icons.chevron_left, color: Colors.white, size: 48),
-          onPressed: () {
-            _switchMedia(widget.mediaList[currentIndex - 1]);
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNextButton() {
-    final currentIndex = widget.mediaList.indexWhere((m) => m.id == _currentMedia.id);
-    if (currentIndex < 0 || currentIndex >= widget.mediaList.length - 1) {
-      return const SizedBox.shrink();
-    }
-
-    return Positioned(
-      right: 8,
-      top: 0,
-      bottom: 0,
-      child: Center(
-        child: IconButton(
-          icon: const Icon(Icons.chevron_right, color: Colors.white, size: 48),
-          onPressed: () {
-            _switchMedia(widget.mediaList[currentIndex + 1]);
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoPanel() {
+  /// 浏览模式底部操作栏
+  Widget _buildBrowseBottomBar() {
+    final loc = AppLocalizations.of(context);
     return Positioned(
       bottom: 0,
       left: 0,
@@ -321,97 +409,294 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> {
           gradient: LinearGradient(
             begin: Alignment.bottomCenter,
             end: Alignment.topCenter,
-            colors: [
-              Colors.black.withOpacity(0.9),
-              Colors.black.withOpacity(0.6),
-              Colors.transparent,
-            ],
+            colors: [Colors.black.withOpacity(0.8), Colors.transparent],
           ),
         ),
-        padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
-        child: SafeArea(
-          top: false,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                _currentMedia.originalName,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              _buildInfoRow(Icons.folder, '路径', _currentMedia.filePath),
-              _buildInfoRow(Icons.data_usage, '大小', _formatFileSize(_currentMedia.size)),
-              _buildInfoRow(Icons.merge_type, '类型', _currentMedia.mimeType),
-              _buildInfoRow(Icons.calendar_today, '创建时间', _formatDate(_currentMedia.createdAt)),
-              if (_currentMedia.width != null && _currentMedia.height != null)
-                _buildInfoRow(
-                  Icons.aspect_ratio,
-                  '尺寸',
-                  '${_currentMedia.width} x ${_currentMedia.height}',
-                ),
-              if (_noteContent != null && _noteContent!.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                _buildInfoRow(Icons.note, '笔记', _noteContent!),
-              ],
-              if (_mediaTags.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  children: _mediaTags.map((tag) {
-                    return Chip(
-                      label: Text(
-                        tag.name,
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                      backgroundColor: _parseColor(tag.color) ?? Colors.grey[700],
-                      labelStyle: const TextStyle(color: Colors.white),
-                      padding: EdgeInsets.zero,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    );
-                  }).toList(),
-                ),
-              ],
-            ],
+        padding: EdgeInsets.fromLTRB(16, 32, 16, MediaQuery.of(context).padding.bottom + 16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildBottomAction(Icons.share, loc.share, () => _shareMedia(context)),
+            _buildBottomAction(Icons.download, loc.exportToDownload, () => _exportMedia(context)),
+            _buildBottomAction(Icons.label_outline, loc.tags, () => _showTagManager(context)),
+            _buildBottomAction(Icons.info_outline, loc.infoPanel, () => _showFileInfoDialog(context)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomAction(IconData icon, String label, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: Colors.white, size: 24),
+            const SizedBox(height: 4),
+            Text(label, style: const TextStyle(color: Colors.white, fontSize: 11)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 详情模式底部控制面板（图片变换按钮 + 视频播放控件）
+  Widget _buildDetailControlPanel() {
+    return Positioned(
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.85),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).padding.bottom + 12),
+        child: _currentMedia.mediaType == MediaType.image
+            ? _buildImageTransformControls()
+            : _currentMedia.mediaType == MediaType.video
+                ? _buildVideoPlaybackControls()
+                : const SizedBox.shrink(),
+      ),
+    );
+  }
+
+  /// 图片变换控制按钮：上移 / 左旋 / 缩小 / 还原 / 放大 / 右旋 / 下移
+  Widget _buildImageTransformControls() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // 变换参数显示
+        Text(
+          '缩放: ${(_scale * 100).toStringAsFixed(0)}%  旋转: ${_rotation.toStringAsFixed(0)}°',
+          style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12),
+        ),
+        const SizedBox(height: 12),
+        // 变换按钮行
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildTransformButton(Icons.arrow_upward, '↑', () {
+              setState(() => _offsetY -= 20);
+            }),
+            _buildTransformButton(Icons.rotate_left, '⟲', () {
+              setState(() => _rotation = (_rotation - 90) % 360);
+            }),
+            _buildTransformButton(Icons.remove, '−', () {
+              setState(() => _scale = (_scale - 0.25).clamp(0.25, 4.0));
+            }),
+            _buildTransformButton(Icons.refresh, '↺', () {
+              setState(() => _resetTransform());
+            }),
+            _buildTransformButton(Icons.add, '+', () {
+              setState(() => _scale = (_scale + 0.25).clamp(0.25, 4.0));
+            }),
+            _buildTransformButton(Icons.rotate_right, '⟳', () {
+              setState(() => _rotation = (_rotation + 90) % 360);
+            }),
+            _buildTransformButton(Icons.arrow_downward, '↓', () {
+              setState(() => _offsetY += 20);
+            }),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // 平移控制
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildTransformButton(Icons.arrow_back, AppLocalizations.of(context).moveLeft, () {
+              setState(() => _offsetX -= 20);
+            }),
+            const SizedBox(width: 16),
+            _buildTransformButton(Icons.arrow_forward, AppLocalizations.of(context).moveRight, () {
+              setState(() => _offsetX += 20);
+            }),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTransformButton(IconData icon, String tooltip, VoidCallback onPressed) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Icon(icon, color: Colors.white, size: 22),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value) {
+  /// 视频播放控件（详情模式）
+  Widget _buildVideoPlaybackControls() {
+    if (_videoController == null || !_videoController!.value.isInitialized) {
+      return const SizedBox.shrink();
+    }
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // 进度条
+        VideoProgressIndicator(
+          _videoController!,
+          allowScrubbing: true,
+          colors: VideoProgressColors(
+            playedColor: Theme.of(context).colorScheme.primary,
+            bufferedColor: Colors.white24,
+            backgroundColor: Colors.white12,
+          ),
+        ),
+        const SizedBox(height: 8),
+        // 控制按钮
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            IconButton(
+              icon: Icon(
+                _videoController!.value.isPlaying ? Icons.pause : Icons.play_arrow,
+                color: Colors.white,
+              ),
+              iconSize: 36,
+              onPressed: () {
+                setState(() {
+                  if (_videoController!.value.isPlaying) {
+                    _videoController!.pause();
+                  } else {
+                    _videoController!.play();
+                  }
+                });
+              },
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// 文件信息对话框（完整 EXIF 显示）
+  void _showFileInfoDialog(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(loc.fileInfo),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildDetailInfoRow(loc.fileName, _currentMedia.originalName),
+              _buildDetailInfoRow(loc.storageName, _currentMedia.storageName),
+              _buildDetailInfoRow(loc.mimeType, _currentMedia.mimeType),
+              _buildDetailInfoRow(loc.fileSize, _formatFileSize(_currentMedia.size)),
+              if (_currentMedia.width != null && _currentMedia.height != null)
+                _buildDetailInfoRow(loc.resolution, '${_currentMedia.width} × ${_currentMedia.height}'),
+              if (_currentMedia.duration != null && _currentMedia.duration! > 0)
+                _buildDetailInfoRow(loc.duration, _formatDuration(_currentMedia.duration!)),
+              _buildDetailInfoRow('SHA-256', _currentMedia.sha256Hash),
+              _buildDetailInfoRow(loc.createdAt, _formatDate(_currentMedia.createdAt)),
+              _buildDetailInfoRow(loc.updatedAt, _formatDate(_currentMedia.updatedAt)),
+              _buildDetailInfoRow(loc.fullPath, _currentMedia.filePath),
+              if (_noteContent != null && _noteContent!.isNotEmpty) ...[
+                const Divider(),
+                Text('${loc.notePanel}:', style: const TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Text(_noteContent!),
+              ],
+              if (_mediaTags.isNotEmpty) ...[
+                const Divider(),
+                Text('${loc.tagPanel}:', style: const TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: _mediaTags.map((tag) => Chip(
+                    label: Text(tag.name, style: const TextStyle(fontSize: 12)),
+                    backgroundColor: _parseColor(tag.color),
+                    labelStyle: const TextStyle(color: Colors.white),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding: EdgeInsets.zero,
+                  )).toList(),
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(loc.close)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailInfoRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 16, color: Colors.white.withOpacity(0.6)),
-          const SizedBox(width: 8),
-          Text(
-            '$label: ',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.6),
-              fontSize: 13,
-            ),
+          SizedBox(
+            width: 72,
+            child: Text('$label:', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
           ),
           Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(color: Colors.white, fontSize: 13),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 2,
-            ),
+            child: Text(value, style: const TextStyle(fontSize: 12), overflow: TextOverflow.ellipsis, maxLines: 3),
           ),
         ],
       ),
     );
   }
 
+  String _formatDuration(int milliseconds) {
+    final seconds = milliseconds ~/ 1000;
+    final minutes = seconds ~/ 60;
+    final hours = minutes ~/ 60;
+    if (hours > 0) {
+      return '${hours}h ${minutes % 60}m ${seconds % 60}s';
+    } else if (minutes > 0) {
+      return '${minutes}m ${seconds % 60}s';
+    }
+    return '${seconds}s';
+  }
+
+  /// 导出到 Download 目录
+  Future<void> _exportMedia(BuildContext context) async {
+    try {
+      final result = await scanner_api.importSingleFile(filePath: _currentMedia.filePath);
+      // 实际导出
+      final exportPath = '/storage/emulated/0/Download/${_currentMedia.originalName}';
+      // 复制文件到 Download
+      final sourceFile = File(_currentMedia.filePath);
+      if (await sourceFile.exists()) {
+        await sourceFile.copy(exportPath);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${AppLocalizations.of(context).exportedTo}: $exportPath')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${AppLocalizations.of(context).exportFailed}: $e')),
+        );
+      }
+    }
+  }
+
   void _showMediaOptions(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.grey[900],
@@ -422,43 +707,33 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> {
             children: [
               ListTile(
                 leading: const Icon(Icons.edit, color: Colors.white),
-                title: const Text('编辑名称', style: TextStyle(color: Colors.white)),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showRenameDialog(context);
-                },
+                title: Text(loc.rename, style: const TextStyle(color: Colors.white)),
+                onTap: () { Navigator.pop(context); _showRenameDialog(context); },
               ),
               ListTile(
                 leading: const Icon(Icons.note_add, color: Colors.white),
-                title: const Text('编辑笔记', style: TextStyle(color: Colors.white)),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showNoteDialog(context);
-                },
+                title: Text(loc.editNote, style: const TextStyle(color: Colors.white)),
+                onTap: () { Navigator.pop(context); _showNoteDialog(context); },
               ),
               ListTile(
                 leading: const Icon(Icons.label, color: Colors.white),
-                title: const Text('管理标签', style: TextStyle(color: Colors.white)),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showTagManager(context);
-                },
+                title: Text(loc.manageTags, style: const TextStyle(color: Colors.white)),
+                onTap: () { Navigator.pop(context); _showTagManager(context); },
+              ),
+              ListTile(
+                leading: const Icon(Icons.download, color: Colors.white),
+                title: Text(loc.exportToDownload, style: const TextStyle(color: Colors.white)),
+                onTap: () { Navigator.pop(context); _exportMedia(context); },
               ),
               ListTile(
                 leading: const Icon(Icons.share, color: Colors.white),
-                title: const Text('分享', style: TextStyle(color: Colors.white)),
-                onTap: () {
-                  Navigator.pop(context);
-                  _shareMedia(context);
-                },
+                title: Text(loc.share, style: const TextStyle(color: Colors.white)),
+                onTap: () { Navigator.pop(context); _shareMedia(context); },
               ),
               ListTile(
                 leading: const Icon(Icons.delete, color: Colors.red),
-                title: const Text('删除', style: TextStyle(color: Colors.red)),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showDeleteConfirm(context);
-                },
+                title: Text(loc.delete, style: const TextStyle(color: Colors.red)),
+                onTap: () { Navigator.pop(context); _showDeleteConfirm(context); },
               ),
             ],
           ),
@@ -468,53 +743,37 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> {
   }
 
   void _showRenameDialog(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final controller = TextEditingController(text: _currentMedia.originalName);
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('重命名'),
-          content: TextField(
-            controller: controller,
-            decoration: const InputDecoration(labelText: '新名称'),
-            autofocus: true,
-          ),
+          title: Text(loc.rename),
+          content: TextField(controller: controller, decoration: InputDecoration(labelText: loc.newName), autofocus: true),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('取消'),
-            ),
+            TextButton(onPressed: () => Navigator.pop(context), child: Text(loc.cancel)),
             TextButton(
               onPressed: () async {
                 final newName = controller.text.trim();
                 if (newName.isNotEmpty) {
                   final updated = MediaItem(
-                    id: _currentMedia.id,
-                    originalName: newName,
-                    storageName: _currentMedia.storageName,
-                    filePath: _currentMedia.filePath,
-                    thumbnailPath: _currentMedia.thumbnailPath,
-                    mediaType: _currentMedia.mediaType,
-                    mimeType: _currentMedia.mimeType,
-                    size: _currentMedia.size,
-                    width: _currentMedia.width,
-                    height: _currentMedia.height,
-                    duration: _currentMedia.duration,
-                    sha256Hash: _currentMedia.sha256Hash,
-                    createdAt: _currentMedia.createdAt,
-                    updatedAt: _currentMedia.updatedAt,
+                    id: _currentMedia.id, originalName: newName, storageName: _currentMedia.storageName,
+                    filePath: _currentMedia.filePath, thumbnailPath: _currentMedia.thumbnailPath,
+                    mediaType: _currentMedia.mediaType, mimeType: _currentMedia.mimeType,
+                    size: _currentMedia.size, width: _currentMedia.width, height: _currentMedia.height,
+                    duration: _currentMedia.duration, sha256Hash: _currentMedia.sha256Hash,
+                    createdAt: _currentMedia.createdAt, updatedAt: _currentMedia.updatedAt,
                   );
                   await updateMedia(media: updated);
                   if (context.mounted) {
-                    setState(() {
-                      _currentMedia = updated;
-                    });
+                    setState(() => _currentMedia = updated);
                     context.read<MediaBloc>().add(const MediaLoadAllEvent());
                   }
                 }
                 if (context.mounted) Navigator.pop(context);
               },
-              child: const Text('保存'),
+              child: Text(loc.save),
             ),
           ],
         );
@@ -523,40 +782,30 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> {
   }
 
   void _showNoteDialog(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final controller = TextEditingController(text: _noteContent ?? '');
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('编辑笔记'),
+          title: Text(loc.editNote),
           content: TextField(
             controller: controller,
-            decoration: const InputDecoration(
-              labelText: '笔记内容',
-              hintText: '输入笔记...',
-            ),
+            decoration: InputDecoration(labelText: loc.noteContent, hintText: loc.noteContentHint),
             maxLines: 5,
             autofocus: true,
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('取消'),
-            ),
+            TextButton(onPressed: () => Navigator.pop(context), child: Text(loc.cancel)),
             TextButton(
               onPressed: () async {
-                await note_api.saveNote(
-                  mediaId: _currentMedia.id,
-                  content: controller.text,
-                );
+                await note_api.saveNote(mediaId: _currentMedia.id, content: controller.text);
                 if (context.mounted) {
-                  setState(() {
-                    _noteContent = controller.text;
-                  });
+                  setState(() => _noteContent = controller.text);
                   Navigator.pop(context);
                 }
               },
-              child: const Text('保存'),
+              child: Text(loc.save),
             ),
           ],
         );
@@ -565,90 +814,51 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> {
   }
 
   void _shareMedia(BuildContext context) {
-    // 分享功能：使用系统分享对话框
-    // 由于 share_plus 插件可能未安装，使用简单的 Snackbar 提示
+    Clipboard.setData(ClipboardData(text: _currentMedia.filePath));
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('分享: ${_currentMedia.originalName}'),
-        action: SnackBarAction(
-          label: '复制路径',
-          onPressed: () {
-            // 复制文件路径到剪贴板
-            // 需要 flutter/services 的 Clipboard
-          },
-        ),
+      SnackBar(content: Text('${AppLocalizations.of(context).filePathCopied}: ${_currentMedia.originalName}')),
+    );
+  }
+
+  void _showTagManager(BuildContext context) async {
+    // 加载所有标签
+    final allTags = await tag_api.getAllTags();
+    if (!context.mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => _TagManagerDialog(
+        allTags: allTags,
+        currentTags: _mediaTags,
+        mediaId: _currentMedia.id,
+        onTagsChanged: () {
+          _loadMediaData();
+        },
       ),
     );
   }
 
-  void _showTagManager(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('标签管理'),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: _mediaTags.length,
-              itemBuilder: (context, index) {
-                final tag = _mediaTags[index];
-                return ListTile(
-                  dense: true,
-                  title: Text(tag.name),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.remove_circle, color: Colors.red),
-                    onPressed: () async {
-                      await tag_api.removeTagFromMedia(
-                        mediaId: _currentMedia.id,
-                        tagId: tag.id,
-                      );
-                      if (mounted) {
-                        setState(() {
-                          _mediaTags.removeAt(index);
-                        });
-                      }
-                    },
-                  ),
-                );
-              },
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('关闭'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   void _showDeleteConfirm(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('确认删除'),
-          content: Text('确定要删除 "${_currentMedia.originalName}" 吗？'),
+          title: Text(loc.confirmDeleteMedia),
+          content: Text('${loc.confirmDeleteMediaMsg} "${_currentMedia.originalName}"'),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('取消'),
-            ),
+            TextButton(onPressed: () => Navigator.pop(context), child: Text(loc.cancel)),
             TextButton(
               onPressed: () async {
                 await deleteMedia(id: _currentMedia.id);
                 if (context.mounted) {
-                  Navigator.pop(context); // 关闭对话框
-                  Navigator.pop(context); // 返回媒体列表
+                  Navigator.pop(context);
+                  Navigator.pop(context);
                   context.read<MediaBloc>().add(const MediaLoadAllEvent());
                 }
               },
               style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('删除'),
+              child: Text(loc.delete),
             ),
           ],
         );
@@ -658,16 +868,11 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> {
 
   IconData _getFileIcon() {
     switch (_currentMedia.mediaType) {
-      case MediaType.image:
-        return Icons.image;
-      case MediaType.video:
-        return Icons.videocam;
-      case MediaType.audio:
-        return Icons.audiotrack;
-      case MediaType.document:
-        return Icons.description;
-      case MediaType.other:
-        return Icons.insert_drive_file;
+      case MediaType.image: return Icons.image;
+      case MediaType.video: return Icons.videocam;
+      case MediaType.audio: return Icons.audiotrack;
+      case MediaType.document: return Icons.description;
+      case MediaType.other: return Icons.insert_drive_file;
     }
   }
 
@@ -682,6 +887,105 @@ class _MediaDetailScreenState extends State<MediaDetailScreen> {
     final date = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
         '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+  }
+
+  Color? _parseColor(String? colorStr) {
+    if (colorStr == null || colorStr.isEmpty) return null;
+    try {
+      if (colorStr.startsWith('#')) {
+        return Color(int.parse(colorStr.substring(1), radix: 16) + 0xFF000000);
+      }
+    } catch (_) {}
+    return null;
+  }
+}
+
+/// 标签管理对话框（支持添加和删除标签）
+class _TagManagerDialog extends StatefulWidget {
+  final List<tag_api.Tag> allTags;
+  final List<tag_api.Tag> currentTags;
+  final String mediaId;
+  final VoidCallback onTagsChanged;
+
+  const _TagManagerDialog({
+    required this.allTags,
+    required this.currentTags,
+    required this.mediaId,
+    required this.onTagsChanged,
+  });
+
+  @override
+  State<_TagManagerDialog> createState() => _TagManagerDialogState();
+}
+
+class _TagManagerDialogState extends State<_TagManagerDialog> {
+  late Set<String> _selectedTagIds;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedTagIds = widget.currentTags.map((t) => t.id).toSet();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(AppLocalizations.of(context).manageTags),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: widget.allTags.isEmpty
+            ? Text(AppLocalizations.of(context).noTagsCreateFirst)
+            : ListView.builder(
+                shrinkWrap: true,
+                itemCount: widget.allTags.length,
+                itemBuilder: (_, i) {
+                  final tag = widget.allTags[i];
+                  final isSelected = _selectedTagIds.contains(tag.id);
+                  return CheckboxListTile(
+                    title: Text(tag.name),
+                    value: isSelected,
+                    onChanged: (val) {
+                      setState(() {
+                        if (val == true) {
+                          _selectedTagIds.add(tag.id);
+                        } else {
+                          _selectedTagIds.remove(tag.id);
+                        }
+                      });
+                    },
+                    secondary: tag.color != null
+                        ? CircleAvatar(
+                            backgroundColor: _parseColor(tag.color) ?? Colors.grey,
+                            radius: 10,
+                          )
+                        : null,
+                  );
+                },
+              ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(AppLocalizations.of(context).cancel)),
+        FilledButton(
+          onPressed: () async {
+            // 差集计算
+            final currentIds = widget.currentTags.map((t) => t.id).toSet();
+            final toAdd = _selectedTagIds.difference(currentIds);
+            final toRemove = currentIds.difference(_selectedTagIds);
+
+            for (final tagId in toAdd) {
+              await tag_api.addTagToMedia(mediaId: widget.mediaId, tagId: tagId);
+            }
+            for (final tagId in toRemove) {
+              await tag_api.removeTagFromMedia(mediaId: widget.mediaId, tagId: tagId);
+            }
+
+            widget.onTagsChanged();
+            if (context.mounted) Navigator.pop(context);
+          },
+          child: Text(AppLocalizations.of(context).save),
+        ),
+      ],
+    );
   }
 
   Color? _parseColor(String? colorStr) {

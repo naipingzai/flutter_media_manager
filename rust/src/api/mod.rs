@@ -1,3 +1,4 @@
+pub mod enums;
 pub mod media;
 pub mod album;
 pub mod tag;

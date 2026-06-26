@@ -1,6 +1,7 @@
 use flutter_rust_bridge::frb;
 use serde::{Deserialize, Serialize};
 use crate::db::{get_pool, models::row_to_media_item};
+use crate::api::enums::FilterMode;
 
 /// 媒体类型枚举
 #[frb]
@@ -14,6 +15,29 @@ pub enum MediaType {
 }
 
 impl MediaType {
+    /// 转换为数据库存储的 TEXT 值
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            MediaType::Image => "image",
+            MediaType::Video => "video",
+            MediaType::Audio => "audio",
+            MediaType::Document => "document",
+            MediaType::Other => "other",
+        }
+    }
+    
+    /// 从数据库 TEXT 值解析
+    pub fn from_str(s: &str) -> Self {
+        match s {
+            "image" => MediaType::Image,
+            "video" => MediaType::Video,
+            "audio" => MediaType::Audio,
+            "document" => MediaType::Document,
+            _ => MediaType::Other,
+        }
+    }
+    
+    /// 兼容旧接口：转换为 i32
     pub fn as_i32(&self) -> i32 {
         match self {
             MediaType::Image => 0,
@@ -88,7 +112,7 @@ pub async fn delete_media(id: String) -> Result<(), String> {
     let mut tx = pool.begin().await.map_err(|e| format!("开启事务失败: {}", e))?;
 
     // 删除关联关系
-    sqlx::query("DELETE FROM media_albums WHERE media_id = ?")
+    sqlx::query("DELETE FROM album_media WHERE media_id = ?")
         .bind(&id)
         .execute(&mut *tx)
         .await
@@ -180,12 +204,12 @@ pub async fn search_media(query: String) -> Result<Vec<MediaItem>, String> {
 #[frb]
 pub async fn filter_media_by_type(media_type: MediaType) -> Result<Vec<MediaItem>, String> {
     let pool = get_pool()?;
-    let type_int = media_type.as_i32();
+    let type_str = media_type.as_str();
 
     let rows = sqlx::query(
-        "SELECT * FROM media_items WHERE media_type = ? ORDER BY created_at DESC"
+        "SELECT * FROM media_items WHERE type = ? ORDER BY created_at DESC"
     )
-    .bind(type_int)
+    .bind(type_str)
     .fetch_all(&pool)
     .await
     .map_err(|e| format!("按类型过滤媒体失败: {}", e))?;
@@ -210,4 +234,76 @@ pub async fn update_media(media: MediaItem) -> Result<(), String> {
     .map_err(|e| format!("更新媒体失败: {}", e))?;
 
     Ok(())
+}
+
+/// Skill-02 §1.5 - FilterMode 过滤查询
+/// 根据过滤模式获取媒体列表
+#[frb]
+pub async fn get_media_by_filter(filter: FilterMode) -> Result<Vec<MediaItem>, String> {
+    let pool = get_pool()?;
+
+    let sql = match filter {
+        FilterMode::All => {
+            return get_all_media().await;
+        }
+        FilterMode::WithTags => {
+            "SELECT DISTINCT m.* FROM media_items m
+             INNER JOIN media_tags mt ON m.id = mt.media_id
+             ORDER BY m.created_at DESC"
+        }
+        FilterMode::WithoutTags => {
+            "SELECT m.* FROM media_items m
+             WHERE m.id NOT IN (SELECT media_id FROM media_tags)
+             ORDER BY m.created_at DESC"
+        }
+        FilterMode::WithAlbums => {
+            "SELECT DISTINCT m.* FROM media_items m
+             INNER JOIN media_albums ma ON m.id = ma.media_id
+             ORDER BY m.created_at DESC"
+        }
+        FilterMode::WithoutAlbums => {
+            "SELECT m.* FROM media_items m
+             WHERE m.id NOT IN (SELECT media_id FROM media_albums)
+             ORDER BY m.created_at DESC"
+        }
+    };
+
+    let rows = sqlx::query(sql)
+        .fetch_all(&pool)
+        .await
+        .map_err(|e| format!("过滤媒体失败: {}", e))?;
+
+    Ok(rows.iter().map(row_to_media_item).collect())
+}
+
+/// 批量删除媒体
+#[frb]
+pub async fn batch_delete_media(ids: Vec<String>) -> Result<(), String> {
+    let pool = get_pool()?;
+    let mut tx = pool.begin().await.map_err(|e| format!("开启事务失败: {}", e))?;
+
+    for id in &ids {
+        // 删除关联关系
+        sqlx::query("DELETE FROM album_media WHERE media_id = ?")
+            .bind(id).execute(&mut *tx).await
+            .map_err(|e| format!("删除相册关联失败: {}", e))?;
+        sqlx::query("DELETE FROM media_tags WHERE media_id = ?")
+            .bind(id).execute(&mut *tx).await
+            .map_err(|e| format!("删除标签关联失败: {}", e))?;
+        sqlx::query("DELETE FROM notes WHERE media_id = ?")
+            .bind(id).execute(&mut *tx).await
+            .map_err(|e| format!("删除笔记失败: {}", e))?;
+        sqlx::query("DELETE FROM media_items WHERE id = ?")
+            .bind(id).execute(&mut *tx).await
+            .map_err(|e| format!("删除媒体失败: {}", e))?;
+    }
+
+    tx.commit().await.map_err(|e| format!("提交事务失败: {}", e))?;
+    Ok(())
+}
+
+/// 获取带标签的媒体列表（附带标签信息）
+#[frb]
+pub async fn get_media_with_tags(id: String) -> Result<Option<MediaItem>, String> {
+    get_media_by_id(id).await
 }

@@ -4,6 +4,7 @@
 // ignore_for_file: invalid_use_of_internal_member, unused_import, unnecessary_import
 
 import '../frb_generated.dart';
+import 'media.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 // These functions are ignored because they are not marked as `pub`: `get_albums_by_parent`
@@ -51,6 +52,10 @@ Future<void> setAlbumCover(
         {required String albumId, required String mediaId}) =>
     RustLib.instance.api
         .crateApiAlbumSetAlbumCover(albumId: albumId, mediaId: mediaId);
+
+/// 获取相册内的媒体列表
+Future<List<MediaItem>> getMediaByAlbum({required String albumId}) =>
+    RustLib.instance.api.crateApiAlbumGetMediaByAlbum(albumId: albumId);
 
 /// 确保默认相册存在（如果不存在则创建）
 Future<String> ensureDefaultAlbum({required String name}) =>

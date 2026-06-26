@@ -38,7 +38,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueNom,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.12.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1728653654;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1179246925;
 
 // Section: executor
 
@@ -93,6 +93,30 @@ fn wire__crate__api__tag__add_tag_to_media_impl(
                     (move || async move {
                         let output_ok =
                             crate::api::tag::add_tag_to_media(api_media_id, api_tag_id).await?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__media__batch_delete_media_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ids: impl CstDecode<Vec<String>>,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::DcoCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "batch_delete_media",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let api_ids = ids.cst_decode();
+            move |context| async move {
+                transform_result_dco::<_, _, String>(
+                    (move || async move {
+                        let output_ok = crate::api::media::batch_delete_media(api_ids).await?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -167,6 +191,36 @@ fn wire__crate__api__album__create_album_impl(
                     (move || async move {
                         let output_ok =
                             crate::api::album::create_album(api_name, api_parent_id).await?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__note__create_note_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    media_id: impl CstDecode<Option<String>>,
+    title: impl CstDecode<String>,
+    content: impl CstDecode<String>,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::DcoCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "create_note",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let api_media_id = media_id.cst_decode();
+            let api_title = title.cst_decode();
+            let api_content = content.cst_decode();
+            move |context| async move {
+                transform_result_dco::<_, _, String>(
+                    (move || async move {
+                        let output_ok =
+                            crate::api::note::create_note(api_media_id, api_title, api_content)
+                                .await?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -314,6 +368,28 @@ fn wire__crate__api__tag__delete_tag_impl(
                 transform_result_dco::<_, _, String>(
                     (move || async move {
                         let output_ok = crate::api::tag::delete_tag(api_id).await?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__settings__delete_unreferenced_files_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::DcoCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "delete_unreferenced_files",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            move |context| async move {
+                transform_result_dco::<_, _, String>(
+                    (move || async move {
+                        let output_ok = crate::api::settings::delete_unreferenced_files().await?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -477,6 +553,74 @@ fn wire__crate__api__media__filter_media_by_type_impl(
         },
     )
 }
+fn wire__crate__api__enums__filter_mode_as_str_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    that: impl CstDecode<crate::api::enums::FilterMode>,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::DcoCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "filter_mode_as_str",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let api_that = that.cst_decode();
+            move |context| {
+                transform_result_dco::<_, _, ()>((move || {
+                    let output_ok = Result::<_, ()>::Ok({
+                        crate::api::enums::FilterMode::as_str(&api_that);
+                    })?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__enums__filter_mode_display_name_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    that: impl CstDecode<crate::api::enums::FilterMode>,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::DcoCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "filter_mode_display_name",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let api_that = that.cst_decode();
+            move |context| {
+                transform_result_dco::<_, _, ()>((move || {
+                    let output_ok = Result::<_, ()>::Ok({
+                        crate::api::enums::FilterMode::display_name(&api_that);
+                    })?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__settings__find_unreferenced_files_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::DcoCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "find_unreferenced_files",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            move |context| async move {
+                transform_result_dco::<_, _, String>(
+                    (move || async move {
+                        let output_ok = crate::api::settings::find_unreferenced_files().await?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
 fn wire__crate__api__scanner__generate_thumbnail_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     file_path: impl CstDecode<String>,
@@ -576,6 +720,28 @@ fn wire__crate__api__media__get_all_media_impl(
         },
     )
 }
+fn wire__crate__api__note__get_all_notes_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::DcoCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "get_all_notes",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            move |context| async move {
+                transform_result_dco::<_, _, String>(
+                    (move || async move {
+                        let output_ok = crate::api::note::get_all_notes().await?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
 fn wire__crate__api__tag__get_all_tags_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
 ) {
@@ -646,6 +812,54 @@ fn wire__crate__api__tag__get_child_tags_impl(
         },
     )
 }
+fn wire__crate__api__album__get_media_by_album_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    album_id: impl CstDecode<String>,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::DcoCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "get_media_by_album",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let api_album_id = album_id.cst_decode();
+            move |context| async move {
+                transform_result_dco::<_, _, String>(
+                    (move || async move {
+                        let output_ok = crate::api::album::get_media_by_album(api_album_id).await?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__media__get_media_by_filter_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    filter: impl CstDecode<crate::api::enums::FilterMode>,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::DcoCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "get_media_by_filter",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let api_filter = filter.cst_decode();
+            move |context| async move {
+                transform_result_dco::<_, _, String>(
+                    (move || async move {
+                        let output_ok = crate::api::media::get_media_by_filter(api_filter).await?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
 fn wire__crate__api__media__get_media_by_id_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     id: impl CstDecode<String>,
@@ -662,6 +876,30 @@ fn wire__crate__api__media__get_media_by_id_impl(
                 transform_result_dco::<_, _, String>(
                     (move || async move {
                         let output_ok = crate::api::media::get_media_by_id(api_id).await?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__tag__get_media_by_tag_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    tag_id: impl CstDecode<String>,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::DcoCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "get_media_by_tag",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let api_tag_id = tag_id.cst_decode();
+            move |context| async move {
+                transform_result_dco::<_, _, String>(
+                    (move || async move {
+                        let output_ok = crate::api::tag::get_media_by_tag(api_tag_id).await?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -786,6 +1024,30 @@ fn wire__crate__api__search__get_media_with_any_tag_impl(
         },
     )
 }
+fn wire__crate__api__media__get_media_with_tags_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    id: impl CstDecode<String>,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::DcoCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "get_media_with_tags",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let api_id = id.cst_decode();
+            move |context| async move {
+                transform_result_dco::<_, _, String>(
+                    (move || async move {
+                        let output_ok = crate::api::media::get_media_with_tags(api_id).await?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
 fn wire__crate__api__search__get_media_without_any_album_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
 ) {
@@ -830,13 +1092,37 @@ fn wire__crate__api__search__get_media_without_any_tag_impl(
         },
     )
 }
-fn wire__crate__api__note__get_note_by_media_id_impl(
+fn wire__crate__api__note__get_note_by_id_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    id: impl CstDecode<String>,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::DcoCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "get_note_by_id",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let api_id = id.cst_decode();
+            move |context| async move {
+                transform_result_dco::<_, _, String>(
+                    (move || async move {
+                        let output_ok = crate::api::note::get_note_by_id(api_id).await?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__note__get_notes_by_media_id_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     media_id: impl CstDecode<String>,
 ) {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::DcoCodec, _, _, _>(
         flutter_rust_bridge::for_generated::TaskInfo {
-            debug_name: "get_note_by_media_id",
+            debug_name: "get_notes_by_media_id",
             port: Some(port_),
             mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
         },
@@ -846,7 +1132,7 @@ fn wire__crate__api__note__get_note_by_media_id_impl(
                 transform_result_dco::<_, _, String>(
                     (move || async move {
                         let output_ok =
-                            crate::api::note::get_note_by_media_id(api_media_id).await?;
+                            crate::api::note::get_notes_by_media_id(api_media_id).await?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -1114,6 +1400,51 @@ fn wire__crate__api__scanner__is_hash_exists_impl(
         },
     )
 }
+fn wire__crate__api__enums__language_setting_as_str_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    that: impl CstDecode<crate::api::enums::LanguageSetting>,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::DcoCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "language_setting_as_str",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let api_that = that.cst_decode();
+            move |context| {
+                transform_result_dco::<_, _, ()>((move || {
+                    let output_ok = Result::<_, ()>::Ok({
+                        crate::api::enums::LanguageSetting::as_str(&api_that);
+                    })?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__enums__language_setting_from_str_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    s: impl CstDecode<String>,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::DcoCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "language_setting_from_str",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let api_s = s.cst_decode();
+            move |context| {
+                transform_result_dco::<_, _, ()>((move || {
+                    let output_ok =
+                        Result::<_, ()>::Ok(crate::api::enums::LanguageSetting::from_str(&api_s))?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
 fn wire__crate__api__media__media_type_as_i32_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     that: impl CstDecode<crate::api::media::MediaType>,
@@ -1130,6 +1461,51 @@ fn wire__crate__api__media__media_type_as_i32_impl(
                 transform_result_dco::<_, _, ()>((move || {
                     let output_ok =
                         Result::<_, ()>::Ok(crate::api::media::MediaType::as_i32(&api_that))?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__media__media_type_as_str_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    that: impl CstDecode<crate::api::media::MediaType>,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::DcoCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "media_type_as_str",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let api_that = that.cst_decode();
+            move |context| {
+                transform_result_dco::<_, _, ()>((move || {
+                    let output_ok = Result::<_, ()>::Ok({
+                        crate::api::media::MediaType::as_str(&api_that);
+                    })?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__media__media_type_from_str_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    s: impl CstDecode<String>,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::DcoCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "media_type_from_str",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let api_s = s.cst_decode();
+            move |context| {
+                transform_result_dco::<_, _, ()>((move || {
+                    let output_ok =
+                        Result::<_, ()>::Ok(crate::api::media::MediaType::from_str(&api_s))?;
                     Ok(output_ok)
                 })())
             }
@@ -1389,6 +1765,30 @@ fn wire__crate__api__search__search_media_advanced_impl(
         },
     )
 }
+fn wire__crate__api__note__search_notes_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    query: impl CstDecode<String>,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::DcoCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "search_notes",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let api_query = query.cst_decode();
+            move |context| async move {
+                transform_result_dco::<_, _, String>(
+                    (move || async move {
+                        let output_ok = crate::api::note::search_notes(api_query).await?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
 fn wire__crate__api__album__set_album_cover_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     album_id: impl CstDecode<String>,
@@ -1412,6 +1812,51 @@ fn wire__crate__api__album__set_album_cover_impl(
                     })()
                     .await,
                 )
+            }
+        },
+    )
+}
+fn wire__crate__api__enums__theme_mode_setting_as_str_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    that: impl CstDecode<crate::api::enums::ThemeModeSetting>,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::DcoCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "theme_mode_setting_as_str",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let api_that = that.cst_decode();
+            move |context| {
+                transform_result_dco::<_, _, ()>((move || {
+                    let output_ok = Result::<_, ()>::Ok({
+                        crate::api::enums::ThemeModeSetting::as_str(&api_that);
+                    })?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__enums__theme_mode_setting_from_str_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    s: impl CstDecode<String>,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::DcoCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "theme_mode_setting_from_str",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let api_s = s.cst_decode();
+            move |context| {
+                transform_result_dco::<_, _, ()>((move || {
+                    let output_ok =
+                        Result::<_, ()>::Ok(crate::api::enums::ThemeModeSetting::from_str(&api_s))?;
+                    Ok(output_ok)
+                })())
             }
         },
     )
@@ -1440,6 +1885,35 @@ fn wire__crate__api__media__update_media_impl(
         },
     )
 }
+fn wire__crate__api__note__update_note_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    id: impl CstDecode<String>,
+    title: impl CstDecode<Option<String>>,
+    content: impl CstDecode<Option<String>>,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::DcoCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "update_note",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let api_id = id.cst_decode();
+            let api_title = title.cst_decode();
+            let api_content = content.cst_decode();
+            move |context| async move {
+                transform_result_dco::<_, _, String>(
+                    (move || async move {
+                        let output_ok =
+                            crate::api::note::update_note(api_id, api_title, api_content).await?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
 
 // Section: dart2rust
 
@@ -1460,6 +1934,19 @@ impl CstDecode<crate::api::import_export::ConflictStrategy> for i32 {
         }
     }
 }
+impl CstDecode<crate::api::enums::FilterMode> for i32 {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    fn cst_decode(self) -> crate::api::enums::FilterMode {
+        match self {
+            0 => crate::api::enums::FilterMode::All,
+            1 => crate::api::enums::FilterMode::WithTags,
+            2 => crate::api::enums::FilterMode::WithoutTags,
+            3 => crate::api::enums::FilterMode::WithAlbums,
+            4 => crate::api::enums::FilterMode::WithoutAlbums,
+            _ => unreachable!("Invalid variant for FilterMode: {}", self),
+        }
+    }
+}
 impl CstDecode<i32> for i32 {
     // Codec=Cst (C-struct based), see doc to use other codecs
     fn cst_decode(self) -> i32 {
@@ -1470,6 +1957,17 @@ impl CstDecode<i64> for i64 {
     // Codec=Cst (C-struct based), see doc to use other codecs
     fn cst_decode(self) -> i64 {
         self
+    }
+}
+impl CstDecode<crate::api::enums::LanguageSetting> for i32 {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    fn cst_decode(self) -> crate::api::enums::LanguageSetting {
+        match self {
+            0 => crate::api::enums::LanguageSetting::System,
+            1 => crate::api::enums::LanguageSetting::Zh,
+            2 => crate::api::enums::LanguageSetting::En,
+            _ => unreachable!("Invalid variant for LanguageSetting: {}", self),
+        }
     }
 }
 impl CstDecode<crate::api::media::MediaType> for i32 {
@@ -1493,6 +1991,17 @@ impl CstDecode<crate::api::settings::ThemeMode> for i32 {
             1 => crate::api::settings::ThemeMode::Light,
             2 => crate::api::settings::ThemeMode::Dark,
             _ => unreachable!("Invalid variant for ThemeMode: {}", self),
+        }
+    }
+}
+impl CstDecode<crate::api::enums::ThemeModeSetting> for i32 {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    fn cst_decode(self) -> crate::api::enums::ThemeModeSetting {
+        match self {
+            0 => crate::api::enums::ThemeModeSetting::System,
+            1 => crate::api::enums::ThemeModeSetting::Light,
+            2 => crate::api::enums::ThemeModeSetting::Dark,
+            _ => unreachable!("Invalid variant for ThemeModeSetting: {}", self),
         }
     }
 }
@@ -1569,6 +2078,7 @@ impl SseDecode for crate::api::settings::AppSettings {
         let mut var_showContentPreviews = <i32>::sse_decode(deserializer);
         let mut var_thumbnailQuality = <i32>::sse_decode(deserializer);
         let mut var_language = <String>::sse_decode(deserializer);
+        let mut var_dynamicColor = <i32>::sse_decode(deserializer);
         return crate::api::settings::AppSettings {
             theme_mode: var_themeMode,
             grid_columns: var_gridColumns,
@@ -1576,6 +2086,7 @@ impl SseDecode for crate::api::settings::AppSettings {
             show_content_previews: var_showContentPreviews,
             thumbnail_quality: var_thumbnailQuality,
             language: var_language,
+            dynamic_color: var_dynamicColor,
         };
     }
 }
@@ -1628,6 +2139,21 @@ impl SseDecode for crate::api::import_export::ExportProgress {
     }
 }
 
+impl SseDecode for crate::api::enums::FilterMode {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::enums::FilterMode::All,
+            1 => crate::api::enums::FilterMode::WithTags,
+            2 => crate::api::enums::FilterMode::WithoutTags,
+            3 => crate::api::enums::FilterMode::WithAlbums,
+            4 => crate::api::enums::FilterMode::WithoutAlbums,
+            _ => unreachable!("Invalid variant for FilterMode: {}", inner),
+        };
+    }
+}
+
 impl SseDecode for i32 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -1654,6 +2180,19 @@ impl SseDecode for crate::api::import_export::ImportProgress {
             processed_files: var_processedFiles,
             current_phase: var_currentPhase,
             status: var_status,
+        };
+    }
+}
+
+impl SseDecode for crate::api::enums::LanguageSetting {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::enums::LanguageSetting::System,
+            1 => crate::api::enums::LanguageSetting::Zh,
+            2 => crate::api::enums::LanguageSetting::En,
+            _ => unreachable!("Invalid variant for LanguageSetting: {}", inner),
         };
     }
 }
@@ -1703,6 +2242,18 @@ impl SseDecode for Vec<crate::api::media::MediaItem> {
         let mut ans_ = Vec::with_capacity(len_ as usize);
         for idx_ in 0..len_ {
             ans_.push(<crate::api::media::MediaItem>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::api::note::Note> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = Vec::with_capacity(len_ as usize);
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::note::Note>::sse_decode(deserializer));
         }
         return ans_;
     }
@@ -1811,13 +2362,15 @@ impl SseDecode for crate::api::note::Note {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_id = <String>::sse_decode(deserializer);
-        let mut var_mediaId = <String>::sse_decode(deserializer);
+        let mut var_mediaId = <Option<String>>::sse_decode(deserializer);
+        let mut var_title = <String>::sse_decode(deserializer);
         let mut var_content = <String>::sse_decode(deserializer);
         let mut var_createdAt = <i64>::sse_decode(deserializer);
         let mut var_updatedAt = <i64>::sse_decode(deserializer);
         return crate::api::note::Note {
             id: var_id,
             media_id: var_mediaId,
+            title: var_title,
             content: var_content,
             created_at: var_createdAt,
             updated_at: var_updatedAt,
@@ -2015,6 +2568,19 @@ impl SseDecode for crate::api::settings::ThemeMode {
     }
 }
 
+impl SseDecode for crate::api::enums::ThemeModeSetting {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::enums::ThemeModeSetting::System,
+            1 => crate::api::enums::ThemeModeSetting::Light,
+            2 => crate::api::enums::ThemeModeSetting::Dark,
+            _ => unreachable!("Invalid variant for ThemeModeSetting: {}", inner),
+        };
+    }
+}
+
 impl SseDecode for u8 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -2129,6 +2695,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::settings::AppSettings {
             self.show_content_previews.into_into_dart().into_dart(),
             self.thumbnail_quality.into_into_dart().into_dart(),
             self.language.into_into_dart().into_dart(),
+            self.dynamic_color.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -2211,6 +2778,27 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::import_export::ExportProgress
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::enums::FilterMode {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::All => 0.into_dart(),
+            Self::WithTags => 1.into_dart(),
+            Self::WithoutTags => 2.into_dart(),
+            Self::WithAlbums => 3.into_dart(),
+            Self::WithoutAlbums => 4.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::api::enums::FilterMode {}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::enums::FilterMode>
+    for crate::api::enums::FilterMode
+{
+    fn into_into_dart(self) -> crate::api::enums::FilterMode {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::import_export::ImportProgress {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -2230,6 +2818,28 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::import_export::ImportProgress
     for crate::api::import_export::ImportProgress
 {
     fn into_into_dart(self) -> crate::api::import_export::ImportProgress {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::enums::LanguageSetting {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::System => 0.into_dart(),
+            Self::Zh => 1.into_dart(),
+            Self::En => 2.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::enums::LanguageSetting
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::enums::LanguageSetting>
+    for crate::api::enums::LanguageSetting
+{
+    fn into_into_dart(self) -> crate::api::enums::LanguageSetting {
         self
     }
 }
@@ -2290,6 +2900,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::note::Note {
         [
             self.id.into_into_dart().into_dart(),
             self.media_id.into_into_dart().into_dart(),
+            self.title.into_into_dart().into_dart(),
             self.content.into_into_dart().into_dart(),
             self.created_at.into_into_dart().into_dart(),
             self.updated_at.into_into_dart().into_dart(),
@@ -2457,6 +3068,28 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::settings::ThemeMode>
         self
     }
 }
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::enums::ThemeModeSetting {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::System => 0.into_dart(),
+            Self::Light => 1.into_dart(),
+            Self::Dark => 2.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::enums::ThemeModeSetting
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::enums::ThemeModeSetting>
+    for crate::api::enums::ThemeModeSetting
+{
+    fn into_into_dart(self) -> crate::api::enums::ThemeModeSetting {
+        self
+    }
+}
 
 impl SseEncode for String {
     // Codec=Sse (Serialization based), see doc to use other codecs
@@ -2505,6 +3138,7 @@ impl SseEncode for crate::api::settings::AppSettings {
         <i32>::sse_encode(self.show_content_previews, serializer);
         <i32>::sse_encode(self.thumbnail_quality, serializer);
         <String>::sse_encode(self.language, serializer);
+        <i32>::sse_encode(self.dynamic_color, serializer);
     }
 }
 
@@ -2550,6 +3184,25 @@ impl SseEncode for crate::api::import_export::ExportProgress {
     }
 }
 
+impl SseEncode for crate::api::enums::FilterMode {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::enums::FilterMode::All => 0,
+                crate::api::enums::FilterMode::WithTags => 1,
+                crate::api::enums::FilterMode::WithoutTags => 2,
+                crate::api::enums::FilterMode::WithAlbums => 3,
+                crate::api::enums::FilterMode::WithoutAlbums => 4,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
 impl SseEncode for i32 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -2571,6 +3224,23 @@ impl SseEncode for crate::api::import_export::ImportProgress {
         <i32>::sse_encode(self.processed_files, serializer);
         <String>::sse_encode(self.current_phase, serializer);
         <String>::sse_encode(self.status, serializer);
+    }
+}
+
+impl SseEncode for crate::api::enums::LanguageSetting {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::enums::LanguageSetting::System => 0,
+                crate::api::enums::LanguageSetting::Zh => 1,
+                crate::api::enums::LanguageSetting::En => 2,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
     }
 }
 
@@ -2610,6 +3280,16 @@ impl SseEncode for Vec<crate::api::media::MediaItem> {
         <i32>::sse_encode(self.len() as _, serializer);
         for item in self {
             <crate::api::media::MediaItem>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::api::note::Note> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::note::Note>::sse_encode(item, serializer);
         }
     }
 }
@@ -2697,7 +3377,8 @@ impl SseEncode for crate::api::note::Note {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <String>::sse_encode(self.id, serializer);
-        <String>::sse_encode(self.media_id, serializer);
+        <Option<String>>::sse_encode(self.media_id, serializer);
+        <String>::sse_encode(self.title, serializer);
         <String>::sse_encode(self.content, serializer);
         <i64>::sse_encode(self.created_at, serializer);
         <i64>::sse_encode(self.updated_at, serializer);
@@ -2853,6 +3534,23 @@ impl SseEncode for crate::api::settings::ThemeMode {
     }
 }
 
+impl SseEncode for crate::api::enums::ThemeModeSetting {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::enums::ThemeModeSetting::System => 0,
+                crate::api::enums::ThemeModeSetting::Light => 1,
+                crate::api::enums::ThemeModeSetting::Dark => 2,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
 impl SseEncode for u8 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -2936,6 +3634,7 @@ mod io {
                 show_content_previews: self.show_content_previews.cst_decode(),
                 thumbnail_quality: self.thumbnail_quality.cst_decode(),
                 language: self.language.cst_decode(),
+                dynamic_color: self.dynamic_color.cst_decode(),
             }
         }
     }
@@ -3057,6 +3756,16 @@ mod io {
             vec.into_iter().map(CstDecode::cst_decode).collect()
         }
     }
+    impl CstDecode<Vec<crate::api::note::Note>> for *mut wire_cst_list_note {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> Vec<crate::api::note::Note> {
+            let vec = unsafe {
+                let wrap = flutter_rust_bridge::for_generated::box_from_leak_ptr(self);
+                flutter_rust_bridge::for_generated::vec_from_leak_ptr(wrap.ptr, wrap.len)
+            };
+            vec.into_iter().map(CstDecode::cst_decode).collect()
+        }
+    }
     impl CstDecode<Vec<u8>> for *mut wire_cst_list_prim_u_8_strict {
         // Codec=Cst (C-struct based), see doc to use other codecs
         fn cst_decode(self) -> Vec<u8> {
@@ -3123,6 +3832,7 @@ mod io {
             crate::api::note::Note {
                 id: self.id.cst_decode(),
                 media_id: self.media_id.cst_decode(),
+                title: self.title.cst_decode(),
                 content: self.content.cst_decode(),
                 created_at: self.created_at.cst_decode(),
                 updated_at: self.updated_at.cst_decode(),
@@ -3252,6 +3962,7 @@ mod io {
                 show_content_previews: Default::default(),
                 thumbnail_quality: Default::default(),
                 language: core::ptr::null_mut(),
+                dynamic_color: Default::default(),
             }
         }
     }
@@ -3333,6 +4044,7 @@ mod io {
             Self {
                 id: core::ptr::null_mut(),
                 media_id: core::ptr::null_mut(),
+                title: core::ptr::null_mut(),
                 content: core::ptr::null_mut(),
                 created_at: Default::default(),
                 updated_at: Default::default(),
@@ -3456,6 +4168,14 @@ mod io {
     }
 
     #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__media__batch_delete_media(
+        port_: i64,
+        ids: *mut wire_cst_list_String,
+    ) {
+        wire__crate__api__media__batch_delete_media_impl(port_, ids)
+    }
+
+    #[unsafe(no_mangle)]
     pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__scanner__calculate_file_hash(
         port_: i64,
         file_path: *mut wire_cst_list_prim_u_8_strict,
@@ -3477,6 +4197,16 @@ mod io {
         parent_id: *mut wire_cst_list_prim_u_8_strict,
     ) {
         wire__crate__api__album__create_album_impl(port_, name, parent_id)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__note__create_note(
+        port_: i64,
+        media_id: *mut wire_cst_list_prim_u_8_strict,
+        title: *mut wire_cst_list_prim_u_8_strict,
+        content: *mut wire_cst_list_prim_u_8_strict,
+    ) {
+        wire__crate__api__note__create_note_impl(port_, media_id, title, content)
     }
 
     #[unsafe(no_mangle)]
@@ -3526,6 +4256,13 @@ mod io {
         id: *mut wire_cst_list_prim_u_8_strict,
     ) {
         wire__crate__api__tag__delete_tag_impl(port_, id)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__settings__delete_unreferenced_files(
+        port_: i64,
+    ) {
+        wire__crate__api__settings__delete_unreferenced_files_impl(port_)
     }
 
     #[unsafe(no_mangle)]
@@ -3579,6 +4316,29 @@ mod io {
     }
 
     #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__enums__filter_mode_as_str(
+        port_: i64,
+        that: i32,
+    ) {
+        wire__crate__api__enums__filter_mode_as_str_impl(port_, that)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__enums__filter_mode_display_name(
+        port_: i64,
+        that: i32,
+    ) {
+        wire__crate__api__enums__filter_mode_display_name_impl(port_, that)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__settings__find_unreferenced_files(
+        port_: i64,
+    ) {
+        wire__crate__api__settings__find_unreferenced_files_impl(port_)
+    }
+
+    #[unsafe(no_mangle)]
     pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__scanner__generate_thumbnail(
         port_: i64,
         file_path: *mut wire_cst_list_prim_u_8_strict,
@@ -3609,6 +4369,11 @@ mod io {
     }
 
     #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__note__get_all_notes(port_: i64) {
+        wire__crate__api__note__get_all_notes_impl(port_)
+    }
+
+    #[unsafe(no_mangle)]
     pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__tag__get_all_tags(port_: i64) {
         wire__crate__api__tag__get_all_tags_impl(port_)
     }
@@ -3630,11 +4395,35 @@ mod io {
     }
 
     #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__album__get_media_by_album(
+        port_: i64,
+        album_id: *mut wire_cst_list_prim_u_8_strict,
+    ) {
+        wire__crate__api__album__get_media_by_album_impl(port_, album_id)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__media__get_media_by_filter(
+        port_: i64,
+        filter: i32,
+    ) {
+        wire__crate__api__media__get_media_by_filter_impl(port_, filter)
+    }
+
+    #[unsafe(no_mangle)]
     pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__media__get_media_by_id(
         port_: i64,
         id: *mut wire_cst_list_prim_u_8_strict,
     ) {
         wire__crate__api__media__get_media_by_id_impl(port_, id)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__tag__get_media_by_tag(
+        port_: i64,
+        tag_id: *mut wire_cst_list_prim_u_8_strict,
+    ) {
+        wire__crate__api__tag__get_media_by_tag_impl(port_, tag_id)
     }
 
     #[unsafe(no_mangle)]
@@ -3676,6 +4465,14 @@ mod io {
     }
 
     #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__media__get_media_with_tags(
+        port_: i64,
+        id: *mut wire_cst_list_prim_u_8_strict,
+    ) {
+        wire__crate__api__media__get_media_with_tags_impl(port_, id)
+    }
+
+    #[unsafe(no_mangle)]
     pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__search__get_media_without_any_album(
         port_: i64,
     ) {
@@ -3690,11 +4487,19 @@ mod io {
     }
 
     #[unsafe(no_mangle)]
-    pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__note__get_note_by_media_id(
+    pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__note__get_note_by_id(
+        port_: i64,
+        id: *mut wire_cst_list_prim_u_8_strict,
+    ) {
+        wire__crate__api__note__get_note_by_id_impl(port_, id)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__note__get_notes_by_media_id(
         port_: i64,
         media_id: *mut wire_cst_list_prim_u_8_strict,
     ) {
-        wire__crate__api__note__get_note_by_media_id_impl(port_, media_id)
+        wire__crate__api__note__get_notes_by_media_id_impl(port_, media_id)
     }
 
     #[unsafe(no_mangle)]
@@ -3776,11 +4581,43 @@ mod io {
     }
 
     #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__enums__language_setting_as_str(
+        port_: i64,
+        that: i32,
+    ) {
+        wire__crate__api__enums__language_setting_as_str_impl(port_, that)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__enums__language_setting_from_str(
+        port_: i64,
+        s: *mut wire_cst_list_prim_u_8_strict,
+    ) {
+        wire__crate__api__enums__language_setting_from_str_impl(port_, s)
+    }
+
+    #[unsafe(no_mangle)]
     pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__media__media_type_as_i32(
         port_: i64,
         that: i32,
     ) {
         wire__crate__api__media__media_type_as_i32_impl(port_, that)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__media__media_type_as_str(
+        port_: i64,
+        that: i32,
+    ) {
+        wire__crate__api__media__media_type_as_str_impl(port_, that)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__media__media_type_from_str(
+        port_: i64,
+        s: *mut wire_cst_list_prim_u_8_strict,
+    ) {
+        wire__crate__api__media__media_type_from_str_impl(port_, s)
     }
 
     #[unsafe(no_mangle)]
@@ -3868,6 +4705,14 @@ mod io {
     }
 
     #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__note__search_notes(
+        port_: i64,
+        query: *mut wire_cst_list_prim_u_8_strict,
+    ) {
+        wire__crate__api__note__search_notes_impl(port_, query)
+    }
+
+    #[unsafe(no_mangle)]
     pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__album__set_album_cover(
         port_: i64,
         album_id: *mut wire_cst_list_prim_u_8_strict,
@@ -3877,11 +4722,37 @@ mod io {
     }
 
     #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__enums__theme_mode_setting_as_str(
+        port_: i64,
+        that: i32,
+    ) {
+        wire__crate__api__enums__theme_mode_setting_as_str_impl(port_, that)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__enums__theme_mode_setting_from_str(
+        port_: i64,
+        s: *mut wire_cst_list_prim_u_8_strict,
+    ) {
+        wire__crate__api__enums__theme_mode_setting_from_str_impl(port_, s)
+    }
+
+    #[unsafe(no_mangle)]
     pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__media__update_media(
         port_: i64,
         media: *mut wire_cst_media_item,
     ) {
         wire__crate__api__media__update_media_impl(port_, media)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__note__update_note(
+        port_: i64,
+        id: *mut wire_cst_list_prim_u_8_strict,
+        title: *mut wire_cst_list_prim_u_8_strict,
+        content: *mut wire_cst_list_prim_u_8_strict,
+    ) {
+        wire__crate__api__note__update_note_impl(port_, id, title, content)
     }
 
     #[unsafe(no_mangle)]
@@ -3988,6 +4859,20 @@ mod io {
     }
 
     #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_advance_media_kb_cst_new_list_note(
+        len: i32,
+    ) -> *mut wire_cst_list_note {
+        let wrap = wire_cst_list_note {
+            ptr: flutter_rust_bridge::for_generated::new_leak_vec_ptr(
+                <wire_cst_note>::new_with_null_ptr(),
+                len,
+            ),
+            len,
+        };
+        flutter_rust_bridge::for_generated::new_leak_box_ptr(wrap)
+    }
+
+    #[unsafe(no_mangle)]
     pub extern "C" fn frbgen_advance_media_kb_cst_new_list_prim_u_8_strict(
         len: i32,
     ) -> *mut wire_cst_list_prim_u_8_strict {
@@ -4072,6 +4957,7 @@ mod io {
         show_content_previews: i32,
         thumbnail_quality: i32,
         language: *mut wire_cst_list_prim_u_8_strict,
+        dynamic_color: i32,
     }
     #[repr(C)]
     #[derive(Clone, Copy)]
@@ -4121,6 +5007,12 @@ mod io {
     }
     #[repr(C)]
     #[derive(Clone, Copy)]
+    pub struct wire_cst_list_note {
+        ptr: *mut wire_cst_note,
+        len: i32,
+    }
+    #[repr(C)]
+    #[derive(Clone, Copy)]
     pub struct wire_cst_list_prim_u_8_strict {
         ptr: *mut u8,
         len: i32,
@@ -4166,6 +5058,7 @@ mod io {
     pub struct wire_cst_note {
         id: *mut wire_cst_list_prim_u_8_strict,
         media_id: *mut wire_cst_list_prim_u_8_strict,
+        title: *mut wire_cst_list_prim_u_8_strict,
         content: *mut wire_cst_list_prim_u_8_strict,
         created_at: i64,
         updated_at: i64,
@@ -4330,8 +5223,8 @@ mod web {
                 .unwrap();
             assert_eq!(
                 self_.length(),
-                6,
-                "Expected 6 elements, got {}",
+                7,
+                "Expected 7 elements, got {}",
                 self_.length()
             );
             crate::api::settings::AppSettings {
@@ -4341,6 +5234,7 @@ mod web {
                 show_content_previews: self_.get(3).cst_decode(),
                 thumbnail_quality: self_.get(4).cst_decode(),
                 language: self_.get(5).cst_decode(),
+                dynamic_color: self_.get(6).cst_decode(),
             }
         }
     }
@@ -4454,6 +5348,18 @@ mod web {
                 .collect()
         }
     }
+    impl CstDecode<Vec<crate::api::note::Note>>
+        for flutter_rust_bridge::for_generated::wasm_bindgen::JsValue
+    {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> Vec<crate::api::note::Note> {
+            self.dyn_into::<flutter_rust_bridge::for_generated::js_sys::Array>()
+                .unwrap()
+                .iter()
+                .map(CstDecode::cst_decode)
+                .collect()
+        }
+    }
     impl CstDecode<Vec<u8>> for Box<[u8]> {
         // Codec=Cst (C-struct based), see doc to use other codecs
         fn cst_decode(self) -> Vec<u8> {
@@ -4538,16 +5444,17 @@ mod web {
                 .unwrap();
             assert_eq!(
                 self_.length(),
-                5,
-                "Expected 5 elements, got {}",
+                6,
+                "Expected 6 elements, got {}",
                 self_.length()
             );
             crate::api::note::Note {
                 id: self_.get(0).cst_decode(),
                 media_id: self_.get(1).cst_decode(),
-                content: self_.get(2).cst_decode(),
-                created_at: self_.get(3).cst_decode(),
-                updated_at: self_.get(4).cst_decode(),
+                title: self_.get(2).cst_decode(),
+                content: self_.get(3).cst_decode(),
+                created_at: self_.get(4).cst_decode(),
+                updated_at: self_.get(5).cst_decode(),
             }
         }
     }
@@ -4709,6 +5616,14 @@ mod web {
             (self.unchecked_into_f64() as i32).cst_decode()
         }
     }
+    impl CstDecode<crate::api::enums::FilterMode>
+        for flutter_rust_bridge::for_generated::wasm_bindgen::JsValue
+    {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> crate::api::enums::FilterMode {
+            (self.unchecked_into_f64() as i32).cst_decode()
+        }
+    }
     impl CstDecode<i32> for flutter_rust_bridge::for_generated::wasm_bindgen::JsValue {
         // Codec=Cst (C-struct based), see doc to use other codecs
         fn cst_decode(self) -> i32 {
@@ -4719,6 +5634,14 @@ mod web {
         // Codec=Cst (C-struct based), see doc to use other codecs
         fn cst_decode(self) -> i64 {
             ::std::convert::TryInto::<i64>::try_into(self).unwrap() as _
+        }
+    }
+    impl CstDecode<crate::api::enums::LanguageSetting>
+        for flutter_rust_bridge::for_generated::wasm_bindgen::JsValue
+    {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> crate::api::enums::LanguageSetting {
+            (self.unchecked_into_f64() as i32).cst_decode()
         }
     }
     impl CstDecode<Vec<u8>> for flutter_rust_bridge::for_generated::wasm_bindgen::JsValue {
@@ -4742,6 +5665,14 @@ mod web {
     {
         // Codec=Cst (C-struct based), see doc to use other codecs
         fn cst_decode(self) -> crate::api::settings::ThemeMode {
+            (self.unchecked_into_f64() as i32).cst_decode()
+        }
+    }
+    impl CstDecode<crate::api::enums::ThemeModeSetting>
+        for flutter_rust_bridge::for_generated::wasm_bindgen::JsValue
+    {
+        // Codec=Cst (C-struct based), see doc to use other codecs
+        fn cst_decode(self) -> crate::api::enums::ThemeModeSetting {
             (self.unchecked_into_f64() as i32).cst_decode()
         }
     }
@@ -4771,6 +5702,14 @@ mod web {
     }
 
     #[wasm_bindgen]
+    pub fn wire__crate__api__media__batch_delete_media(
+        port_: flutter_rust_bridge::for_generated::MessagePort,
+        ids: flutter_rust_bridge::for_generated::wasm_bindgen::JsValue,
+    ) {
+        wire__crate__api__media__batch_delete_media_impl(port_, ids)
+    }
+
+    #[wasm_bindgen]
     pub fn wire__crate__api__scanner__calculate_file_hash(
         port_: flutter_rust_bridge::for_generated::MessagePort,
         file_path: String,
@@ -4792,6 +5731,16 @@ mod web {
         parent_id: Option<String>,
     ) {
         wire__crate__api__album__create_album_impl(port_, name, parent_id)
+    }
+
+    #[wasm_bindgen]
+    pub fn wire__crate__api__note__create_note(
+        port_: flutter_rust_bridge::for_generated::MessagePort,
+        media_id: Option<String>,
+        title: String,
+        content: String,
+    ) {
+        wire__crate__api__note__create_note_impl(port_, media_id, title, content)
     }
 
     #[wasm_bindgen]
@@ -4841,6 +5790,13 @@ mod web {
         id: String,
     ) {
         wire__crate__api__tag__delete_tag_impl(port_, id)
+    }
+
+    #[wasm_bindgen]
+    pub fn wire__crate__api__settings__delete_unreferenced_files(
+        port_: flutter_rust_bridge::for_generated::MessagePort,
+    ) {
+        wire__crate__api__settings__delete_unreferenced_files_impl(port_)
     }
 
     #[wasm_bindgen]
@@ -4894,6 +5850,29 @@ mod web {
     }
 
     #[wasm_bindgen]
+    pub fn wire__crate__api__enums__filter_mode_as_str(
+        port_: flutter_rust_bridge::for_generated::MessagePort,
+        that: i32,
+    ) {
+        wire__crate__api__enums__filter_mode_as_str_impl(port_, that)
+    }
+
+    #[wasm_bindgen]
+    pub fn wire__crate__api__enums__filter_mode_display_name(
+        port_: flutter_rust_bridge::for_generated::MessagePort,
+        that: i32,
+    ) {
+        wire__crate__api__enums__filter_mode_display_name_impl(port_, that)
+    }
+
+    #[wasm_bindgen]
+    pub fn wire__crate__api__settings__find_unreferenced_files(
+        port_: flutter_rust_bridge::for_generated::MessagePort,
+    ) {
+        wire__crate__api__settings__find_unreferenced_files_impl(port_)
+    }
+
+    #[wasm_bindgen]
     pub fn wire__crate__api__scanner__generate_thumbnail(
         port_: flutter_rust_bridge::for_generated::MessagePort,
         file_path: String,
@@ -4926,6 +5905,13 @@ mod web {
     }
 
     #[wasm_bindgen]
+    pub fn wire__crate__api__note__get_all_notes(
+        port_: flutter_rust_bridge::for_generated::MessagePort,
+    ) {
+        wire__crate__api__note__get_all_notes_impl(port_)
+    }
+
+    #[wasm_bindgen]
     pub fn wire__crate__api__tag__get_all_tags(
         port_: flutter_rust_bridge::for_generated::MessagePort,
     ) {
@@ -4949,11 +5935,35 @@ mod web {
     }
 
     #[wasm_bindgen]
+    pub fn wire__crate__api__album__get_media_by_album(
+        port_: flutter_rust_bridge::for_generated::MessagePort,
+        album_id: String,
+    ) {
+        wire__crate__api__album__get_media_by_album_impl(port_, album_id)
+    }
+
+    #[wasm_bindgen]
+    pub fn wire__crate__api__media__get_media_by_filter(
+        port_: flutter_rust_bridge::for_generated::MessagePort,
+        filter: i32,
+    ) {
+        wire__crate__api__media__get_media_by_filter_impl(port_, filter)
+    }
+
+    #[wasm_bindgen]
     pub fn wire__crate__api__media__get_media_by_id(
         port_: flutter_rust_bridge::for_generated::MessagePort,
         id: String,
     ) {
         wire__crate__api__media__get_media_by_id_impl(port_, id)
+    }
+
+    #[wasm_bindgen]
+    pub fn wire__crate__api__tag__get_media_by_tag(
+        port_: flutter_rust_bridge::for_generated::MessagePort,
+        tag_id: String,
+    ) {
+        wire__crate__api__tag__get_media_by_tag_impl(port_, tag_id)
     }
 
     #[wasm_bindgen]
@@ -4995,6 +6005,14 @@ mod web {
     }
 
     #[wasm_bindgen]
+    pub fn wire__crate__api__media__get_media_with_tags(
+        port_: flutter_rust_bridge::for_generated::MessagePort,
+        id: String,
+    ) {
+        wire__crate__api__media__get_media_with_tags_impl(port_, id)
+    }
+
+    #[wasm_bindgen]
     pub fn wire__crate__api__search__get_media_without_any_album(
         port_: flutter_rust_bridge::for_generated::MessagePort,
     ) {
@@ -5009,11 +6027,19 @@ mod web {
     }
 
     #[wasm_bindgen]
-    pub fn wire__crate__api__note__get_note_by_media_id(
+    pub fn wire__crate__api__note__get_note_by_id(
+        port_: flutter_rust_bridge::for_generated::MessagePort,
+        id: String,
+    ) {
+        wire__crate__api__note__get_note_by_id_impl(port_, id)
+    }
+
+    #[wasm_bindgen]
+    pub fn wire__crate__api__note__get_notes_by_media_id(
         port_: flutter_rust_bridge::for_generated::MessagePort,
         media_id: String,
     ) {
-        wire__crate__api__note__get_note_by_media_id_impl(port_, media_id)
+        wire__crate__api__note__get_notes_by_media_id_impl(port_, media_id)
     }
 
     #[wasm_bindgen]
@@ -5101,11 +6127,43 @@ mod web {
     }
 
     #[wasm_bindgen]
+    pub fn wire__crate__api__enums__language_setting_as_str(
+        port_: flutter_rust_bridge::for_generated::MessagePort,
+        that: i32,
+    ) {
+        wire__crate__api__enums__language_setting_as_str_impl(port_, that)
+    }
+
+    #[wasm_bindgen]
+    pub fn wire__crate__api__enums__language_setting_from_str(
+        port_: flutter_rust_bridge::for_generated::MessagePort,
+        s: String,
+    ) {
+        wire__crate__api__enums__language_setting_from_str_impl(port_, s)
+    }
+
+    #[wasm_bindgen]
     pub fn wire__crate__api__media__media_type_as_i32(
         port_: flutter_rust_bridge::for_generated::MessagePort,
         that: i32,
     ) {
         wire__crate__api__media__media_type_as_i32_impl(port_, that)
+    }
+
+    #[wasm_bindgen]
+    pub fn wire__crate__api__media__media_type_as_str(
+        port_: flutter_rust_bridge::for_generated::MessagePort,
+        that: i32,
+    ) {
+        wire__crate__api__media__media_type_as_str_impl(port_, that)
+    }
+
+    #[wasm_bindgen]
+    pub fn wire__crate__api__media__media_type_from_str(
+        port_: flutter_rust_bridge::for_generated::MessagePort,
+        s: String,
+    ) {
+        wire__crate__api__media__media_type_from_str_impl(port_, s)
     }
 
     #[wasm_bindgen]
@@ -5193,6 +6251,14 @@ mod web {
     }
 
     #[wasm_bindgen]
+    pub fn wire__crate__api__note__search_notes(
+        port_: flutter_rust_bridge::for_generated::MessagePort,
+        query: String,
+    ) {
+        wire__crate__api__note__search_notes_impl(port_, query)
+    }
+
+    #[wasm_bindgen]
     pub fn wire__crate__api__album__set_album_cover(
         port_: flutter_rust_bridge::for_generated::MessagePort,
         album_id: String,
@@ -5202,11 +6268,37 @@ mod web {
     }
 
     #[wasm_bindgen]
+    pub fn wire__crate__api__enums__theme_mode_setting_as_str(
+        port_: flutter_rust_bridge::for_generated::MessagePort,
+        that: i32,
+    ) {
+        wire__crate__api__enums__theme_mode_setting_as_str_impl(port_, that)
+    }
+
+    #[wasm_bindgen]
+    pub fn wire__crate__api__enums__theme_mode_setting_from_str(
+        port_: flutter_rust_bridge::for_generated::MessagePort,
+        s: String,
+    ) {
+        wire__crate__api__enums__theme_mode_setting_from_str_impl(port_, s)
+    }
+
+    #[wasm_bindgen]
     pub fn wire__crate__api__media__update_media(
         port_: flutter_rust_bridge::for_generated::MessagePort,
         media: flutter_rust_bridge::for_generated::wasm_bindgen::JsValue,
     ) {
         wire__crate__api__media__update_media_impl(port_, media)
+    }
+
+    #[wasm_bindgen]
+    pub fn wire__crate__api__note__update_note(
+        port_: flutter_rust_bridge::for_generated::MessagePort,
+        id: String,
+        title: Option<String>,
+        content: Option<String>,
+    ) {
+        wire__crate__api__note__update_note_impl(port_, id, title, content)
     }
 }
 #[cfg(target_family = "wasm")]

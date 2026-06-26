@@ -4,6 +4,7 @@
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
 import 'api/album.dart';
+import 'api/enums.dart';
 import 'api/import_export.dart';
 import 'api/media.dart';
 import 'api/note.dart';
@@ -75,7 +76,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.12.0';
 
   @override
-  int get rustContentHash => -1728653654;
+  int get rustContentHash => -1179246925;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -93,12 +94,17 @@ abstract class RustLibApi extends BaseApi {
   Future<void> crateApiTagAddTagToMedia(
       {required String mediaId, required String tagId});
 
+  Future<void> crateApiMediaBatchDeleteMedia({required List<String> ids});
+
   Future<String> crateApiScannerCalculateFileHash({required String filePath});
 
   Future<int> crateApiSettingsClearThumbnailCache();
 
   Future<String> crateApiAlbumCreateAlbum(
       {required String name, String? parentId});
+
+  Future<String> crateApiNoteCreateNote(
+      {String? mediaId, required String title, required String content});
 
   Future<String> crateApiTagCreateTag(
       {required String name, String? color, String? parentId});
@@ -112,6 +118,8 @@ abstract class RustLibApi extends BaseApi {
   Future<void> crateApiNoteDeleteNote({required String id});
 
   Future<void> crateApiTagDeleteTag({required String id});
+
+  Future<int> crateApiSettingsDeleteUnreferencedFiles();
 
   Future<String> crateApiAlbumEnsureDefaultAlbum({required String name});
 
@@ -129,6 +137,12 @@ abstract class RustLibApi extends BaseApi {
   Future<List<MediaItem>> crateApiMediaFilterMediaByType(
       {required MediaType mediaType});
 
+  Future<void> crateApiEnumsFilterModeAsStr({required FilterMode that});
+
+  Future<void> crateApiEnumsFilterModeDisplayName({required FilterMode that});
+
+  Future<List<String>> crateApiSettingsFindUnreferencedFiles();
+
   Future<String> crateApiScannerGenerateThumbnail(
       {required String filePath, required int quality});
 
@@ -139,6 +153,8 @@ abstract class RustLibApi extends BaseApi {
 
   Future<List<MediaItem>> crateApiMediaGetAllMedia();
 
+  Future<List<Note>> crateApiNoteGetAllNotes();
+
   Future<List<Tag>> crateApiTagGetAllTags();
 
   Future<List<AlbumWithInfo>> crateApiAlbumGetChildAlbums(
@@ -146,7 +162,15 @@ abstract class RustLibApi extends BaseApi {
 
   Future<List<TagWithInfo>> crateApiTagGetChildTags({required String parentId});
 
+  Future<List<MediaItem>> crateApiAlbumGetMediaByAlbum(
+      {required String albumId});
+
+  Future<List<MediaItem>> crateApiMediaGetMediaByFilter(
+      {required FilterMode filter});
+
   Future<MediaItem?> crateApiMediaGetMediaById({required String id});
+
+  Future<List<MediaItem>> crateApiTagGetMediaByTag({required String tagId});
 
   Future<List<MediaItem>> crateApiTagGetMediaByTagsAnd(
       {required List<String> tagIds});
@@ -160,11 +184,15 @@ abstract class RustLibApi extends BaseApi {
 
   Future<List<MediaItem>> crateApiSearchGetMediaWithAnyTag();
 
+  Future<MediaItem?> crateApiMediaGetMediaWithTags({required String id});
+
   Future<List<MediaItem>> crateApiSearchGetMediaWithoutAnyAlbum();
 
   Future<List<MediaItem>> crateApiSearchGetMediaWithoutAnyTag();
 
-  Future<Note?> crateApiNoteGetNoteByMediaId({required String mediaId});
+  Future<Note?> crateApiNoteGetNoteById({required String id});
+
+  Future<List<Note>> crateApiNoteGetNotesByMediaId({required String mediaId});
 
   Future<List<AlbumWithInfo>> crateApiAlbumGetRootAlbums();
 
@@ -191,7 +219,17 @@ abstract class RustLibApi extends BaseApi {
 
   Future<bool> crateApiScannerIsHashExists({required String hash});
 
+  Future<void> crateApiEnumsLanguageSettingAsStr(
+      {required LanguageSetting that});
+
+  Future<LanguageSetting> crateApiEnumsLanguageSettingFromStr(
+      {required String s});
+
   Future<int> crateApiMediaMediaTypeAsI32({required MediaType that});
+
+  Future<void> crateApiMediaMediaTypeAsStr({required MediaType that});
+
+  Future<MediaType> crateApiMediaMediaTypeFromStr({required String s});
 
   Future<void> crateApiAlbumRemoveMediaFromAlbum(
       {required List<String> mediaIds, required String albumId});
@@ -219,10 +257,21 @@ abstract class RustLibApi extends BaseApi {
   Future<List<MediaItem>> crateApiSearchSearchMediaAdvanced(
       {required SearchFilter filter});
 
+  Future<List<Note>> crateApiNoteSearchNotes({required String query});
+
   Future<void> crateApiAlbumSetAlbumCover(
       {required String albumId, required String mediaId});
 
+  Future<void> crateApiEnumsThemeModeSettingAsStr(
+      {required ThemeModeSetting that});
+
+  Future<ThemeModeSetting> crateApiEnumsThemeModeSettingFromStr(
+      {required String s});
+
   Future<void> crateApiMediaUpdateMedia({required MediaItem media});
+
+  Future<void> crateApiNoteUpdateNote(
+      {required String id, String? title, String? content});
 }
 
 class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
@@ -281,6 +330,29 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateApiTagAddTagToMediaConstMeta => const TaskConstMeta(
         debugName: "add_tag_to_media",
         argNames: ["mediaId", "tagId"],
+      );
+
+  @override
+  Future<void> crateApiMediaBatchDeleteMedia({required List<String> ids}) {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        var arg0 = cst_encode_list_String(ids);
+        return wire.wire__crate__api__media__batch_delete_media(port_, arg0);
+      },
+      codec: DcoCodec(
+        decodeSuccessData: dco_decode_unit,
+        decodeErrorData: dco_decode_String,
+      ),
+      constMeta: kCrateApiMediaBatchDeleteMediaConstMeta,
+      argValues: [ids],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiMediaBatchDeleteMediaConstMeta =>
+      const TaskConstMeta(
+        debugName: "batch_delete_media",
+        argNames: ["ids"],
       );
 
   @override
@@ -350,6 +422,32 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateApiAlbumCreateAlbumConstMeta => const TaskConstMeta(
         debugName: "create_album",
         argNames: ["name", "parentId"],
+      );
+
+  @override
+  Future<String> crateApiNoteCreateNote(
+      {String? mediaId, required String title, required String content}) {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        var arg0 = cst_encode_opt_String(mediaId);
+        var arg1 = cst_encode_String(title);
+        var arg2 = cst_encode_String(content);
+        return wire.wire__crate__api__note__create_note(
+            port_, arg0, arg1, arg2);
+      },
+      codec: DcoCodec(
+        decodeSuccessData: dco_decode_String,
+        decodeErrorData: dco_decode_String,
+      ),
+      constMeta: kCrateApiNoteCreateNoteConstMeta,
+      argValues: [mediaId, title, content],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiNoteCreateNoteConstMeta => const TaskConstMeta(
+        debugName: "create_note",
+        argNames: ["mediaId", "title", "content"],
       );
 
   @override
@@ -485,6 +583,29 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateApiTagDeleteTagConstMeta => const TaskConstMeta(
         debugName: "delete_tag",
         argNames: ["id"],
+      );
+
+  @override
+  Future<int> crateApiSettingsDeleteUnreferencedFiles() {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        return wire
+            .wire__crate__api__settings__delete_unreferenced_files(port_);
+      },
+      codec: DcoCodec(
+        decodeSuccessData: dco_decode_i_32,
+        decodeErrorData: dco_decode_String,
+      ),
+      constMeta: kCrateApiSettingsDeleteUnreferencedFilesConstMeta,
+      argValues: [],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiSettingsDeleteUnreferencedFilesConstMeta =>
+      const TaskConstMeta(
+        debugName: "delete_unreferenced_files",
+        argNames: [],
       );
 
   @override
@@ -634,6 +755,75 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<void> crateApiEnumsFilterModeAsStr({required FilterMode that}) {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        var arg0 = cst_encode_filter_mode(that);
+        return wire.wire__crate__api__enums__filter_mode_as_str(port_, arg0);
+      },
+      codec: DcoCodec(
+        decodeSuccessData: dco_decode_unit,
+        decodeErrorData: null,
+      ),
+      constMeta: kCrateApiEnumsFilterModeAsStrConstMeta,
+      argValues: [that],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiEnumsFilterModeAsStrConstMeta =>
+      const TaskConstMeta(
+        debugName: "filter_mode_as_str",
+        argNames: ["that"],
+      );
+
+  @override
+  Future<void> crateApiEnumsFilterModeDisplayName({required FilterMode that}) {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        var arg0 = cst_encode_filter_mode(that);
+        return wire.wire__crate__api__enums__filter_mode_display_name(
+            port_, arg0);
+      },
+      codec: DcoCodec(
+        decodeSuccessData: dco_decode_unit,
+        decodeErrorData: null,
+      ),
+      constMeta: kCrateApiEnumsFilterModeDisplayNameConstMeta,
+      argValues: [that],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiEnumsFilterModeDisplayNameConstMeta =>
+      const TaskConstMeta(
+        debugName: "filter_mode_display_name",
+        argNames: ["that"],
+      );
+
+  @override
+  Future<List<String>> crateApiSettingsFindUnreferencedFiles() {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        return wire.wire__crate__api__settings__find_unreferenced_files(port_);
+      },
+      codec: DcoCodec(
+        decodeSuccessData: dco_decode_list_String,
+        decodeErrorData: dco_decode_String,
+      ),
+      constMeta: kCrateApiSettingsFindUnreferencedFilesConstMeta,
+      argValues: [],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiSettingsFindUnreferencedFilesConstMeta =>
+      const TaskConstMeta(
+        debugName: "find_unreferenced_files",
+        argNames: [],
+      );
+
+  @override
   Future<String> crateApiScannerGenerateThumbnail(
       {required String filePath, required int quality}) {
     return handler.executeNormal(NormalTask(
@@ -728,6 +918,27 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<List<Note>> crateApiNoteGetAllNotes() {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        return wire.wire__crate__api__note__get_all_notes(port_);
+      },
+      codec: DcoCodec(
+        decodeSuccessData: dco_decode_list_note,
+        decodeErrorData: dco_decode_String,
+      ),
+      constMeta: kCrateApiNoteGetAllNotesConstMeta,
+      argValues: [],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiNoteGetAllNotesConstMeta => const TaskConstMeta(
+        debugName: "get_all_notes",
+        argNames: [],
+      );
+
+  @override
   Future<List<Tag>> crateApiTagGetAllTags() {
     return handler.executeNormal(NormalTask(
       callFfi: (port_) {
@@ -796,6 +1007,54 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<List<MediaItem>> crateApiAlbumGetMediaByAlbum(
+      {required String albumId}) {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        var arg0 = cst_encode_String(albumId);
+        return wire.wire__crate__api__album__get_media_by_album(port_, arg0);
+      },
+      codec: DcoCodec(
+        decodeSuccessData: dco_decode_list_media_item,
+        decodeErrorData: dco_decode_String,
+      ),
+      constMeta: kCrateApiAlbumGetMediaByAlbumConstMeta,
+      argValues: [albumId],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiAlbumGetMediaByAlbumConstMeta =>
+      const TaskConstMeta(
+        debugName: "get_media_by_album",
+        argNames: ["albumId"],
+      );
+
+  @override
+  Future<List<MediaItem>> crateApiMediaGetMediaByFilter(
+      {required FilterMode filter}) {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        var arg0 = cst_encode_filter_mode(filter);
+        return wire.wire__crate__api__media__get_media_by_filter(port_, arg0);
+      },
+      codec: DcoCodec(
+        decodeSuccessData: dco_decode_list_media_item,
+        decodeErrorData: dco_decode_String,
+      ),
+      constMeta: kCrateApiMediaGetMediaByFilterConstMeta,
+      argValues: [filter],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiMediaGetMediaByFilterConstMeta =>
+      const TaskConstMeta(
+        debugName: "get_media_by_filter",
+        argNames: ["filter"],
+      );
+
+  @override
   Future<MediaItem?> crateApiMediaGetMediaById({required String id}) {
     return handler.executeNormal(NormalTask(
       callFfi: (port_) {
@@ -815,6 +1074,28 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateApiMediaGetMediaByIdConstMeta => const TaskConstMeta(
         debugName: "get_media_by_id",
         argNames: ["id"],
+      );
+
+  @override
+  Future<List<MediaItem>> crateApiTagGetMediaByTag({required String tagId}) {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        var arg0 = cst_encode_String(tagId);
+        return wire.wire__crate__api__tag__get_media_by_tag(port_, arg0);
+      },
+      codec: DcoCodec(
+        decodeSuccessData: dco_decode_list_media_item,
+        decodeErrorData: dco_decode_String,
+      ),
+      constMeta: kCrateApiTagGetMediaByTagConstMeta,
+      argValues: [tagId],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiTagGetMediaByTagConstMeta => const TaskConstMeta(
+        debugName: "get_media_by_tag",
+        argNames: ["tagId"],
       );
 
   @override
@@ -932,6 +1213,29 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<MediaItem?> crateApiMediaGetMediaWithTags({required String id}) {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        var arg0 = cst_encode_String(id);
+        return wire.wire__crate__api__media__get_media_with_tags(port_, arg0);
+      },
+      codec: DcoCodec(
+        decodeSuccessData: dco_decode_opt_box_autoadd_media_item,
+        decodeErrorData: dco_decode_String,
+      ),
+      constMeta: kCrateApiMediaGetMediaWithTagsConstMeta,
+      argValues: [id],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiMediaGetMediaWithTagsConstMeta =>
+      const TaskConstMeta(
+        debugName: "get_media_with_tags",
+        argNames: ["id"],
+      );
+
+  @override
   Future<List<MediaItem>> crateApiSearchGetMediaWithoutAnyAlbum() {
     return handler.executeNormal(NormalTask(
       callFfi: (port_) {
@@ -977,25 +1281,47 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<Note?> crateApiNoteGetNoteByMediaId({required String mediaId}) {
+  Future<Note?> crateApiNoteGetNoteById({required String id}) {
     return handler.executeNormal(NormalTask(
       callFfi: (port_) {
-        var arg0 = cst_encode_String(mediaId);
-        return wire.wire__crate__api__note__get_note_by_media_id(port_, arg0);
+        var arg0 = cst_encode_String(id);
+        return wire.wire__crate__api__note__get_note_by_id(port_, arg0);
       },
       codec: DcoCodec(
         decodeSuccessData: dco_decode_opt_box_autoadd_note,
         decodeErrorData: dco_decode_String,
       ),
-      constMeta: kCrateApiNoteGetNoteByMediaIdConstMeta,
+      constMeta: kCrateApiNoteGetNoteByIdConstMeta,
+      argValues: [id],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiNoteGetNoteByIdConstMeta => const TaskConstMeta(
+        debugName: "get_note_by_id",
+        argNames: ["id"],
+      );
+
+  @override
+  Future<List<Note>> crateApiNoteGetNotesByMediaId({required String mediaId}) {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        var arg0 = cst_encode_String(mediaId);
+        return wire.wire__crate__api__note__get_notes_by_media_id(port_, arg0);
+      },
+      codec: DcoCodec(
+        decodeSuccessData: dco_decode_list_note,
+        decodeErrorData: dco_decode_String,
+      ),
+      constMeta: kCrateApiNoteGetNotesByMediaIdConstMeta,
       argValues: [mediaId],
       apiImpl: this,
     ));
   }
 
-  TaskConstMeta get kCrateApiNoteGetNoteByMediaIdConstMeta =>
+  TaskConstMeta get kCrateApiNoteGetNotesByMediaIdConstMeta =>
       const TaskConstMeta(
-        debugName: "get_note_by_media_id",
+        debugName: "get_notes_by_media_id",
         argNames: ["mediaId"],
       );
 
@@ -1250,6 +1576,56 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<void> crateApiEnumsLanguageSettingAsStr(
+      {required LanguageSetting that}) {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        var arg0 = cst_encode_language_setting(that);
+        return wire.wire__crate__api__enums__language_setting_as_str(
+            port_, arg0);
+      },
+      codec: DcoCodec(
+        decodeSuccessData: dco_decode_unit,
+        decodeErrorData: null,
+      ),
+      constMeta: kCrateApiEnumsLanguageSettingAsStrConstMeta,
+      argValues: [that],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiEnumsLanguageSettingAsStrConstMeta =>
+      const TaskConstMeta(
+        debugName: "language_setting_as_str",
+        argNames: ["that"],
+      );
+
+  @override
+  Future<LanguageSetting> crateApiEnumsLanguageSettingFromStr(
+      {required String s}) {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        var arg0 = cst_encode_String(s);
+        return wire.wire__crate__api__enums__language_setting_from_str(
+            port_, arg0);
+      },
+      codec: DcoCodec(
+        decodeSuccessData: dco_decode_language_setting,
+        decodeErrorData: null,
+      ),
+      constMeta: kCrateApiEnumsLanguageSettingFromStrConstMeta,
+      argValues: [s],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiEnumsLanguageSettingFromStrConstMeta =>
+      const TaskConstMeta(
+        debugName: "language_setting_from_str",
+        argNames: ["s"],
+      );
+
+  @override
   Future<int> crateApiMediaMediaTypeAsI32({required MediaType that}) {
     return handler.executeNormal(NormalTask(
       callFfi: (port_) {
@@ -1270,6 +1646,52 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(
         debugName: "media_type_as_i32",
         argNames: ["that"],
+      );
+
+  @override
+  Future<void> crateApiMediaMediaTypeAsStr({required MediaType that}) {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        var arg0 = cst_encode_media_type(that);
+        return wire.wire__crate__api__media__media_type_as_str(port_, arg0);
+      },
+      codec: DcoCodec(
+        decodeSuccessData: dco_decode_unit,
+        decodeErrorData: null,
+      ),
+      constMeta: kCrateApiMediaMediaTypeAsStrConstMeta,
+      argValues: [that],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiMediaMediaTypeAsStrConstMeta =>
+      const TaskConstMeta(
+        debugName: "media_type_as_str",
+        argNames: ["that"],
+      );
+
+  @override
+  Future<MediaType> crateApiMediaMediaTypeFromStr({required String s}) {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        var arg0 = cst_encode_String(s);
+        return wire.wire__crate__api__media__media_type_from_str(port_, arg0);
+      },
+      codec: DcoCodec(
+        decodeSuccessData: dco_decode_media_type,
+        decodeErrorData: null,
+      ),
+      constMeta: kCrateApiMediaMediaTypeFromStrConstMeta,
+      argValues: [s],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiMediaMediaTypeFromStrConstMeta =>
+      const TaskConstMeta(
+        debugName: "media_type_from_str",
+        argNames: ["s"],
       );
 
   @override
@@ -1512,6 +1934,28 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<List<Note>> crateApiNoteSearchNotes({required String query}) {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        var arg0 = cst_encode_String(query);
+        return wire.wire__crate__api__note__search_notes(port_, arg0);
+      },
+      codec: DcoCodec(
+        decodeSuccessData: dco_decode_list_note,
+        decodeErrorData: dco_decode_String,
+      ),
+      constMeta: kCrateApiNoteSearchNotesConstMeta,
+      argValues: [query],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiNoteSearchNotesConstMeta => const TaskConstMeta(
+        debugName: "search_notes",
+        argNames: ["query"],
+      );
+
+  @override
   Future<void> crateApiAlbumSetAlbumCover(
       {required String albumId, required String mediaId}) {
     return handler.executeNormal(NormalTask(
@@ -1536,6 +1980,56 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<void> crateApiEnumsThemeModeSettingAsStr(
+      {required ThemeModeSetting that}) {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        var arg0 = cst_encode_theme_mode_setting(that);
+        return wire.wire__crate__api__enums__theme_mode_setting_as_str(
+            port_, arg0);
+      },
+      codec: DcoCodec(
+        decodeSuccessData: dco_decode_unit,
+        decodeErrorData: null,
+      ),
+      constMeta: kCrateApiEnumsThemeModeSettingAsStrConstMeta,
+      argValues: [that],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiEnumsThemeModeSettingAsStrConstMeta =>
+      const TaskConstMeta(
+        debugName: "theme_mode_setting_as_str",
+        argNames: ["that"],
+      );
+
+  @override
+  Future<ThemeModeSetting> crateApiEnumsThemeModeSettingFromStr(
+      {required String s}) {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        var arg0 = cst_encode_String(s);
+        return wire.wire__crate__api__enums__theme_mode_setting_from_str(
+            port_, arg0);
+      },
+      codec: DcoCodec(
+        decodeSuccessData: dco_decode_theme_mode_setting,
+        decodeErrorData: null,
+      ),
+      constMeta: kCrateApiEnumsThemeModeSettingFromStrConstMeta,
+      argValues: [s],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiEnumsThemeModeSettingFromStrConstMeta =>
+      const TaskConstMeta(
+        debugName: "theme_mode_setting_from_str",
+        argNames: ["s"],
+      );
+
+  @override
   Future<void> crateApiMediaUpdateMedia({required MediaItem media}) {
     return handler.executeNormal(NormalTask(
       callFfi: (port_) {
@@ -1555,6 +2049,32 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateApiMediaUpdateMediaConstMeta => const TaskConstMeta(
         debugName: "update_media",
         argNames: ["media"],
+      );
+
+  @override
+  Future<void> crateApiNoteUpdateNote(
+      {required String id, String? title, String? content}) {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        var arg0 = cst_encode_String(id);
+        var arg1 = cst_encode_opt_String(title);
+        var arg2 = cst_encode_opt_String(content);
+        return wire.wire__crate__api__note__update_note(
+            port_, arg0, arg1, arg2);
+      },
+      codec: DcoCodec(
+        decodeSuccessData: dco_decode_unit,
+        decodeErrorData: dco_decode_String,
+      ),
+      constMeta: kCrateApiNoteUpdateNoteConstMeta,
+      argValues: [id, title, content],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiNoteUpdateNoteConstMeta => const TaskConstMeta(
+        debugName: "update_note",
+        argNames: ["id", "title", "content"],
       );
 
   @protected
@@ -1610,8 +2130,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   AppSettings dco_decode_app_settings(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 6)
-      throw Exception('unexpected arr length: expect 6 but see ${arr.length}');
+    if (arr.length != 7)
+      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
     return AppSettings(
       themeMode: dco_decode_theme_mode(arr[0]),
       gridColumns: dco_decode_i_32(arr[1]),
@@ -1619,6 +2139,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       showContentPreviews: dco_decode_i_32(arr[3]),
       thumbnailQuality: dco_decode_i_32(arr[4]),
       language: dco_decode_String(arr[5]),
+      dynamicColor: dco_decode_i_32(arr[6]),
     );
   }
 
@@ -1703,6 +2224,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  FilterMode dco_decode_filter_mode(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return FilterMode.values[raw as int];
+  }
+
+  @protected
   int dco_decode_i_32(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as int;
@@ -1729,6 +2256,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  LanguageSetting dco_decode_language_setting(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return LanguageSetting.values[raw as int];
+  }
+
+  @protected
   List<String> dco_decode_list_String(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return (raw as List<dynamic>).map(dco_decode_String).toList();
@@ -1750,6 +2283,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   List<MediaItem> dco_decode_list_media_item(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return (raw as List<dynamic>).map(dco_decode_media_item).toList();
+  }
+
+  @protected
+  List<Note> dco_decode_list_note(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_note).toList();
   }
 
   @protected
@@ -1810,14 +2349,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Note dco_decode_note(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 5)
-      throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
+    if (arr.length != 6)
+      throw Exception('unexpected arr length: expect 6 but see ${arr.length}');
     return Note(
       id: dco_decode_String(arr[0]),
-      mediaId: dco_decode_String(arr[1]),
-      content: dco_decode_String(arr[2]),
-      createdAt: dco_decode_i_64(arr[3]),
-      updatedAt: dco_decode_i_64(arr[4]),
+      mediaId: dco_decode_opt_String(arr[1]),
+      title: dco_decode_String(arr[2]),
+      content: dco_decode_String(arr[3]),
+      createdAt: dco_decode_i_64(arr[4]),
+      updatedAt: dco_decode_i_64(arr[5]),
     );
   }
 
@@ -1956,6 +2496,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  ThemeModeSetting dco_decode_theme_mode_setting(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return ThemeModeSetting.values[raw as int];
+  }
+
+  @protected
   int dco_decode_u_8(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as int;
@@ -2025,13 +2571,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_showContentPreviews = sse_decode_i_32(deserializer);
     var var_thumbnailQuality = sse_decode_i_32(deserializer);
     var var_language = sse_decode_String(deserializer);
+    var var_dynamicColor = sse_decode_i_32(deserializer);
     return AppSettings(
         themeMode: var_themeMode,
         gridColumns: var_gridColumns,
         albumGridColumns: var_albumGridColumns,
         showContentPreviews: var_showContentPreviews,
         thumbnailQuality: var_thumbnailQuality,
-        language: var_language);
+        language: var_language,
+        dynamicColor: var_dynamicColor);
   }
 
   @protected
@@ -2115,6 +2663,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  FilterMode sse_decode_filter_mode(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_i_32(deserializer);
+    return FilterMode.values[inner];
+  }
+
+  @protected
   int sse_decode_i_32(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getInt32();
@@ -2138,6 +2693,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         processedFiles: var_processedFiles,
         currentPhase: var_currentPhase,
         status: var_status);
+  }
+
+  @protected
+  LanguageSetting sse_decode_language_setting(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_i_32(deserializer);
+    return LanguageSetting.values[inner];
   }
 
   @protected
@@ -2186,6 +2748,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var ans_ = <MediaItem>[];
     for (var idx_ = 0; idx_ < len_; ++idx_) {
       ans_.add(sse_decode_media_item(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<Note> sse_decode_list_note(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <Note>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_note(deserializer));
     }
     return ans_;
   }
@@ -2280,13 +2854,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Note sse_decode_note(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_id = sse_decode_String(deserializer);
-    var var_mediaId = sse_decode_String(deserializer);
+    var var_mediaId = sse_decode_opt_String(deserializer);
+    var var_title = sse_decode_String(deserializer);
     var var_content = sse_decode_String(deserializer);
     var var_createdAt = sse_decode_i_64(deserializer);
     var var_updatedAt = sse_decode_i_64(deserializer);
     return Note(
         id: var_id,
         mediaId: var_mediaId,
+        title: var_title,
         content: var_content,
         createdAt: var_createdAt,
         updatedAt: var_updatedAt);
@@ -2465,6 +3041,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  ThemeModeSetting sse_decode_theme_mode_setting(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_i_32(deserializer);
+    return ThemeModeSetting.values[inner];
+  }
+
+  @protected
   int sse_decode_u_8(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getUint8();
@@ -2488,9 +3071,21 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  int cst_encode_filter_mode(FilterMode raw) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    return cst_encode_i_32(raw.index);
+  }
+
+  @protected
   int cst_encode_i_32(int raw) {
     // Codec=Cst (C-struct based), see doc to use other codecs
     return raw;
+  }
+
+  @protected
+  int cst_encode_language_setting(LanguageSetting raw) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    return cst_encode_i_32(raw.index);
   }
 
   @protected
@@ -2501,6 +3096,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   int cst_encode_theme_mode(ThemeMode raw) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    return cst_encode_i_32(raw.index);
+  }
+
+  @protected
+  int cst_encode_theme_mode_setting(ThemeModeSetting raw) {
     // Codec=Cst (C-struct based), see doc to use other codecs
     return cst_encode_i_32(raw.index);
   }
@@ -2561,6 +3162,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_i_32(self.showContentPreviews, serializer);
     sse_encode_i_32(self.thumbnailQuality, serializer);
     sse_encode_String(self.language, serializer);
+    sse_encode_i_32(self.dynamicColor, serializer);
   }
 
   @protected
@@ -2642,6 +3244,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_filter_mode(FilterMode self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
+  }
+
+  @protected
   void sse_encode_i_32(int self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putInt32(self);
@@ -2661,6 +3269,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_i_32(self.processedFiles, serializer);
     sse_encode_String(self.currentPhase, serializer);
     sse_encode_String(self.status, serializer);
+  }
+
+  @protected
+  void sse_encode_language_setting(
+      LanguageSetting self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
   }
 
   @protected
@@ -2699,6 +3314,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_i_32(self.length, serializer);
     for (final item in self) {
       sse_encode_media_item(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_note(List<Note> self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_note(item, serializer);
     }
   }
 
@@ -2768,7 +3392,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   void sse_encode_note(Note self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_String(self.id, serializer);
-    sse_encode_String(self.mediaId, serializer);
+    sse_encode_opt_String(self.mediaId, serializer);
+    sse_encode_String(self.title, serializer);
     sse_encode_String(self.content, serializer);
     sse_encode_i_64(self.createdAt, serializer);
     sse_encode_i_64(self.updatedAt, serializer);
@@ -2906,6 +3531,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void sse_encode_theme_mode(ThemeMode self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
+  }
+
+  @protected
+  void sse_encode_theme_mode_setting(
+      ThemeModeSetting self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.index, serializer);
   }

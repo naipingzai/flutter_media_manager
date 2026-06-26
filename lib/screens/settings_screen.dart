@@ -1,9 +1,13 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import '../bloc/bloc.dart';
+import '../core/i18n/app_localizations.dart';
 import '../src/rust/api/settings.dart' as rust_settings;
 import '../src/rust/api/import_export.dart' as rust_import_export;
+import '../src/rust/api/media.dart' as media_api;
 import 'api_test_screen.dart';
 
 /// 设置页面
@@ -40,7 +44,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('设置'),
+        title: Text(AppLocalizations.of(context).settings),
         centerTitle: true,
       ),
       body: BlocBuilder<AppBloc, AppState>(
@@ -52,21 +56,53 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           return ListView(
             children: [
-              const _SectionHeader(title: '外观'),
+              _SectionHeader(title: AppLocalizations.of(context).themeMode),
               ListTile(
                 leading: const Icon(Icons.palette),
-                title: const Text('主题模式'),
+                title: Text(AppLocalizations.of(context).themeMode),
                 subtitle: Text(_themeModeLabel(settings.themeMode)),
                 onTap: () => _showThemeModeDialog(context, settings),
               ),
+              // 动态颜色 (Android 12+)
+              SwitchListTile(
+                secondary: const Icon(Icons.color_lens_outlined),
+                title: Text(AppLocalizations.of(context).dynamicColor),
+                subtitle: Text(AppLocalizations.of(context).dynamicColorDesc),
+                value: settings.dynamicColor != 0,
+                onChanged: (val) {
+                  final updated = rust_settings.AppSettings(
+                    themeMode: settings.themeMode,
+                    gridColumns: settings.gridColumns,
+                    albumGridColumns: settings.albumGridColumns,
+                    showContentPreviews: settings.showContentPreviews,
+                    thumbnailQuality: settings.thumbnailQuality,
+                    language: settings.language,
+                    dynamicColor: val ? 1 : 0,
+                  );
+                  context.read<AppBloc>().add(AppSettingsUpdatedEvent(updated));
+                },
+              ),
               ListTile(
                 leading: const Icon(Icons.grid_on),
-                title: const Text('网格列数'),
-                subtitle: Text('${settings.gridColumns} 列'),
+                title: Text(AppLocalizations.of(context).mediaGridColumns),
+                subtitle: Text('${settings.gridColumns} ${AppLocalizations.of(context).columns}'),
                 onTap: () => _showGridColumnsDialog(context, settings),
               ),
+              ListTile(
+                leading: const Icon(Icons.grid_view),
+                title: Text(AppLocalizations.of(context).albumGridColumns),
+                subtitle: Text('${settings.albumGridColumns} ${AppLocalizations.of(context).columns}'),
+                onTap: () => _showAlbumGridColumnsDialog(context, settings),
+              ),
+              // 语言设置
+              ListTile(
+                leading: const Icon(Icons.language),
+                title: Text(AppLocalizations.of(context).language),
+                subtitle: Text(_languageLabel(settings.language)),
+                onTap: () => _showLanguageDialog(context, settings),
+              ),
               const Divider(),
-              const _SectionHeader(title: '显示'),
+              _SectionHeader(title: AppLocalizations.of(context).display),
               SwitchListTile(
                 secondary: const Icon(Icons.preview),
                 title: const Text('内容预览'),
@@ -80,6 +116,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     showContentPreviews: val ? 1 : 0,
                     thumbnailQuality: settings.thumbnailQuality,
                     language: settings.language,
+                    dynamicColor: settings.dynamicColor,
                   );
                   context.read<AppBloc>().add(
                         AppSettingsUpdatedEvent(updated),
@@ -138,6 +175,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 title: const Text('导出 ZIP 包'),
                 subtitle: const Text('导出数据库+媒体文件'),
                 onTap: () => _showExportZipDialog(context),
+              ),
+              ListTile(
+                leading: const Icon(Icons.find_in_page),
+                title: const Text('查找未引用文件'),
+                subtitle: const Text('查找磁盘上存在但数据库未记录的文件'),
+                onTap: () => _showFindUnreferencedDialog(context),
               ),
               ListTile(
                 leading: const Icon(Icons.delete_forever, color: Colors.red),
@@ -224,6 +267,100 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  String _languageLabel(String lang) {
+    switch (lang) {
+      case 'zh':
+        return '中文';
+      case 'en':
+        return 'English';
+      default:
+        return '跟随系统';
+    }
+  }
+
+  void _showLanguageDialog(
+      BuildContext context, rust_settings.AppSettings settings) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('选择语言'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RadioListTile<String>(
+                title: const Text('跟随系统'),
+                value: 'system',
+                groupValue: settings.language,
+                onChanged: (value) {
+                  if (value != null) {
+                    final newSettings = rust_settings.AppSettings(
+                      themeMode: settings.themeMode,
+                      gridColumns: settings.gridColumns,
+                      albumGridColumns: settings.albumGridColumns,
+                      showContentPreviews: settings.showContentPreviews,
+                      thumbnailQuality: settings.thumbnailQuality,
+                      language: value,
+                      dynamicColor: settings.dynamicColor,
+                    );
+                    context
+                        .read<AppBloc>()
+                        .add(AppSettingsUpdatedEvent(newSettings));
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+              RadioListTile<String>(
+                title: const Text('中文'),
+                value: 'zh',
+                groupValue: settings.language,
+                onChanged: (value) {
+                  if (value != null) {
+                    final newSettings = rust_settings.AppSettings(
+                      themeMode: settings.themeMode,
+                      gridColumns: settings.gridColumns,
+                      albumGridColumns: settings.albumGridColumns,
+                      showContentPreviews: settings.showContentPreviews,
+                      thumbnailQuality: settings.thumbnailQuality,
+                      language: value,
+                      dynamicColor: settings.dynamicColor,
+                    );
+                    context
+                        .read<AppBloc>()
+                        .add(AppSettingsUpdatedEvent(newSettings));
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+              RadioListTile<String>(
+                title: const Text('English'),
+                value: 'en',
+                groupValue: settings.language,
+                onChanged: (value) {
+                  if (value != null) {
+                    final newSettings = rust_settings.AppSettings(
+                      themeMode: settings.themeMode,
+                      gridColumns: settings.gridColumns,
+                      albumGridColumns: settings.albumGridColumns,
+                      showContentPreviews: settings.showContentPreviews,
+                      thumbnailQuality: settings.thumbnailQuality,
+                      language: value,
+                      dynamicColor: settings.dynamicColor,
+                    );
+                    context
+                        .read<AppBloc>()
+                        .add(AppSettingsUpdatedEvent(newSettings));
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   void _showThemeModeDialog(
       BuildContext context, rust_settings.AppSettings settings) {
     showDialog(
@@ -304,6 +441,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       showContentPreviews: settings.showContentPreviews,
                       thumbnailQuality: settings.thumbnailQuality,
                       language: settings.language,
+                      dynamicColor: settings.dynamicColor,
+                    );
+                    context
+                        .read<AppBloc>()
+                        .add(AppSettingsUpdatedEvent(newSettings));
+                    Navigator.pop(context);
+                  }
+                },
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showAlbumGridColumnsDialog(
+      BuildContext context, rust_settings.AppSettings settings) {
+    final columns = [2, 3, 4, 5];
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('选择相册网格列数'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: columns.map((count) {
+              return RadioListTile<int>(
+                title: Text('$count 列'),
+                value: count,
+                groupValue: settings.albumGridColumns,
+                onChanged: (value) {
+                  if (value != null) {
+                    final newSettings = rust_settings.AppSettings(
+                      themeMode: settings.themeMode,
+                      gridColumns: settings.gridColumns,
+                      albumGridColumns: value,
+                      showContentPreviews: settings.showContentPreviews,
+                      thumbnailQuality: settings.thumbnailQuality,
+                      language: settings.language,
+                      dynamicColor: settings.dynamicColor,
                     );
                     context
                         .read<AppBloc>()
@@ -343,6 +521,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       showContentPreviews: settings.showContentPreviews,
                       thumbnailQuality: value,
                       language: settings.language,
+                      dynamicColor: settings.dynamicColor,
                     );
                     context
                         .read<AppBloc>()
@@ -675,6 +854,131 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
     );
+  }
+
+  /// 查找未引用的文件
+  void _showFindUnreferencedDialog(BuildContext context) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('正在扫描未引用文件...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      // 获取数据库中所有媒体的文件路径
+      final allMedia = await media_api.getAllMedia();
+      final dbPaths = <String>{};
+      for (final m in allMedia) {
+        dbPaths.add(m.filePath);
+      }
+
+      // 获取应用媒体目录
+      final appDir = await getApplicationDocumentsDirectory();
+      final mediaDir = Directory('${appDir.path}/media');
+      final unreferenced = <String>[];
+
+      if (await mediaDir.exists()) {
+        await for (final entity in mediaDir.list(recursive: true)) {
+          if (entity is File) {
+            final path = entity.path;
+            // 跳过缩略图目录
+            if (path.contains('/thumbnails/')) continue;
+            if (!dbPaths.contains(path)) {
+              unreferenced.add(path);
+            }
+          }
+        }
+      }
+
+      if (!mounted) return;
+      Navigator.pop(context); // 关闭进度
+
+      if (unreferenced.isEmpty) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('扫描完成'),
+            content: const Text('未发现未引用的文件，所有文件都在数据库中有记录。'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('确定'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+
+      // 显示结果并提供删除选项
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text('发现 ${unreferenced.length} 个未引用文件'),
+          content: SizedBox(
+            width: double.maxFinite,
+            height: 300,
+            child: ListView.builder(
+              itemCount: unreferenced.length,
+              itemBuilder: (_, i) {
+                final fileName = unreferenced[i].split('/').last;
+                final file = File(unreferenced[i]);
+                final size = file.existsSync() ? file.lengthSync() : 0;
+                return ListTile(
+                  dense: true,
+                  leading: const Icon(Icons.insert_drive_file, size: 20),
+                  title: Text(fileName, style: const TextStyle(fontSize: 13)),
+                  subtitle: Text(
+                    '${(size / 1024).toStringAsFixed(1)} KB',
+                    style: const TextStyle(fontSize: 11),
+                  ),
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: Colors.red),
+              onPressed: () async {
+                Navigator.pop(ctx);
+                var deleted = 0;
+                for (final path in unreferenced) {
+                  try {
+                    await File(path).delete();
+                    deleted++;
+                  } catch (_) {}
+                }
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('已删除 $deleted 个未引用文件')),
+                );
+                await _loadStats();
+              },
+              child: Text('全部删除 (${unreferenced.length})'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('扫描失败: $e')),
+      );
+    }
   }
 
   Future<void> _clearAllData(BuildContext context) async {

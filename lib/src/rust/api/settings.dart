@@ -37,6 +37,14 @@ Future<void> importData({required String importPath}) =>
 Future<void> deleteAllData() =>
     RustLib.instance.api.crateApiSettingsDeleteAllData();
 
+/// 查找未引用的媒体文件（磁盘上存在但数据库中没有记录的文件）
+Future<List<String>> findUnreferencedFiles() =>
+    RustLib.instance.api.crateApiSettingsFindUnreferencedFiles();
+
+/// 删除未引用的媒体文件
+Future<int> deleteUnreferencedFiles() =>
+    RustLib.instance.api.crateApiSettingsDeleteUnreferencedFiles();
+
 /// 初始化应用（初始化数据库连接池）
 ///
 /// 在 Android 上，app_dir 应该传入应用的私有目录（如 getApplicationDocumentsDirectory）
@@ -44,14 +52,28 @@ Future<void> deleteAllData() =>
 Future<void> initApp({required String appDir}) =>
     RustLib.instance.api.crateApiSettingsInitApp(appDir: appDir);
 
-/// 应用设置
+/// 应用设置 - Skill-08 §1 (6 个设置项)
 class AppSettings {
+  /// 主题模式 (system/light/dark) - 默认: system
   final ThemeMode themeMode;
+
+  /// 网格列数 - 默认: 3
   final int gridColumns;
+
+  /// 相册网格列数 - 默认: 2
   final int albumGridColumns;
+
+  /// 是否显示内容预览 - 默认: true
   final int showContentPreviews;
+
+  /// 缩略图质量 1-100 - 默认: 85
   final int thumbnailQuality;
+
+  /// 语言 (system/zh/en) - 默认: system
   final String language;
+
+  /// 动态颜色 (Android 12+) - 默认: true
+  final int dynamicColor;
 
   const AppSettings({
     required this.themeMode,
@@ -60,6 +82,7 @@ class AppSettings {
     required this.showContentPreviews,
     required this.thumbnailQuality,
     required this.language,
+    required this.dynamicColor,
   });
 
   @override
@@ -69,7 +92,8 @@ class AppSettings {
       albumGridColumns.hashCode ^
       showContentPreviews.hashCode ^
       thumbnailQuality.hashCode ^
-      language.hashCode;
+      language.hashCode ^
+      dynamicColor.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -81,7 +105,8 @@ class AppSettings {
           albumGridColumns == other.albumGridColumns &&
           showContentPreviews == other.showContentPreviews &&
           thumbnailQuality == other.thumbnailQuality &&
-          language == other.language;
+          language == other.language &&
+          dynamicColor == other.dynamicColor;
 }
 
 /// 存储统计

@@ -16,6 +16,7 @@ class MediaState extends Equatable {
   final Set<String> selectedMediaIds;
   final bool isSelectionMode;
   final MediaType? currentFilter;
+  final FilterMode? currentFilterMode;
   final String currentQuery;
   final AdjacentMedia? adjacentMedia;
   final String? errorMessage;
@@ -30,6 +31,7 @@ class MediaState extends Equatable {
     this.selectedMediaIds = const {},
     this.isSelectionMode = false,
     this.currentFilter,
+    this.currentFilterMode,
     this.currentQuery = '',
     this.adjacentMedia,
     this.errorMessage,
@@ -45,6 +47,7 @@ class MediaState extends Equatable {
     Set<String>? selectedMediaIds,
     bool? isSelectionMode,
     MediaType? currentFilter,
+    FilterMode? currentFilterMode,
     String? currentQuery,
     AdjacentMedia? adjacentMedia,
     String? errorMessage,
@@ -59,6 +62,7 @@ class MediaState extends Equatable {
       selectedMediaIds: selectedMediaIds ?? this.selectedMediaIds,
       isSelectionMode: isSelectionMode ?? this.isSelectionMode,
       currentFilter: currentFilter,
+      currentFilterMode: currentFilterMode,
       currentQuery: currentQuery ?? this.currentQuery,
       adjacentMedia: adjacentMedia,
       errorMessage: errorMessage,
@@ -76,6 +80,7 @@ class MediaState extends Equatable {
         selectedMediaIds,
         isSelectionMode,
         currentFilter,
+        currentFilterMode,
         currentQuery,
         adjacentMedia,
         errorMessage,

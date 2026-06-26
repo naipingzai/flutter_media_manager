@@ -196,11 +196,13 @@ pub async fn get_tag_breadcrumb(tag_id: String) -> Result<Vec<TagBreadcrumb>, St
 pub async fn add_tag_to_media(media_id: String, tag_id: String) -> Result<(), String> {
     let pool = get_pool()?;
 
+    let now = chrono::Utc::now().timestamp();
     sqlx::query(
-        "INSERT OR IGNORE INTO media_tags (media_id, tag_id) VALUES (?, ?)"
+        "INSERT OR IGNORE INTO media_tags (media_id, tag_id, created_at) VALUES (?, ?, ?)"
     )
     .bind(&media_id)
     .bind(&tag_id)
+    .bind(now)
     .execute(&pool)
     .await
     .map_err(|e| format!("添加标签到媒体失败: {}", e))?;
@@ -306,6 +308,12 @@ pub async fn get_media_by_tags_or(tag_ids: Vec<String>) -> Result<Vec<MediaItem>
         .map_err(|e| format!("OR 标签筛选失败: {}", e))?;
 
     Ok(rows.iter().map(row_to_media_item).collect())
+}
+
+/// 获取单个标签关联的媒体
+#[frb]
+pub async fn get_media_by_tag(tag_id: String) -> Result<Vec<MediaItem>, String> {
+    get_media_by_tags_or(vec![tag_id]).await
 }
 
 /// 确保默认标签存在（如果不存在则创建）

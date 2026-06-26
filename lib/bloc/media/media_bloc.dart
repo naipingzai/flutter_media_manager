@@ -3,6 +3,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:advance_media_kb/src/rust/api/media.dart';
+import 'package:advance_media_kb/src/rust/api/enums.dart';
 import 'package:advance_media_kb/src/rust/api/search.dart';
 import 'package:advance_media_kb/src/rust/frb_generated.dart';
 import 'package:logger/logger.dart';
@@ -28,6 +29,7 @@ class MediaBloc extends Bloc<MediaEvent, MediaState> {
     on<MediaLoadAdjacentEvent>(_onLoadAdjacent);
     on<MediaSortEvent>(_onSort);
     on<MediaSetGridColumnsEvent>(_onSetGridColumns);
+    on<MediaFilterByFilterModeEvent>(_onFilterByFilterMode);
     on<MediaImportFileEvent>(_onImportFile);
   }
 
@@ -257,6 +259,28 @@ class MediaBloc extends Bloc<MediaEvent, MediaState> {
     Emitter<MediaState> emit,
   ) {
     emit(state.copyWith(gridColumns: event.columns.clamp(2, 6)));
+  }
+
+  Future<void> _onFilterByFilterMode(
+    MediaFilterByFilterModeEvent event,
+    Emitter<MediaState> emit,
+  ) async {
+    emit(state.copyWith(status: MediaStatus.loading));
+    try {
+      final results = await RustLib.instance.api
+          .crateApiMediaGetMediaByFilter(filter: event.filterMode);
+      emit(state.copyWith(
+        status: MediaStatus.loaded,
+        filteredList: results,
+        currentFilterMode: event.filterMode,
+      ));
+    } catch (e) {
+      _logger.e('按模式过滤媒体失败: $e');
+      emit(state.copyWith(
+        status: MediaStatus.error,
+        errorMessage: e.toString(),
+      ));
+    }
   }
 
   Future<void> _onImportFile(

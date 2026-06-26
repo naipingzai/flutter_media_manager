@@ -117,3 +117,27 @@ class AlbumNavigateToEvent extends AlbumEvent {
 class AlbumNavigateUpEvent extends AlbumEvent {
   const AlbumNavigateUpEvent();
 }
+
+/// 导航到根目录
+class AlbumNavigateToRootEvent extends AlbumEvent {
+  const AlbumNavigateToRootEvent();
+}
+
+/// 切换媒体选中状态
+class AlbumToggleMediaSelectionEvent extends AlbumEvent {
+  final String mediaId;
+  const AlbumToggleMediaSelectionEvent(this.mediaId);
+
+  @override
+  List<Object?> get props => [mediaId];
+}
+
+/// 清除选中
+class AlbumClearSelectionEvent extends AlbumEvent {
+  const AlbumClearSelectionEvent();
+}
+
+/// 从相册移除选中的媒体
+class AlbumRemoveSelectedMediaEvent extends AlbumEvent {
+  const AlbumRemoveSelectedMediaEvent();
+}

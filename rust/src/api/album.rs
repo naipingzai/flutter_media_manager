@@ -1,5 +1,6 @@
 use flutter_rust_bridge::frb;
-use crate::db::{get_pool, models::row_to_album};
+use crate::db::{get_pool, models::{row_to_album, row_to_media_item}};
+use crate::api::media::MediaItem;
 use sqlx::Row;
 use uuid::Uuid;
 
@@ -51,7 +52,7 @@ async fn get_albums_by_parent(parent_id: Option<String>) -> Result<Vec<AlbumWith
     let rows = match &parent_id {
         Some(pid) => sqlx::query(
             "SELECT a.*,
-                (SELECT COUNT(*) FROM media_albums ma WHERE ma.album_id = a.id) as media_count,
+                (SELECT COUNT(*) FROM album_media am WHERE am.album_id = a.id) as media_count,
                 (SELECT COUNT(*) FROM albums ca WHERE ca.parent_id = a.id) as child_count,
                 (SELECT m.thumbnail_path FROM media_items m WHERE m.id = a.cover_media_id LIMIT 1) as cover_thumbnail
              FROM albums a WHERE a.parent_id = ? ORDER BY a.sort_order, a.created_at"
@@ -62,7 +63,7 @@ async fn get_albums_by_parent(parent_id: Option<String>) -> Result<Vec<AlbumWith
         .map_err(|e| format!("查询子相册失败: {}", e))?,
         None => sqlx::query(
             "SELECT a.*,
-                (SELECT COUNT(*) FROM media_albums ma WHERE ma.album_id = a.id) as media_count,
+                (SELECT COUNT(*) FROM album_media am WHERE am.album_id = a.id) as media_count,
                 (SELECT COUNT(*) FROM albums ca WHERE ca.parent_id = a.id) as child_count,
                 (SELECT m.thumbnail_path FROM media_items m WHERE m.id = a.cover_media_id LIMIT 1) as cover_thumbnail
              FROM albums a WHERE a.parent_id IS NULL ORDER BY a.sort_order, a.created_at"
@@ -176,10 +177,11 @@ pub async fn add_media_to_album(media_ids: Vec<String>, album_id: String) -> Res
 
     for media_id in media_ids {
         sqlx::query(
-            "INSERT OR IGNORE INTO media_albums (media_id, album_id) VALUES (?, ?)"
+            "INSERT OR IGNORE INTO album_media (media_id, album_id, added_at) VALUES (?, ?, ?)"
         )
         .bind(&media_id)
         .bind(&album_id)
+        .bind(chrono::Utc::now().timestamp())
         .execute(&mut *tx)
         .await
         .map_err(|e| format!("添加媒体到相册失败: {}", e))?;
@@ -195,7 +197,7 @@ pub async fn remove_media_from_album(media_ids: Vec<String>, album_id: String) -
     let pool = get_pool()?;
 
     for media_id in media_ids {
-        sqlx::query("DELETE FROM media_albums WHERE media_id = ? AND album_id = ?")
+            sqlx::query("DELETE FROM album_media WHERE media_id = ? AND album_id = ?")
             .bind(&media_id)
             .bind(&album_id)
             .execute(&pool)
@@ -219,6 +221,25 @@ pub async fn set_album_cover(album_id: String, media_id: String) -> Result<(), S
         .map_err(|e| format!("设置相册封面失败: {}", e))?;
 
     Ok(())
+}
+
+/// 获取相册内的媒体列表
+#[frb]
+pub async fn get_media_by_album(album_id: String) -> Result<Vec<MediaItem>, String> {
+    let pool = get_pool()?;
+
+    let rows = sqlx::query(
+        "SELECT m.* FROM media_items m
+         JOIN album_media am ON m.id = am.media_id
+         WHERE am.album_id = ?
+         ORDER BY am.added_at DESC"
+    )
+    .bind(&album_id)
+    .fetch_all(&pool)
+    .await
+    .map_err(|e| format!("获取相册媒体失败: {}", e))?;
+
+    Ok(rows.iter().map(row_to_media_item).collect())
 }
 
 /// 确保默认相册存在（如果不存在则创建）

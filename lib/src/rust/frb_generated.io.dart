@@ -4,6 +4,7 @@
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
 import 'api/album.dart';
+import 'api/enums.dart';
 import 'api/import_export.dart';
 import 'api/media.dart';
 import 'api/note.dart';
@@ -74,6 +75,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   ExportProgress dco_decode_export_progress(dynamic raw);
 
   @protected
+  FilterMode dco_decode_filter_mode(dynamic raw);
+
+  @protected
   int dco_decode_i_32(dynamic raw);
 
   @protected
@@ -81,6 +85,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   ImportProgress dco_decode_import_progress(dynamic raw);
+
+  @protected
+  LanguageSetting dco_decode_language_setting(dynamic raw);
 
   @protected
   List<String> dco_decode_list_String(dynamic raw);
@@ -93,6 +100,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<MediaItem> dco_decode_list_media_item(dynamic raw);
+
+  @protected
+  List<Note> dco_decode_list_note(dynamic raw);
 
   @protected
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
@@ -158,6 +168,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   ThemeMode dco_decode_theme_mode(dynamic raw);
 
   @protected
+  ThemeModeSetting dco_decode_theme_mode_setting(dynamic raw);
+
+  @protected
   int dco_decode_u_8(dynamic raw);
 
   @protected
@@ -214,6 +227,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   ExportProgress sse_decode_export_progress(SseDeserializer deserializer);
 
   @protected
+  FilterMode sse_decode_filter_mode(SseDeserializer deserializer);
+
+  @protected
   int sse_decode_i_32(SseDeserializer deserializer);
 
   @protected
@@ -221,6 +237,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   ImportProgress sse_decode_import_progress(SseDeserializer deserializer);
+
+  @protected
+  LanguageSetting sse_decode_language_setting(SseDeserializer deserializer);
 
   @protected
   List<String> sse_decode_list_String(SseDeserializer deserializer);
@@ -235,6 +254,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<MediaItem> sse_decode_list_media_item(SseDeserializer deserializer);
+
+  @protected
+  List<Note> sse_decode_list_note(SseDeserializer deserializer);
 
   @protected
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
@@ -301,6 +323,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   ThemeMode sse_decode_theme_mode(SseDeserializer deserializer);
+
+  @protected
+  ThemeModeSetting sse_decode_theme_mode_setting(SseDeserializer deserializer);
 
   @protected
   int sse_decode_u_8(SseDeserializer deserializer);
@@ -415,6 +440,16 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
     final ans = wire.cst_new_list_media_item(raw.length);
     for (var i = 0; i < raw.length; ++i) {
       cst_api_fill_to_wire_media_item(raw[i], ans.ref.ptr[i]);
+    }
+    return ans;
+  }
+
+  @protected
+  ffi.Pointer<wire_cst_list_note> cst_encode_list_note(List<Note> raw) {
+    // Codec=Cst (C-struct based), see doc to use other codecs
+    final ans = wire.cst_new_list_note(raw.length);
+    for (var i = 0; i < raw.length; ++i) {
+      cst_api_fill_to_wire_note(raw[i], ans.ref.ptr[i]);
     }
     return ans;
   }
@@ -545,6 +580,7 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
     wireObj.show_content_previews = cst_encode_i_32(apiObj.showContentPreviews);
     wireObj.thumbnail_quality = cst_encode_i_32(apiObj.thumbnailQuality);
     wireObj.language = cst_encode_String(apiObj.language);
+    wireObj.dynamic_color = cst_encode_i_32(apiObj.dynamicColor);
   }
 
   @protected
@@ -624,7 +660,8 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void cst_api_fill_to_wire_note(Note apiObj, wire_cst_note wireObj) {
     wireObj.id = cst_encode_String(apiObj.id);
-    wireObj.media_id = cst_encode_String(apiObj.mediaId);
+    wireObj.media_id = cst_encode_opt_String(apiObj.mediaId);
+    wireObj.title = cst_encode_String(apiObj.title);
     wireObj.content = cst_encode_String(apiObj.content);
     wireObj.created_at = cst_encode_i_64(apiObj.createdAt);
     wireObj.updated_at = cst_encode_i_64(apiObj.updatedAt);
@@ -693,13 +730,22 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   int cst_encode_conflict_strategy(ConflictStrategy raw);
 
   @protected
+  int cst_encode_filter_mode(FilterMode raw);
+
+  @protected
   int cst_encode_i_32(int raw);
+
+  @protected
+  int cst_encode_language_setting(LanguageSetting raw);
 
   @protected
   int cst_encode_media_type(MediaType raw);
 
   @protected
   int cst_encode_theme_mode(ThemeMode raw);
+
+  @protected
+  int cst_encode_theme_mode_setting(ThemeModeSetting raw);
 
   @protected
   int cst_encode_u_8(int raw);
@@ -764,6 +810,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
       ExportProgress self, SseSerializer serializer);
 
   @protected
+  void sse_encode_filter_mode(FilterMode self, SseSerializer serializer);
+
+  @protected
   void sse_encode_i_32(int self, SseSerializer serializer);
 
   @protected
@@ -772,6 +821,10 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_import_progress(
       ImportProgress self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_language_setting(
+      LanguageSetting self, SseSerializer serializer);
 
   @protected
   void sse_encode_list_String(List<String> self, SseSerializer serializer);
@@ -787,6 +840,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_list_media_item(
       List<MediaItem> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_note(List<Note> self, SseSerializer serializer);
 
   @protected
   void sse_encode_list_prim_u_8_strict(
@@ -856,6 +912,10 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_theme_mode(ThemeMode self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_theme_mode_setting(
+      ThemeModeSetting self, SseSerializer serializer);
 
   @protected
   void sse_encode_u_8(int self, SseSerializer serializer);
@@ -951,6 +1011,24 @@ class RustLibWire implements BaseWire {
           void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>,
               ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
 
+  void wire__crate__api__media__batch_delete_media(
+    int port_,
+    ffi.Pointer<wire_cst_list_String> ids,
+  ) {
+    return _wire__crate__api__media__batch_delete_media(
+      port_,
+      ids,
+    );
+  }
+
+  late final _wire__crate__api__media__batch_delete_mediaPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(ffi.Int64, ffi.Pointer<wire_cst_list_String>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__media__batch_delete_media');
+  late final _wire__crate__api__media__batch_delete_media =
+      _wire__crate__api__media__batch_delete_mediaPtr
+          .asFunction<void Function(int, ffi.Pointer<wire_cst_list_String>)>();
+
   void wire__crate__api__scanner__calculate_file_hash(
     int port_,
     ffi.Pointer<wire_cst_list_prim_u_8_strict> file_path,
@@ -1007,6 +1085,36 @@ class RustLibWire implements BaseWire {
   late final _wire__crate__api__album__create_album =
       _wire__crate__api__album__create_albumPtr.asFunction<
           void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+              ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__note__create_note(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> media_id,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> title,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> content,
+  ) {
+    return _wire__crate__api__note__create_note(
+      port_,
+      media_id,
+      title,
+      content,
+    );
+  }
+
+  late final _wire__crate__api__note__create_notePtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__note__create_note');
+  late final _wire__crate__api__note__create_note =
+      _wire__crate__api__note__create_notePtr.asFunction<
+          void Function(
+              int,
+              ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+              ffi.Pointer<wire_cst_list_prim_u_8_strict>,
               ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
 
   void wire__crate__api__tag__create_tag(
@@ -1130,6 +1238,21 @@ class RustLibWire implements BaseWire {
       _wire__crate__api__tag__delete_tagPtr.asFunction<
           void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
 
+  void wire__crate__api__settings__delete_unreferenced_files(
+    int port_,
+  ) {
+    return _wire__crate__api__settings__delete_unreferenced_files(
+      port_,
+    );
+  }
+
+  late final _wire__crate__api__settings__delete_unreferenced_filesPtr = _lookup<
+          ffi.NativeFunction<ffi.Void Function(ffi.Int64)>>(
+      'frbgen_advance_media_kb_wire__crate__api__settings__delete_unreferenced_files');
+  late final _wire__crate__api__settings__delete_unreferenced_files =
+      _wire__crate__api__settings__delete_unreferenced_filesPtr
+          .asFunction<void Function(int)>();
+
   void wire__crate__api__album__ensure_default_album(
     int port_,
     ffi.Pointer<wire_cst_list_prim_u_8_strict> name,
@@ -1249,6 +1372,55 @@ class RustLibWire implements BaseWire {
       _wire__crate__api__media__filter_media_by_typePtr
           .asFunction<void Function(int, int)>();
 
+  void wire__crate__api__enums__filter_mode_as_str(
+    int port_,
+    int that,
+  ) {
+    return _wire__crate__api__enums__filter_mode_as_str(
+      port_,
+      that,
+    );
+  }
+
+  late final _wire__crate__api__enums__filter_mode_as_strPtr = _lookup<
+          ffi.NativeFunction<ffi.Void Function(ffi.Int64, ffi.Int32)>>(
+      'frbgen_advance_media_kb_wire__crate__api__enums__filter_mode_as_str');
+  late final _wire__crate__api__enums__filter_mode_as_str =
+      _wire__crate__api__enums__filter_mode_as_strPtr
+          .asFunction<void Function(int, int)>();
+
+  void wire__crate__api__enums__filter_mode_display_name(
+    int port_,
+    int that,
+  ) {
+    return _wire__crate__api__enums__filter_mode_display_name(
+      port_,
+      that,
+    );
+  }
+
+  late final _wire__crate__api__enums__filter_mode_display_namePtr = _lookup<
+          ffi.NativeFunction<ffi.Void Function(ffi.Int64, ffi.Int32)>>(
+      'frbgen_advance_media_kb_wire__crate__api__enums__filter_mode_display_name');
+  late final _wire__crate__api__enums__filter_mode_display_name =
+      _wire__crate__api__enums__filter_mode_display_namePtr
+          .asFunction<void Function(int, int)>();
+
+  void wire__crate__api__settings__find_unreferenced_files(
+    int port_,
+  ) {
+    return _wire__crate__api__settings__find_unreferenced_files(
+      port_,
+    );
+  }
+
+  late final _wire__crate__api__settings__find_unreferenced_filesPtr = _lookup<
+          ffi.NativeFunction<ffi.Void Function(ffi.Int64)>>(
+      'frbgen_advance_media_kb_wire__crate__api__settings__find_unreferenced_files');
+  late final _wire__crate__api__settings__find_unreferenced_files =
+      _wire__crate__api__settings__find_unreferenced_filesPtr
+          .asFunction<void Function(int)>();
+
   void wire__crate__api__scanner__generate_thumbnail(
     int port_,
     ffi.Pointer<wire_cst_list_prim_u_8_strict> file_path,
@@ -1324,6 +1496,21 @@ class RustLibWire implements BaseWire {
       _wire__crate__api__media__get_all_mediaPtr
           .asFunction<void Function(int)>();
 
+  void wire__crate__api__note__get_all_notes(
+    int port_,
+  ) {
+    return _wire__crate__api__note__get_all_notes(
+      port_,
+    );
+  }
+
+  late final _wire__crate__api__note__get_all_notesPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Int64)>>(
+          'frbgen_advance_media_kb_wire__crate__api__note__get_all_notes');
+  late final _wire__crate__api__note__get_all_notes =
+      _wire__crate__api__note__get_all_notesPtr
+          .asFunction<void Function(int)>();
+
   void wire__crate__api__tag__get_all_tags(
     int port_,
   ) {
@@ -1376,6 +1563,42 @@ class RustLibWire implements BaseWire {
       _wire__crate__api__tag__get_child_tagsPtr.asFunction<
           void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
 
+  void wire__crate__api__album__get_media_by_album(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> album_id,
+  ) {
+    return _wire__crate__api__album__get_media_by_album(
+      port_,
+      album_id,
+    );
+  }
+
+  late final _wire__crate__api__album__get_media_by_albumPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__album__get_media_by_album');
+  late final _wire__crate__api__album__get_media_by_album =
+      _wire__crate__api__album__get_media_by_albumPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__media__get_media_by_filter(
+    int port_,
+    int filter,
+  ) {
+    return _wire__crate__api__media__get_media_by_filter(
+      port_,
+      filter,
+    );
+  }
+
+  late final _wire__crate__api__media__get_media_by_filterPtr = _lookup<
+          ffi.NativeFunction<ffi.Void Function(ffi.Int64, ffi.Int32)>>(
+      'frbgen_advance_media_kb_wire__crate__api__media__get_media_by_filter');
+  late final _wire__crate__api__media__get_media_by_filter =
+      _wire__crate__api__media__get_media_by_filterPtr
+          .asFunction<void Function(int, int)>();
+
   void wire__crate__api__media__get_media_by_id(
     int port_,
     ffi.Pointer<wire_cst_list_prim_u_8_strict> id,
@@ -1393,6 +1616,25 @@ class RustLibWire implements BaseWire {
       'frbgen_advance_media_kb_wire__crate__api__media__get_media_by_id');
   late final _wire__crate__api__media__get_media_by_id =
       _wire__crate__api__media__get_media_by_idPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__tag__get_media_by_tag(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> tag_id,
+  ) {
+    return _wire__crate__api__tag__get_media_by_tag(
+      port_,
+      tag_id,
+    );
+  }
+
+  late final _wire__crate__api__tag__get_media_by_tagPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__tag__get_media_by_tag');
+  late final _wire__crate__api__tag__get_media_by_tag =
+      _wire__crate__api__tag__get_media_by_tagPtr.asFunction<
           void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
 
   void wire__crate__api__tag__get_media_by_tags_and(
@@ -1480,6 +1722,25 @@ class RustLibWire implements BaseWire {
       _wire__crate__api__search__get_media_with_any_tagPtr
           .asFunction<void Function(int)>();
 
+  void wire__crate__api__media__get_media_with_tags(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> id,
+  ) {
+    return _wire__crate__api__media__get_media_with_tags(
+      port_,
+      id,
+    );
+  }
+
+  late final _wire__crate__api__media__get_media_with_tagsPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__media__get_media_with_tags');
+  late final _wire__crate__api__media__get_media_with_tags =
+      _wire__crate__api__media__get_media_with_tagsPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
   void wire__crate__api__search__get_media_without_any_album(
     int port_,
   ) {
@@ -1510,23 +1771,42 @@ class RustLibWire implements BaseWire {
       _wire__crate__api__search__get_media_without_any_tagPtr
           .asFunction<void Function(int)>();
 
-  void wire__crate__api__note__get_note_by_media_id(
+  void wire__crate__api__note__get_note_by_id(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> id,
+  ) {
+    return _wire__crate__api__note__get_note_by_id(
+      port_,
+      id,
+    );
+  }
+
+  late final _wire__crate__api__note__get_note_by_idPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__note__get_note_by_id');
+  late final _wire__crate__api__note__get_note_by_id =
+      _wire__crate__api__note__get_note_by_idPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__note__get_notes_by_media_id(
     int port_,
     ffi.Pointer<wire_cst_list_prim_u_8_strict> media_id,
   ) {
-    return _wire__crate__api__note__get_note_by_media_id(
+    return _wire__crate__api__note__get_notes_by_media_id(
       port_,
       media_id,
     );
   }
 
-  late final _wire__crate__api__note__get_note_by_media_idPtr = _lookup<
+  late final _wire__crate__api__note__get_notes_by_media_idPtr = _lookup<
           ffi.NativeFunction<
               ffi.Void Function(
                   ffi.Int64, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
-      'frbgen_advance_media_kb_wire__crate__api__note__get_note_by_media_id');
-  late final _wire__crate__api__note__get_note_by_media_id =
-      _wire__crate__api__note__get_note_by_media_idPtr.asFunction<
+      'frbgen_advance_media_kb_wire__crate__api__note__get_notes_by_media_id');
+  late final _wire__crate__api__note__get_notes_by_media_id =
+      _wire__crate__api__note__get_notes_by_media_idPtr.asFunction<
           void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
 
   void wire__crate__api__album__get_root_albums(
@@ -1720,6 +2000,42 @@ class RustLibWire implements BaseWire {
       _wire__crate__api__scanner__is_hash_existsPtr.asFunction<
           void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
 
+  void wire__crate__api__enums__language_setting_as_str(
+    int port_,
+    int that,
+  ) {
+    return _wire__crate__api__enums__language_setting_as_str(
+      port_,
+      that,
+    );
+  }
+
+  late final _wire__crate__api__enums__language_setting_as_strPtr = _lookup<
+          ffi.NativeFunction<ffi.Void Function(ffi.Int64, ffi.Int32)>>(
+      'frbgen_advance_media_kb_wire__crate__api__enums__language_setting_as_str');
+  late final _wire__crate__api__enums__language_setting_as_str =
+      _wire__crate__api__enums__language_setting_as_strPtr
+          .asFunction<void Function(int, int)>();
+
+  void wire__crate__api__enums__language_setting_from_str(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> s,
+  ) {
+    return _wire__crate__api__enums__language_setting_from_str(
+      port_,
+      s,
+    );
+  }
+
+  late final _wire__crate__api__enums__language_setting_from_strPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__enums__language_setting_from_str');
+  late final _wire__crate__api__enums__language_setting_from_str =
+      _wire__crate__api__enums__language_setting_from_strPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
   void wire__crate__api__media__media_type_as_i32(
     int port_,
     int that,
@@ -1736,6 +2052,42 @@ class RustLibWire implements BaseWire {
   late final _wire__crate__api__media__media_type_as_i32 =
       _wire__crate__api__media__media_type_as_i32Ptr
           .asFunction<void Function(int, int)>();
+
+  void wire__crate__api__media__media_type_as_str(
+    int port_,
+    int that,
+  ) {
+    return _wire__crate__api__media__media_type_as_str(
+      port_,
+      that,
+    );
+  }
+
+  late final _wire__crate__api__media__media_type_as_strPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Int64, ffi.Int32)>>(
+          'frbgen_advance_media_kb_wire__crate__api__media__media_type_as_str');
+  late final _wire__crate__api__media__media_type_as_str =
+      _wire__crate__api__media__media_type_as_strPtr
+          .asFunction<void Function(int, int)>();
+
+  void wire__crate__api__media__media_type_from_str(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> s,
+  ) {
+    return _wire__crate__api__media__media_type_from_str(
+      port_,
+      s,
+    );
+  }
+
+  late final _wire__crate__api__media__media_type_from_strPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__media__media_type_from_str');
+  late final _wire__crate__api__media__media_type_from_str =
+      _wire__crate__api__media__media_type_from_strPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
 
   void wire__crate__api__album__remove_media_from_album(
     int port_,
@@ -1946,6 +2298,25 @@ class RustLibWire implements BaseWire {
       _wire__crate__api__search__search_media_advancedPtr.asFunction<
           void Function(int, ffi.Pointer<wire_cst_search_filter>)>();
 
+  void wire__crate__api__note__search_notes(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> query,
+  ) {
+    return _wire__crate__api__note__search_notes(
+      port_,
+      query,
+    );
+  }
+
+  late final _wire__crate__api__note__search_notesPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__note__search_notes');
+  late final _wire__crate__api__note__search_notes =
+      _wire__crate__api__note__search_notesPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
   void wire__crate__api__album__set_album_cover(
     int port_,
     ffi.Pointer<wire_cst_list_prim_u_8_strict> album_id,
@@ -1970,6 +2341,42 @@ class RustLibWire implements BaseWire {
           void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>,
               ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
 
+  void wire__crate__api__enums__theme_mode_setting_as_str(
+    int port_,
+    int that,
+  ) {
+    return _wire__crate__api__enums__theme_mode_setting_as_str(
+      port_,
+      that,
+    );
+  }
+
+  late final _wire__crate__api__enums__theme_mode_setting_as_strPtr = _lookup<
+          ffi.NativeFunction<ffi.Void Function(ffi.Int64, ffi.Int32)>>(
+      'frbgen_advance_media_kb_wire__crate__api__enums__theme_mode_setting_as_str');
+  late final _wire__crate__api__enums__theme_mode_setting_as_str =
+      _wire__crate__api__enums__theme_mode_setting_as_strPtr
+          .asFunction<void Function(int, int)>();
+
+  void wire__crate__api__enums__theme_mode_setting_from_str(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> s,
+  ) {
+    return _wire__crate__api__enums__theme_mode_setting_from_str(
+      port_,
+      s,
+    );
+  }
+
+  late final _wire__crate__api__enums__theme_mode_setting_from_strPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__enums__theme_mode_setting_from_str');
+  late final _wire__crate__api__enums__theme_mode_setting_from_str =
+      _wire__crate__api__enums__theme_mode_setting_from_strPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
   void wire__crate__api__media__update_media(
     int port_,
     ffi.Pointer<wire_cst_media_item> media,
@@ -1987,6 +2394,36 @@ class RustLibWire implements BaseWire {
   late final _wire__crate__api__media__update_media =
       _wire__crate__api__media__update_mediaPtr
           .asFunction<void Function(int, ffi.Pointer<wire_cst_media_item>)>();
+
+  void wire__crate__api__note__update_note(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> id,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> title,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> content,
+  ) {
+    return _wire__crate__api__note__update_note(
+      port_,
+      id,
+      title,
+      content,
+    );
+  }
+
+  late final _wire__crate__api__note__update_notePtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__note__update_note');
+  late final _wire__crate__api__note__update_note =
+      _wire__crate__api__note__update_notePtr.asFunction<
+          void Function(
+              int,
+              ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+              ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+              ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
 
   ffi.Pointer<wire_cst_adjacent_media> cst_new_box_autoadd_adjacent_media() {
     return _cst_new_box_autoadd_adjacent_media();
@@ -2130,6 +2567,21 @@ class RustLibWire implements BaseWire {
   late final _cst_new_list_media_item = _cst_new_list_media_itemPtr
       .asFunction<ffi.Pointer<wire_cst_list_media_item> Function(int)>();
 
+  ffi.Pointer<wire_cst_list_note> cst_new_list_note(
+    int len,
+  ) {
+    return _cst_new_list_note(
+      len,
+    );
+  }
+
+  late final _cst_new_list_notePtr = _lookup<
+          ffi
+          .NativeFunction<ffi.Pointer<wire_cst_list_note> Function(ffi.Int32)>>(
+      'frbgen_advance_media_kb_cst_new_list_note');
+  late final _cst_new_list_note = _cst_new_list_notePtr
+      .asFunction<ffi.Pointer<wire_cst_list_note> Function(int)>();
+
   ffi.Pointer<wire_cst_list_prim_u_8_strict> cst_new_list_prim_u_8_strict(
     int len,
   ) {
@@ -2241,6 +2693,9 @@ final class wire_cst_app_settings extends ffi.Struct {
   external int thumbnail_quality;
 
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> language;
+
+  @ffi.Int32()
+  external int dynamic_color;
 }
 
 final class wire_cst_search_filter extends ffi.Struct {
@@ -2306,6 +2761,8 @@ final class wire_cst_note extends ffi.Struct {
 
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> media_id;
 
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> title;
+
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> content;
 
   @ffi.Int64()
@@ -2365,6 +2822,13 @@ final class wire_cst_list_breadcrumb_item extends ffi.Struct {
 
 final class wire_cst_list_media_item extends ffi.Struct {
   external ffi.Pointer<wire_cst_media_item> ptr;
+
+  @ffi.Int32()
+  external int len;
+}
+
+final class wire_cst_list_note extends ffi.Struct {
+  external ffi.Pointer<wire_cst_note> ptr;
 
   @ffi.Int32()
   external int len;

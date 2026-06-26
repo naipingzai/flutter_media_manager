@@ -8,6 +8,7 @@ use crate::api::{
 use sqlx::Row;
 
 /// 从数据库行转换为 MediaItem
+/// 注意：数据库中 type 字段存储为 TEXT（"image"/"video"/"audio"/"document"/"other"）
 pub fn row_to_media_item(row: &sqlx::sqlite::SqliteRow) -> MediaItem {
     MediaItem {
         id: row.get("id"),
@@ -15,12 +16,11 @@ pub fn row_to_media_item(row: &sqlx::sqlite::SqliteRow) -> MediaItem {
         storage_name: row.get("storage_name"),
         file_path: row.get("file_path"),
         thumbnail_path: row.get("thumbnail_path"),
-        media_type: match row.get::<i32, _>("media_type") {
-            0 => MediaType::Image,
-            1 => MediaType::Video,
-            2 => MediaType::Audio,
-            3 => MediaType::Document,
-            4 => MediaType::Other,
+        media_type: match row.get::<String, _>("type").as_str() {
+            "image" => MediaType::Image,
+            "video" => MediaType::Video,
+            "audio" => MediaType::Audio,
+            "document" => MediaType::Document,
             _ => MediaType::Other,
         },
         mime_type: row.get("mime_type"),
@@ -58,10 +58,12 @@ pub fn row_to_tag(row: &sqlx::sqlite::SqliteRow) -> Tag {
 }
 
 /// 从数据库行转换为 Note
+/// 注意：media_id 现在可为 null（支持独立笔记），新增 title 字段
 pub fn row_to_note(row: &sqlx::sqlite::SqliteRow) -> Note {
     Note {
         id: row.get("id"),
-        media_id: row.get("media_id"),
+        media_id: row.get::<Option<String>, _>("media_id"),
+        title: row.get("title"),
         content: row.get("content"),
         created_at: row.get::<i64, _>("created_at"),
         updated_at: row.get::<i64, _>("updated_at"),
@@ -82,5 +84,6 @@ pub fn row_to_settings(row: &sqlx::sqlite::SqliteRow) -> AppSettings {
         show_content_previews: row.get::<i32, _>("show_content_previews"),
         thumbnail_quality: row.get::<i32, _>("thumbnail_quality"),
         language: row.get("language"),
+        dynamic_color: row.try_get::<i32, _>("dynamic_color").unwrap_or(1),
     }
 }

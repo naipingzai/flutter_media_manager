@@ -1,16 +1,22 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:file_picker/file_picker.dart';
 import '../bloc/bloc.dart';
+import '../core/design_system/components.dart';
+import '../core/i18n/app_localizations.dart';
 import '../widgets/media_grid.dart';
-import '../widgets/search_bar.dart';
 import '../widgets/file_browser_dialog.dart';
 import '../widgets/advanced_search_dialog.dart';
 import '../src/rust/api/media.dart';
+import '../src/rust/api/enums.dart';
 import '../src/rust/api/scanner.dart';
+import '../src/rust/api/search.dart';
 import '../src/rust/api/tag.dart';
 import '../src/rust/api/album.dart';
+import '../src/rust/api/note.dart' as note_api;
+import 'media_detail_screen.dart';
+import 'settings_screen.dart';
 
 class MediaScreen extends StatefulWidget {
   const MediaScreen({super.key});
@@ -19,6 +25,8 @@ class MediaScreen extends StatefulWidget {
 }
 
 class _MediaScreenState extends State<MediaScreen> {
+  FilterMode? _filterMode;
+
   @override
   void initState() {
     super.initState();
@@ -29,44 +37,116 @@ class _MediaScreenState extends State<MediaScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('媒体库'),
-        centerTitle: true,
+        title: Text(AppLocalizations.of(context).tabAllMedia),
         actions: [
+          // 列数控制按钮
+          BlocBuilder<MediaBloc, MediaState>(
+            buildWhen: (prev, curr) => prev.gridColumns != curr.gridColumns,
+            builder: (context, state) {
+              return PopupMenuButton<int>(
+                icon: const Icon(Icons.grid_view),
+                tooltip: AppLocalizations.of(context).gridColumns,
+                onSelected: (cols) {
+                  context.read<MediaBloc>().add(MediaSetGridColumnsEvent(cols));
+                },
+                itemBuilder: (_) => [2, 3, 4, 5].map((cols) {
+                  return CheckedPopupMenuItem<int>(
+                    value: cols,
+                    checked: state.gridColumns == cols,
+                    child: Text('$cols ${AppLocalizations.of(context).columns}'),
+                  );
+                }).toList(),
+              );
+            },
+          ),
           IconButton(
-              icon: const Icon(Icons.filter_list),
-              onPressed: () => _showFilterOptions(context)),
+            icon: const Icon(Icons.search),
+            tooltip: AppLocalizations.of(context).search,
+            onPressed: () => _showSearch(context),
+          ),
           IconButton(
-              icon: const Icon(Icons.more_vert),
-              onPressed: () => _showMoreOptions(context)),
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: AppLocalizations.of(context).settings,
+            onPressed: () => _openSettings(context),
+          ),
         ],
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(56),
-          child: MediaSearchBar(),
-        ),
       ),
       body: BlocBuilder<MediaBloc, MediaState>(
-        builder: (context, state) => Stack(
+        builder: (context, state) => Column(
           children: [
-            _buildBody(context, state),
-            if (state.isSelectionMode)
-              Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: _buildSelectionBottomBar(context, state)),
+            // 过滤器 Chip 行（多选模式下隐藏）
+            if (!state.isSelectionMode) _buildFilterChips(context, state),
+            // 内容区域
+            Expanded(child: _buildBody(context, state)),
           ],
         ),
       ),
+      // 多选模式底栏
+      bottomNavigationBar: BlocBuilder<MediaBloc, MediaState>(
+        builder: (context, state) {
+          if (!state.isSelectionMode) return const SizedBox.shrink();
+          return _buildSelectionBottomBar(context, state);
+        },
+      ),
+      // FAB: 导入（多选模式下隐藏）
       floatingActionButton: BlocBuilder<MediaBloc, MediaState>(
         builder: (context, state) {
           if (state.isSelectionMode) return const SizedBox.shrink();
           return FloatingActionButton(
-            onPressed: () => _showImportOptions(context),
-            child: const Icon(Icons.add),
+            onPressed: () => _openFileBrowser(context),
+            tooltip: AppLocalizations.of(context).importMedia,
+            child: const Icon(Icons.add_photo_alternate),
           );
         },
       ),
     );
+  }
+
+  /// 过滤器 Chip 行
+  Widget _buildFilterChips(BuildContext context, MediaState state) {
+    final loc = AppLocalizations.of(context);
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          _buildFilterChip(loc.filterAll, null),
+          const SizedBox(width: 8),
+          _buildFilterChip(loc.filterWithTags, FilterMode.withTags),
+          const SizedBox(width: 8),
+          _buildFilterChip(loc.filterWithoutTags, FilterMode.withoutTags),
+          const SizedBox(width: 8),
+          _buildFilterChip(loc.filterWithAlbums, FilterMode.withAlbums),
+          const SizedBox(width: 8),
+          _buildFilterChip(loc.filterWithoutAlbums, FilterMode.withoutAlbums),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String label, FilterMode? mode) {
+    final selected = _filterMode == mode;
+    return FilterChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => _toggleFilter(mode),
+    );
+  }
+
+  void _toggleFilter(FilterMode? mode) {
+    setState(() {
+      if (_filterMode == mode) {
+        _filterMode = null;
+      } else {
+        _filterMode = mode;
+      }
+    });
+    if (mode != null) {
+      context.read<MediaBloc>().add(MediaFilterByFilterModeEvent(mode));
+    } else {
+      context.read<MediaBloc>().add(const MediaLoadAllEvent());
+    }
+    context.read<MediaBloc>().add(const MediaClearSelectionEvent());
   }
 
   Widget _buildBody(BuildContext context, MediaState state) {
@@ -81,129 +161,205 @@ class _MediaScreenState extends State<MediaScreen> {
             children: [
               const Icon(Icons.error_outline, size: 48, color: Colors.red),
               const SizedBox(height: 16),
-              Text('加载失败: ${state.errorMessage ?? '未知错误'}',
+              Text('${AppLocalizations.of(context).error}: ${state.errorMessage ?? AppLocalizations.of(context).unknown}',
                   textAlign: TextAlign.center),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () =>
                     context.read<MediaBloc>().add(const MediaLoadAllEvent()),
-                child: const Text('重试'),
+                child: Text(AppLocalizations.of(context).retry),
               ),
             ],
           ),
         );
       case MediaStatus.loaded:
         if (state.filteredList.isEmpty) {
-          return const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.photo_library_outlined, size: 64, color: Colors.grey),
-                SizedBox(height: 16),
-                Text('暂无媒体文件',
-                    style: TextStyle(fontSize: 18, color: Colors.grey)),
-                SizedBox(height: 8),
-                Text('点击右下角按钮导入',
-                    style: TextStyle(fontSize: 14, color: Colors.grey)),
-              ],
-            ),
-          );
+          return _buildEmptyState();
         }
-        return Padding(
-          padding: EdgeInsets.only(bottom: state.isSelectionMode ? 80.0 : 0),
-          child: MediaGrid(
-            mediaList: state.filteredList,
-            selectedIds: state.selectedMediaIds,
-            crossAxisCount: state.gridColumns,
-          ),
+        return MediaGrid(
+          mediaList: state.filteredList,
+          selectedIds: state.selectedMediaIds,
+          crossAxisCount: state.gridColumns,
         );
     }
   }
 
+  Widget _buildEmptyState() {
+    final loc = AppLocalizations.of(context);
+    String text = loc.noMedia;
+    String? subtitle = _filterMode == null ? loc.noMediaDesc : null;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: EmptyState(
+          icon: Icons.photo_library_outlined,
+          title: text,
+          subtitle: subtitle,
+        ),
+      ),
+    );
+  }
+
+  /// 多选模式底栏
   Widget _buildSelectionBottomBar(BuildContext context, MediaState state) {
     final selectedCount = state.selectedMediaIds.length;
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, -2)),
+          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, -2)),
         ],
       ),
       child: SafeArea(
         top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          child: Row(
-            children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text('已选 $selectedCount',
-                    style: TextStyle(
-                        color:
-                            Theme.of(context).colorScheme.onPrimaryContainer,
-                        fontWeight: FontWeight.bold)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        child: Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.close),
+              tooltip: AppLocalizations.of(context).cancel,
+              onPressed: () {
+                context.read<MediaBloc>().add(const MediaClearSelectionEvent());
+                context.read<MediaBloc>().add(const MediaToggleSelectionModeEvent());
+              },
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(20),
               ),
-              const Spacer(),
-              IconButton(
-                  icon: const Icon(Icons.label),
-                  tooltip: '添加标签',
-                  onPressed: selectedCount > 0
-                      ? () => _batchAddTags(context, state.selectedMediaIds)
-                      : null),
-              IconButton(
-                  icon: const Icon(Icons.photo_album),
-                  tooltip: '添加到相册',
-                  onPressed: selectedCount > 0
-                      ? () => _batchAddToAlbum(
-                          context, state.selectedMediaIds)
-                      : null),
-              IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.red),
-                  tooltip: '批量删除',
-                  onPressed: selectedCount > 0
-                      ? () => _batchDelete(context, state.selectedMediaIds)
-                      : null),
-              IconButton(
-                  icon: const Icon(Icons.close),
-                  tooltip: '取消选择',
-                  onPressed: () {
-                    context
-                        .read<MediaBloc>()
-                        .add(const MediaClearSelectionEvent());
-                    context
-                        .read<MediaBloc>()
-                        .add(const MediaToggleSelectionModeEvent());
-                  }),
-            ],
-          ),
+              child: Text('${AppLocalizations.of(context).selected} $selectedCount',
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      fontWeight: FontWeight.bold)),
+            ),
+            const Spacer(),
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.red),
+              tooltip: AppLocalizations.of(context).delete,
+              onPressed: selectedCount > 0 ? () => _batchDelete(context, state.selectedMediaIds) : null,
+            ),
+            IconButton(
+              icon: const Icon(Icons.label_outline),
+              tooltip: AppLocalizations.of(context).addTag,
+              onPressed: selectedCount > 0 ? () => _batchAddTags(context, state.selectedMediaIds) : null,
+            ),
+            IconButton(
+              icon: const Icon(Icons.photo_album_outlined),
+              tooltip: AppLocalizations.of(context).addToAlbum,
+              onPressed: selectedCount > 0 ? () => _batchAddToAlbum(context, state.selectedMediaIds) : null,
+            ),
+          ],
         ),
+      ),
+      ),
+    );
+  }
+
+  /// 打开文件浏览器
+  Future<void> _openFileBrowser(BuildContext context) async {
+    final filePaths = await openFileBrowser(context);
+    if (filePaths.isEmpty) return;
+    if (!context.mounted) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _ImportProgressDialog(totalCount: filePaths.length),
+    );
+
+    int successCount = 0;
+    int failCount = 0;
+    for (final path in filePaths) {
+      try {
+        final file = File(path);
+        if (!await file.exists()) {
+          failCount++;
+          continue;
+        }
+        await importSingleFile(filePath: path);
+        successCount++;
+      } catch (e) {
+        failCount++;
+      }
+    }
+
+    if (!context.mounted) return;
+    try { Navigator.pop(context); } catch (_) {}
+
+    context.read<MediaBloc>().add(const MediaLoadAllEvent());
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(AppLocalizations.of(context).importComplete),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('✅ ${AppLocalizations.of(context).success}: $successCount'),
+            if (failCount > 0) Text('❌ ${AppLocalizations.of(context).importFailed}: $failCount', style: const TextStyle(color: Colors.red)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(AppLocalizations.of(context).confirm),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 搜索
+  void _showSearch(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.9,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (ctx, scrollController) => _SearchOverlay(scrollController: scrollController),
+      ),
+    );
+  }
+
+  /// 打开设置
+  void _openSettings(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.9,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (ctx, scrollController) => const SettingsScreen(),
       ),
     );
   }
 
   Future<void> _batchDelete(BuildContext context, Set<String> ids) async {
+    final loc = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-              title: const Text('批量删除'),
-              content:
-                  Text('确定删除选中的 ${ids.length} 个文件？此操作不可恢复。'),
+              title: Text(loc.confirmBatchDelete),
+              content: Text(loc.confirmBatchDelete),
               actions: [
                 TextButton(
                     onPressed: () => Navigator.pop(ctx, false),
-                    child: const Text('取消')),
-                FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                    child: Text(loc.cancel)),
+                TextButton(
+                  style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
                   onPressed: () => Navigator.pop(ctx, true),
-                  child: const Text('删除'),
+                  child: Text(loc.delete),
                 ),
               ],
             ));
@@ -214,19 +370,17 @@ class _MediaScreenState extends State<MediaScreen> {
     context.read<MediaBloc>().add(const MediaClearSelectionEvent());
     context.read<MediaBloc>().add(const MediaToggleSelectionModeEvent());
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text('已删除 ${ids.length} 个文件')));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${loc.success} ${ids.length}')));
   }
 
-  Future<void> _batchAddTags(
-      BuildContext context, Set<String> mediaIds) async {
+  Future<void> _batchAddTags(BuildContext context, Set<String> mediaIds) async {
+    final loc = AppLocalizations.of(context);
     try {
       final tags = await getAllTags();
       if (!context.mounted) return;
       final result = await showDialog<Set<String>>(
           context: context,
-          builder: (ctx) => _TagSelectionDialog(
-              tags: tags, preselectedIds: <String>{}));
+          builder: (ctx) => _TagSelectionDialog(tags: tags, preselectedIds: <String>{}));
       if (result == null || result.isEmpty) return;
       int successCount = 0;
       for (final mediaId in mediaIds) {
@@ -242,395 +396,384 @@ class _MediaScreenState extends State<MediaScreen> {
       }
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('已为 $successCount 个文件添加标签')));
+          SnackBar(content: Text('${loc.addTag} $successCount')));
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('加载标签失败: $e')));
+          .showSnackBar(SnackBar(content: Text('${loc.error}: $e')));
     }
   }
 
-  Future<void> _batchAddToAlbum(
-      BuildContext context, Set<String> mediaIds) async {
+  Future<void> _batchAddToAlbum(BuildContext context, Set<String> mediaIds) async {
+    final loc = AppLocalizations.of(context);
     try {
       final albums = await getRootAlbums();
       if (!context.mounted) return;
       final selectedAlbum = await showDialog<String>(
           context: context,
-          builder: (ctx) => AlertDialog(
-                title: const Text('选择相册'),
-                content: SizedBox(
-                  width: double.maxFinite,
-                  child: albums.isEmpty
-                      ? const Text('暂无相册，请先在相册页面创建')
-                      : ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: albums.length,
-                          itemBuilder: (ctx, index) {
-                            final info = albums[index];
-                            return ListTile(
-                              leading: const Icon(Icons.photo_album),
-                              title: Text(info.album.name),
-                              subtitle: Text('${info.mediaCount} 个文件'),
-                              onTap: () =>
-                                  Navigator.pop(ctx, info.album.id),
-                            );
-                          },
-                        ),
-                ),
-                actions: [
-                  TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: const Text('取消')),
-                ],
-              ));
+          builder: (ctx) => _AddToAlbumDialog(albums: albums));
       if (selectedAlbum == null) return;
-      await addMediaToAlbum(
-          mediaIds: mediaIds.toList(), albumId: selectedAlbum);
+      await addMediaToAlbum(mediaIds: mediaIds.toList(), albumId: selectedAlbum);
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('已添加 ${mediaIds.length} 个文件到相册')));
+          SnackBar(content: Text('${loc.addToAlbum} ${mediaIds.length}')));
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('操作失败: $e')));
+          .showSnackBar(SnackBar(content: Text('${loc.error}: $e')));
     }
   }
+}
 
-  void _showFilterOptions(BuildContext context) {
-    showModalBottomSheet(
-        context: context,
-        builder: (ctx) => SafeArea(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.image),
-                    title: const Text('仅图片'),
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      context.read<MediaBloc>().add(
-                          const MediaFilterByTypeEvent(MediaType.image));
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.videocam),
-                    title: const Text('仅视频'),
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      context.read<MediaBloc>().add(
-                          const MediaFilterByTypeEvent(MediaType.video));
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.audio_file),
-                    title: const Text('仅音频'),
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      context.read<MediaBloc>().add(
-                          const MediaFilterByTypeEvent(MediaType.audio));
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.clear_all),
-                    title: const Text('显示全部'),
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      context
-                          .read<MediaBloc>()
-                          .add(const MediaLoadAllEvent());
-                    },
-                  ),
-                  const Divider(),
-                  ListTile(
-                    leading: const Icon(Icons.tune),
-                    title: const Text('高级搜索'),
-                    subtitle: const Text('组合关键词、类型、日期、标签、相册'),
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      showDialog(
-                        context: context,
-                        builder: (_) => const AdvancedSearchDialog(),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ));
+/// 搜索覆盖层 - 实时搜索 + 搜索历史 + 高级搜索入口
+class _SearchOverlay extends StatefulWidget {
+  final ScrollController scrollController;
+  const _SearchOverlay({required this.scrollController});
+
+  @override
+  State<_SearchOverlay> createState() => _SearchOverlayState();
+}
+
+class _SearchOverlayState extends State<_SearchOverlay> {
+  final _controller = TextEditingController();
+  List<MediaItem> _results = [];
+  List<note_api.Note> _noteResults = [];
+  bool _isSearching = false;
+  Timer? _debounceTimer;
+
+  // 搜索历史（内存中存储，页面关闭后清除）
+  static final List<String> _searchHistory = [];
+  bool _showHistory = true;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _debounceTimer?.cancel();
+    super.dispose();
   }
 
-  void _showMoreOptions(BuildContext context) {
-    showModalBottomSheet(
-        context: context,
-        builder: (ctx) => SafeArea(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.select_all),
-                    title: const Text('选择模式'),
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      context
-                          .read<MediaBloc>()
-                          .add(const MediaToggleSelectionModeEvent());
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.sort),
-                    title: const Text('排序'),
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      _showSortOptions(context);
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.grid_on),
-                    title: const Text('网格设置'),
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      _showGridOptions(context);
-                    },
-                  ),
-                ],
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // 搜索栏
+        Padding(
+          padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
+          child: Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Navigator.pop(context),
               ),
-            ));
-  }
-
-  void _showImportOptions(BuildContext context) {
-    showModalBottomSheet(
-        context: context,
-        builder: (ctx) => SafeArea(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.folder_open),
-                    title: const Text('扫描文件夹'),
-                    onTap: () async {
-                      Navigator.pop(ctx);
-                      await _scanDirectory(context);
-                    },
+              Expanded(
+                child: TextField(
+                  controller: _controller,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    hintText: AppLocalizations.of(context).searchHint,
+                    border: InputBorder.none,
+                    suffixIcon: _controller.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 20),
+                            onPressed: () {
+                              _controller.clear();
+                              setState(() {
+                                _results = [];
+                                _noteResults = [];
+                                _showHistory = true;
+                              });
+                            },
+                          )
+                        : null,
                   ),
-                  ListTile(
-                    leading: const Icon(Icons.file_upload),
-                    title: const Text('浏览选择文件'),
-                    subtitle: const Text('直接浏览文件系统，显示所有文件'),
-                    onTap: () async {
-                      Navigator.pop(ctx);
-                      await _requestPermissionAndImport(context);
-                    },
-                  ),
-                ],
-              ),
-            ));
-  }
-
-  Future<void> _scanDirectory(BuildContext context) async {
-    final result = await FilePicker.platform.getDirectoryPath();
-    if (result == null) return;
-    if (!context.mounted) return;
-    showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => const AlertDialog(
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('正在扫描文件夹...'),
-                ],
-              ),
-            ));
-    try {
-      final scanResult = await scanDirectory(path: result);
-      if (!context.mounted) return;
-      Navigator.pop(context);
-      showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-                title: const Text('扫描完成'),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('导入: ${scanResult.importedCount}'),
-                    Text('重复: ${scanResult.duplicateCount}'),
-                    Text('失败: ${scanResult.failedCount}'),
-                  ],
+                  onChanged: _onSearch,
+                  onSubmitted: (q) => _executeSearch(q),
                 ),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      context
-                          .read<MediaBloc>()
-                          .add(const MediaLoadAllEvent());
-                    },
-                    child: const Text('确定'),
-                  ),
-                ],
-              ));
-    } catch (e) {
-      if (!context.mounted) return;
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('扫描失败: $e')));
-    }
+              ),
+              // 高级搜索按钮
+              IconButton(
+                icon: const Icon(Icons.tune),
+                tooltip: AppLocalizations.of(context).search,
+                onPressed: () {
+                  Navigator.pop(context);
+                  showDialog(
+                    context: context,
+                    builder: (_) => const AdvancedSearchDialog(),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+        const Divider(height: 1),
+        // 内容区域
+        Expanded(
+          child: _buildContent(),
+        ),
+      ],
+    );
   }
 
-  Future<void> _requestPermissionAndImport(BuildContext context) async {
-    // openFileBrowser 会自动处理权限请求
-    final filePaths = await openFileBrowser(context);
-    if (filePaths.isEmpty) return; // 用户取消或权限被拒
-    if (!context.mounted) return;
-
-    // 显示导入进度
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => _ImportProgressDialog(totalCount: filePaths.length),
-    );
-
-    // 逐个导入文件
-    int successCount = 0;
-    int failCount = 0;
-    final errors = <String>[];
-    for (final path in filePaths) {
-      try {
-        final file = File(path);
-        if (!await file.exists()) {
-          failCount++;
-          errors.add('文件不存在: $path');
-          continue;
-        }
-        await importSingleFile(filePath: path);
-        successCount++;
-      } catch (e) {
-        failCount++;
-        errors.add('$path: $e');
-      }
+  Widget _buildContent() {
+    if (_isSearching) {
+      return const Center(child: CircularProgressIndicator());
     }
 
-    if (!context.mounted) return;
-    // 关闭进度对话框
-    try { Navigator.pop(context); } catch (_) {}
+    // 显示搜索历史
+    if (_showHistory && _controller.text.isEmpty && _searchHistory.isNotEmpty) {
+      return _buildHistoryList();
+    }
 
-    // 刷新媒体列表
-    context.read<MediaBloc>().add(const MediaLoadAllEvent());
+    // 显示搜索结果
+    if (_controller.text.isNotEmpty) {
+      if (_results.isEmpty && _noteResults.isEmpty) {
+        return Center(
+          child: Text(
+            AppLocalizations.of(context).noResults,
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+          ),
+        );
+      }
+      return _buildResultsList();
+    }
 
-    // 显示结果
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('导入完成: $successCount 成功, $failCount 失败'),
-        duration: const Duration(seconds: 3),
+    // 初始状态
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.search, size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3)),
+          const SizedBox(height: 12),
+          Text(AppLocalizations.of(context).searchHint, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+        ],
       ),
     );
+  }
 
-    if (errors.isNotEmpty) {
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('导入错误详情'),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: errors.length.clamp(0, 20),
-              itemBuilder: (_, index) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Text(errors[index], style: const TextStyle(fontSize: 12, color: Colors.red)),
+  Widget _buildHistoryList() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: Row(
+            children: [
+              Text(AppLocalizations.of(context).search, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              const Spacer(),
+              TextButton(
+                onPressed: () {
+                  setState(() => _searchHistory.clear());
+                },
+                child: Text(AppLocalizations.of(context).delete, style: const TextStyle(fontSize: 12)),
               ),
-            ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('关闭'),
-            ),
-          ],
+        ),
+        Expanded(
+          child: ListView.builder(
+            controller: widget.scrollController,
+            itemCount: _searchHistory.length,
+            itemBuilder: (ctx, i) {
+              final query = _searchHistory[i];
+              return ListTile(
+                leading: const Icon(Icons.history, size: 20),
+                title: Text(query, style: const TextStyle(fontSize: 14)),
+                dense: true,
+                onTap: () {
+                  _controller.text = query;
+                  _executeSearch(query);
+                },
+                trailing: IconButton(
+                  icon: const Icon(Icons.close, size: 16),
+                  onPressed: () {
+                    setState(() => _searchHistory.removeAt(i));
+                  },
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildResultsList() {
+    final total = _results.length + _noteResults.length;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          child: Text(
+            '${AppLocalizations.of(context).noResults} ($total)',
+            style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            controller: widget.scrollController,
+            itemCount: _results.length + _noteResults.length,
+            itemBuilder: (ctx, i) {
+              if (i < _results.length) {
+                final media = _results[i];
+                return ListTile(
+                  leading: _buildMediaThumbnail(media),
+                  title: Text(media.originalName, style: const TextStyle(fontSize: 14)),
+                  subtitle: Text(
+                    '${_formatSize(media.size)} · ${_formatDate(media.createdAt)}',
+                    style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => MediaDetailScreen(media: media, mediaList: _results),
+                      ),
+                    );
+                  },
+                );
+              } else {
+                final note = _noteResults[i - _results.length];
+                return ListTile(
+                  leading: const Icon(Icons.note, color: Colors.amber),
+                  title: Text('${AppLocalizations.of(context).notes}: ${note.content}', maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14)),
+                  subtitle: Text('${AppLocalizations.of(context).tabMedia} ID: ${note.mediaId}', style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                );
+              }
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMediaThumbnail(MediaItem media) {
+    if (media.thumbnailPath.isNotEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: Image.file(
+          File(media.thumbnailPath),
+          width: 40,
+          height: 40,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => const Icon(Icons.image, size: 40),
         ),
       );
     }
+    return Icon(_getMediaIcon(media.mediaType), size: 40);
   }
 
-  void _showSortOptions(BuildContext context) {
-    final bloc = context.read<MediaBloc>();
-    final cf = bloc.state.sortField;
-    final co = bloc.state.sortOrder;
-    showModalBottomSheet(
-        context: context,
-        builder: (_) => SafeArea(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const ListTile(
-                      title: Text('排序方式',
-                          style: TextStyle(fontWeight: FontWeight.bold))),
-                  _buildSortTile(
-                      context, '按日期', SortField.date, cf, co, bloc),
-                  _buildSortTile(
-                      context, '按名称', SortField.name, cf, co, bloc),
-                  _buildSortTile(
-                      context, '按大小', SortField.size, cf, co, bloc),
-                  _buildSortTile(
-                      context, '按类型', SortField.type, cf, co, bloc),
-                ],
+  IconData _getMediaIcon(MediaType type) {
+    switch (type) {
+      case MediaType.image: return Icons.image;
+      case MediaType.video: return Icons.videocam;
+      case MediaType.audio: return Icons.audiotrack;
+      case MediaType.document: return Icons.description;
+      case MediaType.other: return Icons.insert_drive_file;
+    }
+  }
+
+  String _formatSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+  }
+
+  String _formatDate(int timestamp) {
+    final date = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+
+  void _onSearch(String query) {
+    _debounceTimer?.cancel();
+    if (query.length < 2) {
+      setState(() {
+        _results = [];
+        _noteResults = [];
+        _showHistory = query.isEmpty;
+      });
+      return;
+    }
+    setState(() => _isSearching = true);
+    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+      _executeSearch(query);
+    });
+  }
+
+  Future<void> _executeSearch(String query) async {
+    if (query.length < 2) return;
+
+    setState(() {
+      _isSearching = true;
+      _showHistory = false;
+    });
+
+    // 添加到搜索历史
+    if (!_searchHistory.contains(query)) {
+      _searchHistory.insert(0, query);
+      if (_searchHistory.length > 20) _searchHistory.removeLast();
+    }
+
+    try {
+      // 同时搜索媒体和笔记
+      final filter = SearchFilter(query: query);
+      final mediaResults = await searchMediaAdvanced(filter: filter);
+      final noteResults = await note_api.searchNotes(query: query);
+
+      if (mounted) {
+        setState(() {
+          _results = mediaResults;
+          _noteResults = noteResults;
+          _isSearching = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _results = [];
+          _noteResults = [];
+          _isSearching = false;
+        });
+      }
+    }
+  }
+}
+
+/// 添加到相册对话框
+class _AddToAlbumDialog extends StatelessWidget {
+  final List<dynamic> albums;
+  const _AddToAlbumDialog({required this.albums});
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(AppLocalizations.of(context).addToAlbum),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: albums.isEmpty
+            ? Text(AppLocalizations.of(context).noAlbums)
+            : ListView.builder(
+                shrinkWrap: true,
+                itemCount: albums.length,
+                itemBuilder: (ctx, index) {
+                  final info = albums[index];
+                  return ListTile(
+                    leading: const Icon(Icons.photo_album),
+                    title: Text(info.album.name),
+                    subtitle: Text('${info.mediaCount} ${AppLocalizations.of(context).files}'),
+                    onTap: () => Navigator.pop(ctx, info.album.id),
+                  );
+                },
               ),
-            ));
-  }
-
-  Widget _buildSortTile(BuildContext context, String title, SortField field,
-      SortField cf, SortOrder co, MediaBloc bloc) {
-    final sel = field == cf;
-    return ListTile(
-      leading: sel
-          ? Icon(co == SortOrder.ascending
-              ? Icons.arrow_upward
-              : Icons.arrow_downward)
-          : const SizedBox(width: 24),
-      title: Text(title),
-      trailing: sel ? const Icon(Icons.check) : null,
-      onTap: () {
-        Navigator.pop(context);
-        bloc.add(MediaSortEvent(
-            field, sel && co == SortOrder.descending
-                ? SortOrder.ascending
-                : SortOrder.descending));
-      },
+      ),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(AppLocalizations.of(context).cancel)),
+      ],
     );
-  }
-
-  void _showGridOptions(BuildContext context) {
-    final bloc = context.read<MediaBloc>();
-    final cc = bloc.state.gridColumns;
-    showModalBottomSheet(
-        context: context,
-        builder: (_) => SafeArea(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const ListTile(
-                      title: Text('网格列数',
-                          style: TextStyle(fontWeight: FontWeight.bold))),
-                  for (int i = 2; i <= 6; i++)
-                    ListTile(
-                      leading: Icon(Icons.grid_view,
-                          color: i == cc
-                              ? Theme.of(context).primaryColor
-                              : null),
-                      title: Text('$i 列'),
-                      trailing:
-                          i == cc ? const Icon(Icons.check) : null,
-                      onTap: () {
-                        Navigator.pop(context);
-                        bloc.add(MediaSetGridColumnsEvent(i));
-                      },
-                    ),
-                ],
-              ),
-            ));
   }
 }
 
@@ -645,9 +788,9 @@ class _ImportProgressDialog extends StatelessWidget {
         children: [
           const CircularProgressIndicator(),
           const SizedBox(height: 16),
-          Text('正在导入 $totalCount 个文件...'),
+          Text('${AppLocalizations.of(context).importing} ($totalCount)'),
           const SizedBox(height: 8),
-          Text('请稍候，正在复制和处理文件',
+          Text(AppLocalizations.of(context).loading,
               style: TextStyle(fontSize: 12, color: Colors.grey[600])),
         ],
       ),
@@ -658,15 +801,13 @@ class _ImportProgressDialog extends StatelessWidget {
 class _TagSelectionDialog extends StatefulWidget {
   final List<Tag> tags;
   final Set<String> preselectedIds;
-  const _TagSelectionDialog(
-      {required this.tags, required this.preselectedIds});
+  const _TagSelectionDialog({required this.tags, required this.preselectedIds});
   @override
   State<_TagSelectionDialog> createState() => _TagSelectionDialogState();
 }
 
 class _TagSelectionDialogState extends State<_TagSelectionDialog> {
   late Set<String> _selectedIds;
-  final _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -675,85 +816,45 @@ class _TagSelectionDialogState extends State<_TagSelectionDialog> {
   }
 
   @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final query = _searchController.text.toLowerCase();
-    final filtered = query.isEmpty
-        ? widget.tags
-        : widget.tags
-            .where((t) => t.name.toLowerCase().contains(query))
-            .toList();
     return AlertDialog(
-      title: const Text('选择标签'),
+      title: Text(AppLocalizations.of(context).addTag),
       content: SizedBox(
         width: double.maxFinite,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _searchController,
-              decoration: const InputDecoration(
-                hintText: '搜索标签...',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
-                isDense: true,
-              ),
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: filtered.isEmpty
-                  ? const Center(child: Text('无匹配标签'))
-                  : ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: filtered.length,
-                      itemBuilder: (_, i) {
-                        final tag = filtered[i];
-                        return CheckboxListTile(
-                          title: Text(tag.name),
-                          subtitle: tag.color != null
-                              ? Row(children: [
-                                  Container(
-                                    width: 12,
-                                    height: 12,
-                                    decoration: BoxDecoration(
-                                      color: Color(int.parse(
-                                          tag.color!
-                                              .replaceAll('#', '0xFF'))),
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                ])
-                              : null,
-                          value: _selectedIds.contains(tag.id),
-                          onChanged: (sel) {
-                            setState(() {
-                              if (sel == true) {
-                                _selectedIds.add(tag.id);
-                              } else {
-                                _selectedIds.remove(tag.id);
-                              }
-                            });
-                          },
-                        );
-                      },
+        child: widget.tags.isEmpty
+            ? Text(AppLocalizations.of(context).noTags)
+            : ListView.builder(
+                shrinkWrap: true,
+                itemCount: widget.tags.length,
+                itemBuilder: (_, i) {
+                  final tag = widget.tags[i];
+                  final isSelected = _selectedIds.contains(tag.id);
+                  return ListTile(
+                    leading: Icon(
+                      isSelected ? Icons.check_circle : Icons.circle_outlined,
+                      color: isSelected ? Theme.of(context).colorScheme.primary : null,
                     ),
-            ),
-          ],
-        ),
+                    title: Text(tag.name),
+                    onTap: () {
+                      setState(() {
+                        if (isSelected) {
+                          _selectedIds.remove(tag.id);
+                        } else {
+                          _selectedIds.add(tag.id);
+                        }
+                      });
+                    },
+                  );
+                },
+              ),
       ),
       actions: [
         TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('取消')),
+            child: Text(AppLocalizations.of(context).cancel)),
         FilledButton(
           onPressed: () => Navigator.pop(context, _selectedIds),
-          child: Text('确认 (${_selectedIds.length})'),
+          child: Text(AppLocalizations.of(context).confirm),
         ),
       ],
     );

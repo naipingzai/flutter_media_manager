@@ -12,16 +12,24 @@ pub enum ThemeMode {
     Dark,
 }
 
-/// 应用设置
+/// 应用设置 - Skill-08 §1 (6 个设置项)
 #[frb]
 #[derive(Debug, Clone)]
 pub struct AppSettings {
+    /// 主题模式 (system/light/dark) - 默认: system
     pub theme_mode: ThemeMode,
+    /// 网格列数 - 默认: 3
     pub grid_columns: i32,
+    /// 相册网格列数 - 默认: 2
     pub album_grid_columns: i32,
+    /// 是否显示内容预览 - 默认: true
     pub show_content_previews: i32,
+    /// 缩略图质量 1-100 - 默认: 85
     pub thumbnail_quality: i32,
+    /// 语言 (system/zh/en) - 默认: system
     pub language: String,
+    /// 动态颜色 (Android 12+) - 默认: true
+    pub dynamic_color: i32,
 }
 
 /// 存储统计
@@ -53,7 +61,8 @@ pub async fn get_settings() -> Result<AppSettings, String> {
                 album_grid_columns: 2,
                 show_content_previews: 1,
                 thumbnail_quality: 85,
-                language: "zh_CN".to_string(),
+                language: "system".to_string(),
+                dynamic_color: 1,
             })
         }
     }
@@ -70,15 +79,16 @@ pub async fn save_settings(settings: AppSettings) -> Result<(), String> {
     };
 
     sqlx::query(
-        "INSERT INTO app_settings (id, theme_mode, grid_columns, album_grid_columns, show_content_previews, thumbnail_quality, language)
-         VALUES (1, ?, ?, ?, ?, ?, ?)
+        "INSERT INTO app_settings (id, theme_mode, grid_columns, album_grid_columns, show_content_previews, thumbnail_quality, language, dynamic_color)
+         VALUES (1, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(id) DO UPDATE SET
             theme_mode = excluded.theme_mode,
             grid_columns = excluded.grid_columns,
             album_grid_columns = excluded.album_grid_columns,
             show_content_previews = excluded.show_content_previews,
             thumbnail_quality = excluded.thumbnail_quality,
-            language = excluded.language"
+            language = excluded.language,
+            dynamic_color = excluded.dynamic_color"
     )
     .bind(theme_int)
     .bind(settings.grid_columns)
@@ -86,6 +96,7 @@ pub async fn save_settings(settings: AppSettings) -> Result<(), String> {
     .bind(settings.show_content_previews)
     .bind(settings.thumbnail_quality)
     .bind(&settings.language)
+    .bind(settings.dynamic_color)
     .execute(&pool)
     .await
     .map_err(|e| format!("保存设置失败: {}", e))?;
@@ -225,7 +236,7 @@ pub async fn delete_all_data() -> Result<(), String> {
 
     // 按外键依赖顺序删除
     sqlx::query("DELETE FROM media_tags").execute(&mut *tx).await.map_err(|e| format!("删除标签关联失败: {}", e))?;
-    sqlx::query("DELETE FROM media_albums").execute(&mut *tx).await.map_err(|e| format!("删除相册关联失败: {}", e))?;
+    sqlx::query("DELETE FROM album_media").execute(&mut *tx).await.map_err(|e| format!("删除相册关联失败: {}", e))?;
     sqlx::query("DELETE FROM notes").execute(&mut *tx).await.map_err(|e| format!("删除笔记失败: {}", e))?;
     sqlx::query("DELETE FROM media_items").execute(&mut *tx).await.map_err(|e| format!("删除媒体失败: {}", e))?;
     sqlx::query("DELETE FROM albums").execute(&mut *tx).await.map_err(|e| format!("删除相册失败: {}", e))?;
@@ -269,6 +280,65 @@ async fn estimate_thumbnail_size(pool: &sqlx::Pool<sqlx::Sqlite>) -> Result<i64,
     }
 
     Ok(total_size)
+}
+
+/// 查找未引用的媒体文件（磁盘上存在但数据库中没有记录的文件）
+#[frb]
+pub async fn find_unreferenced_files() -> Result<Vec<String>, String> {
+    let pool = get_pool()?;
+    let media_dir = crate::db::get_media_dir()?;
+    let media_path = std::path::PathBuf::from(&media_dir);
+
+    if !media_path.exists() {
+        return Ok(vec![]);
+    }
+
+    // 获取数据库中所有有效的 file_path
+    let rows = sqlx::query("SELECT file_path FROM media_items")
+        .fetch_all(&pool)
+        .await
+        .map_err(|e| format!("查询媒体路径失败: {}", e))?;
+
+    let valid_paths: std::collections::HashSet<String> = rows
+        .iter()
+        .map(|row| row.get::<String, _>("file_path"))
+        .collect();
+
+    let mut unreferenced = Vec::new();
+
+    // 遍历媒体目录，查找未被引用的文件（跳过 thumbnails 子目录）
+    if let Ok(entries) = std::fs::read_dir(&media_path) {
+        for entry in entries.filter_map(|e| e.ok()) {
+            let path = entry.path();
+            if path.is_file() {
+                let path_str = path.to_string_lossy().to_string();
+                // 跳过缩略图目录中的文件
+                if path_str.contains("thumbnails") {
+                    continue;
+                }
+                if !valid_paths.contains(&path_str) {
+                    unreferenced.push(path_str);
+                }
+            }
+        }
+    }
+
+    Ok(unreferenced)
+}
+
+/// 删除未引用的媒体文件
+#[frb]
+pub async fn delete_unreferenced_files() -> Result<i32, String> {
+    let unreferenced = find_unreferenced_files().await?;
+    let mut deleted_count = 0i32;
+
+    for path in &unreferenced {
+        if std::fs::remove_file(path).is_ok() {
+            deleted_count += 1;
+        }
+    }
+
+    Ok(deleted_count)
 }
 
 /// 初始化应用（初始化数据库连接池）

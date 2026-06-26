@@ -4,6 +4,7 @@
 // ignore_for_file: invalid_use_of_internal_member, unused_import, unnecessary_import
 
 import '../frb_generated.dart';
+import 'enums.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `clone`, `clone`, `clone`, `eq`, `fmt`, `fmt`, `fmt`
@@ -35,6 +36,19 @@ Future<List<MediaItem>> filterMediaByType({required MediaType mediaType}) =>
 /// 更新媒体信息（仅更新名称）
 Future<void> updateMedia({required MediaItem media}) =>
     RustLib.instance.api.crateApiMediaUpdateMedia(media: media);
+
+/// Skill-02 §1.5 - FilterMode 过滤查询
+/// 根据过滤模式获取媒体列表
+Future<List<MediaItem>> getMediaByFilter({required FilterMode filter}) =>
+    RustLib.instance.api.crateApiMediaGetMediaByFilter(filter: filter);
+
+/// 批量删除媒体
+Future<void> batchDeleteMedia({required List<String> ids}) =>
+    RustLib.instance.api.crateApiMediaBatchDeleteMedia(ids: ids);
+
+/// 获取带标签的媒体列表（附带标签信息）
+Future<MediaItem?> getMediaWithTags({required String id}) =>
+    RustLib.instance.api.crateApiMediaGetMediaWithTags(id: id);
 
 /// 相邻媒体（用于查看器导航）
 class AdjacentMedia {
@@ -142,7 +156,17 @@ enum MediaType {
   other,
   ;
 
+  /// 兼容旧接口：转换为 i32
   Future<int> asI32() => RustLib.instance.api.crateApiMediaMediaTypeAsI32(
         that: this,
       );
+
+  /// 转换为数据库存储的 TEXT 值
+  Future<void> asStr() => RustLib.instance.api.crateApiMediaMediaTypeAsStr(
+        that: this,
+      );
+
+  /// 从数据库 TEXT 值解析
+  static Future<MediaType> fromStr({required String s}) =>
+      RustLib.instance.api.crateApiMediaMediaTypeFromStr(s: s);
 }

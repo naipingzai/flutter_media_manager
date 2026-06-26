@@ -29,6 +29,7 @@ class TagBloc extends Bloc<TagEvent, TagState> {
     on<TagLoadMediaByTagsOrEvent>(_onLoadMediaByTagsOr);
     on<TagNavigateToEvent>(_onNavigateTo);
     on<TagNavigateUpEvent>(_onNavigateUp);
+    on<TagNavigateToRootEvent>(_onNavigateToRoot);
   }
 
   Future<void> _onLoadAll(
@@ -246,9 +247,16 @@ class TagBloc extends Bloc<TagEvent, TagState> {
     TagNavigateToEvent event,
     Emitter<TagState> emit,
   ) {
+    // 查找标签名称并构建面包屑
+    final tagName = _findTagName(event.tagId);
+    final newBreadcrumb = [
+      ...state.breadcrumb,
+      BreadcrumbItem(id: event.tagId, name: tagName),
+    ];
     emit(state.copyWith(
       currentTagId: event.tagId,
       currentParentId: event.tagId,
+      breadcrumb: newBreadcrumb,
     ));
     add(TagLoadChildrenEvent(event.tagId));
   }
@@ -257,10 +265,44 @@ class TagBloc extends Bloc<TagEvent, TagState> {
     TagNavigateUpEvent event,
     Emitter<TagState> emit,
   ) {
+    if (state.breadcrumb.length > 1) {
+      final newBreadcrumb = state.breadcrumb.sublist(0, state.breadcrumb.length - 1);
+      final parentId = newBreadcrumb.last.id;
+      emit(state.copyWith(
+        currentTagId: parentId,
+        currentParentId: parentId,
+        breadcrumb: newBreadcrumb,
+      ));
+      add(TagLoadChildrenEvent(parentId));
+    } else {
+      // 回到根
+      emit(state.copyWith(
+        clearNavigation: true,
+        breadcrumb: [],
+      ));
+      add(const TagLoadRootsEvent());
+    }
+  }
+
+  void _onNavigateToRoot(
+    TagNavigateToRootEvent event,
+    Emitter<TagState> emit,
+  ) {
     emit(state.copyWith(
-      currentTagId: null,
-      currentParentId: null,
+      clearNavigation: true,
+      breadcrumb: [],
     ));
     add(const TagLoadRootsEvent());
+  }
+
+  /// 从当前状态中查找标签名称
+  String _findTagName(String tagId) {
+    for (final tagInfo in state.tagsWithInfo) {
+      if (tagInfo.tag.id == tagId) return tagInfo.tag.name;
+    }
+    for (final tag in state.tags) {
+      if (tag.id == tagId) return tag.name;
+    }
+    return tagId;
   }
 }

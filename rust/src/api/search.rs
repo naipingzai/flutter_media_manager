@@ -55,7 +55,7 @@ pub async fn search_media_advanced(filter: SearchFilter) -> Result<Vec<MediaItem
     let mut sql = String::from("SELECT m.* FROM media_items m");
 
     if has_album_filter {
-        sql.push_str(" JOIN media_albums ma ON m.id = ma.media_id");
+        sql.push_str(" JOIN album_media ma ON m.id = ma.media_id");
     }
 
     if has_tag_filter {
@@ -130,7 +130,7 @@ pub async fn get_media_with_any_album() -> Result<Vec<MediaItem>, String> {
 
     let rows = sqlx::query(
         "SELECT DISTINCT m.* FROM media_items m
-         JOIN media_albums ma ON m.id = ma.media_id
+         JOIN album_media ma ON m.id = ma.media_id
          ORDER BY m.created_at DESC"
     )
     .fetch_all(&pool)
@@ -147,7 +147,7 @@ pub async fn get_media_without_any_album() -> Result<Vec<MediaItem>, String> {
 
     let rows = sqlx::query(
         "SELECT m.* FROM media_items m
-         LEFT JOIN media_albums ma ON m.id = ma.media_id
+         LEFT JOIN album_media ma ON m.id = ma.media_id
          WHERE ma.media_id IS NULL
          ORDER BY m.created_at DESC"
     )
@@ -192,8 +192,8 @@ async fn build_and_execute_query(
     // 类型过滤
     if let Some(media_type_str) = &filter.media_type {
         if let Ok(media_type) = parse_media_type(media_type_str) {
-            let type_int = media_type.as_i32();
-            result.retain(|m| m.media_type.as_i32() == type_int);
+            let type_str = media_type.as_str();
+            result.retain(|m| m.media_type.as_str() == type_str);
         }
     }
 
@@ -208,7 +208,7 @@ async fn build_and_execute_query(
     // 相册过滤（需要额外查询）
     if let Some(album_id) = &filter.album_id {
         let album_media: Vec<String> = sqlx::query(
-            "SELECT media_id FROM media_albums WHERE album_id = ?"
+            "SELECT media_id FROM album_media WHERE album_id = ?"
         )
         .bind(album_id)
         .fetch_all(pool)

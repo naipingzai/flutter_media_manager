@@ -119,6 +119,16 @@ class MediaSetGridColumnsEvent extends MediaEvent {
   List<Object?> get props => [columns];
 }
 
+/// 按 FilterMode 过滤（Skill-02 §1.5）
+class MediaFilterByFilterModeEvent extends MediaEvent {
+  final FilterMode filterMode;
+
+  const MediaFilterByFilterModeEvent(this.filterMode);
+
+  @override
+  List<Object?> get props => [filterMode];
+}
+
 /// 导入单个文件
 class MediaImportFileEvent extends MediaEvent {
   final String filePath;

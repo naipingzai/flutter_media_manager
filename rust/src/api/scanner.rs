@@ -121,7 +121,7 @@ pub async fn scan_directory(path: String) -> Result<ScanResult, String> {
         let result = sqlx::query(
             "INSERT INTO media_items (
                 id, original_name, storage_name, file_path, thumbnail_path,
-                media_type, mime_type, size, width, height, duration,
+                type, mime_type, size, width, height, duration,
                 sha256_hash, created_at, updated_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         )
@@ -130,7 +130,7 @@ pub async fn scan_directory(path: String) -> Result<ScanResult, String> {
         .bind(&storage_name)
         .bind(&path_str)
         .bind(&thumbnail_path)
-        .bind(media_type.as_i32())
+        .bind(media_type.as_str())
         .bind(&mime)
         .bind(size)
         .bind(width)
@@ -393,7 +393,7 @@ pub async fn import_single_file(file_path: String) -> Result<MediaItem, String> 
     sqlx::query(
         "INSERT INTO media_items (
             id, original_name, storage_name, file_path, thumbnail_path,
-            media_type, mime_type, size, width, height, duration,
+            type, mime_type, size, width, height, duration,
             sha256_hash, created_at, updated_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
@@ -402,7 +402,7 @@ pub async fn import_single_file(file_path: String) -> Result<MediaItem, String> 
     .bind(&storage_name)
     .bind(dest_path.to_string_lossy().to_string())
     .bind(&thumbnail_path)
-    .bind(media_type.as_i32())
+    .bind(media_type.as_str())
     .bind(&mime_type)
     .bind(size)
     .bind(width)

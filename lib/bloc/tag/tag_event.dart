@@ -131,3 +131,8 @@ class TagNavigateToEvent extends TagEvent {
 class TagNavigateUpEvent extends TagEvent {
   const TagNavigateUpEvent();
 }
+
+/// 导航到根目录
+class TagNavigateToRootEvent extends TagEvent {
+  const TagNavigateToRootEvent();
+}
