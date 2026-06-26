@@ -13,8 +13,6 @@ import 'api/settings.dart';
 import 'api/tag.dart';
 import 'dart:async';
 import 'dart:convert';
-import 'dart:ffi' as ffi;
-import 'package:ffi/ffi.dart';
 import 'frb_generated.dart';
 import 'frb_generated.io.dart'
     if (dart.library.js_interop) 'frb_generated.web.dart';
@@ -566,9 +564,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     return handler.executeNormal(NormalTask(
       callFfi: (port_) {
         var arg0 = cst_encode_String(exportPath);
-        final arg1Ptr = calloc<ffi.Int8>();
-        arg1Ptr.value = includeMedia ? 1 : 0;
-        var arg1 = arg1Ptr;
+        var arg1 = cst_encode_bool(includeMedia);
         return wire.wire__crate__api__import_export__export_package(
             port_, arg0, arg1);
       },
@@ -1606,7 +1602,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       album: dco_decode_album(arr[0]),
       mediaCount: dco_decode_i_32(arr[1]),
       coverThumbnailPath: dco_decode_opt_String(arr[2]),
-      hasChildren: dco_decode_bool(arr[3]),
+      hasChildren: dco_decode_i_32(arr[3]),
     );
   }
 
@@ -1620,7 +1616,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       themeMode: dco_decode_theme_mode(arr[0]),
       gridColumns: dco_decode_i_32(arr[1]),
       albumGridColumns: dco_decode_i_32(arr[2]),
-      showContentPreviews: dco_decode_bool(arr[3]),
+      showContentPreviews: dco_decode_i_32(arr[3]),
       thumbnailQuality: dco_decode_i_32(arr[4]),
       language: dco_decode_String(arr[5]),
     );
@@ -1949,7 +1945,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       tag: dco_decode_tag(arr[0]),
       mediaCount: dco_decode_i_32(arr[1]),
       coverThumbnailPath: dco_decode_opt_String(arr[2]),
-      hasChildren: dco_decode_bool(arr[3]),
+      hasChildren: dco_decode_i_32(arr[3]),
     );
   }
 
@@ -2012,7 +2008,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_album = sse_decode_album(deserializer);
     var var_mediaCount = sse_decode_i_32(deserializer);
     var var_coverThumbnailPath = sse_decode_opt_String(deserializer);
-    var var_hasChildren = sse_decode_bool(deserializer);
+    var var_hasChildren = sse_decode_i_32(deserializer);
     return AlbumWithInfo(
         album: var_album,
         mediaCount: var_mediaCount,
@@ -2026,7 +2022,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_themeMode = sse_decode_theme_mode(deserializer);
     var var_gridColumns = sse_decode_i_32(deserializer);
     var var_albumGridColumns = sse_decode_i_32(deserializer);
-    var var_showContentPreviews = sse_decode_bool(deserializer);
+    var var_showContentPreviews = sse_decode_i_32(deserializer);
     var var_thumbnailQuality = sse_decode_i_32(deserializer);
     var var_language = sse_decode_String(deserializer);
     return AppSettings(
@@ -2453,7 +2449,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_tag = sse_decode_tag(deserializer);
     var var_mediaCount = sse_decode_i_32(deserializer);
     var var_coverThumbnailPath = sse_decode_opt_String(deserializer);
-    var var_hasChildren = sse_decode_bool(deserializer);
+    var var_hasChildren = sse_decode_i_32(deserializer);
     return TagWithInfo(
         tag: var_tag,
         mediaCount: var_mediaCount,
@@ -2553,7 +2549,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_album(self.album, serializer);
     sse_encode_i_32(self.mediaCount, serializer);
     sse_encode_opt_String(self.coverThumbnailPath, serializer);
-    sse_encode_bool(self.hasChildren, serializer);
+    sse_encode_i_32(self.hasChildren, serializer);
   }
 
   @protected
@@ -2562,7 +2558,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_theme_mode(self.themeMode, serializer);
     sse_encode_i_32(self.gridColumns, serializer);
     sse_encode_i_32(self.albumGridColumns, serializer);
-    sse_encode_bool(self.showContentPreviews, serializer);
+    sse_encode_i_32(self.showContentPreviews, serializer);
     sse_encode_i_32(self.thumbnailQuality, serializer);
     sse_encode_String(self.language, serializer);
   }
@@ -2905,7 +2901,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_tag(self.tag, serializer);
     sse_encode_i_32(self.mediaCount, serializer);
     sse_encode_opt_String(self.coverThumbnailPath, serializer);
-    sse_encode_bool(self.hasChildren, serializer);
+    sse_encode_i_32(self.hasChildren, serializer);
   }
 
   @protected

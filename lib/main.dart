@@ -1,13 +1,13 @@
 import 'dart:developer' as developer;
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path_provider/path_provider.dart';
 import 'src/rust/frb_generated.dart';
 import 'src/rust/api/settings.dart' as rust_settings;
 import 'bloc/bloc.dart';
 import 'screens/home_screen.dart';
-import 'screens/api_test_screen.dart';
 
 /// 全局 Rust API 实例
 late final RustLib rustLib;
@@ -86,7 +86,7 @@ class ErrorApp extends StatelessWidget {
                 const Icon(Icons.error_outline, color: Colors.red, size: 64),
                 const SizedBox(height: 16),
                 const Text(
-                  'AdvanceMediaKB 启动失败',
+                  '媒体知识库 启动失败',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
@@ -127,8 +127,18 @@ class AdvanceMediaKBApp extends StatelessWidget {
       child: BlocBuilder<AppBloc, AppState>(
         builder: (context, state) {
           return MaterialApp(
-            title: 'AdvanceMediaKB',
+            title: '媒体知识库',
             debugShowCheckedModeBanner: false,
+            locale: const Locale('zh', 'CN'),
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [
+              Locale('zh', 'CN'),
+              Locale('en', 'US'),
+            ],
             theme: ThemeData(
               colorScheme: ColorScheme.fromSeed(
                 seedColor: const Color(0xFF6750A4),

@@ -22,6 +22,9 @@ Future<ExportProgress> exportPackage(
         exportPath: exportPath, includeMedia: includeMedia);
 
 /// 导出指定媒体到下载目录
+///
+/// 注意：在 Android 上，由于 Scoped Storage 限制，无法直接写入系统 Download 目录。
+/// 改为导出到应用的外部存储目录（Android/data/<package>/files/Exports）
 Future<String> exportToDownload({required List<String> mediaIds}) =>
     RustLib.instance.api
         .crateApiImportExportExportToDownload(mediaIds: mediaIds);

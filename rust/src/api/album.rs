@@ -22,7 +22,7 @@ pub struct AlbumWithInfo {
     pub album: Album,
     pub media_count: i32,
     pub cover_thumbnail_path: Option<String>,
-    pub has_children: bool,
+    pub has_children: i32,
 }
 
 /// 面包屑项
@@ -81,7 +81,7 @@ async fn get_albums_by_parent(parent_id: Option<String>) -> Result<Vec<AlbumWith
             album,
             media_count: media_count as i32,
             cover_thumbnail_path: cover_thumbnail,
-            has_children: child_count > 0,
+            has_children: if child_count > 0 { 1 } else { 0 },
         }
     }).collect())
 }

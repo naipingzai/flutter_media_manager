@@ -1550,7 +1550,7 @@ impl SseDecode for crate::api::album::AlbumWithInfo {
         let mut var_album = <crate::api::album::Album>::sse_decode(deserializer);
         let mut var_mediaCount = <i32>::sse_decode(deserializer);
         let mut var_coverThumbnailPath = <Option<String>>::sse_decode(deserializer);
-        let mut var_hasChildren = <bool>::sse_decode(deserializer);
+        let mut var_hasChildren = <i32>::sse_decode(deserializer);
         return crate::api::album::AlbumWithInfo {
             album: var_album,
             media_count: var_mediaCount,
@@ -1566,7 +1566,7 @@ impl SseDecode for crate::api::settings::AppSettings {
         let mut var_themeMode = <crate::api::settings::ThemeMode>::sse_decode(deserializer);
         let mut var_gridColumns = <i32>::sse_decode(deserializer);
         let mut var_albumGridColumns = <i32>::sse_decode(deserializer);
-        let mut var_showContentPreviews = <bool>::sse_decode(deserializer);
+        let mut var_showContentPreviews = <i32>::sse_decode(deserializer);
         let mut var_thumbnailQuality = <i32>::sse_decode(deserializer);
         let mut var_language = <String>::sse_decode(deserializer);
         return crate::api::settings::AppSettings {
@@ -1992,7 +1992,7 @@ impl SseDecode for crate::api::tag::TagWithInfo {
         let mut var_tag = <crate::api::tag::Tag>::sse_decode(deserializer);
         let mut var_mediaCount = <i32>::sse_decode(deserializer);
         let mut var_coverThumbnailPath = <Option<String>>::sse_decode(deserializer);
-        let mut var_hasChildren = <bool>::sse_decode(deserializer);
+        let mut var_hasChildren = <i32>::sse_decode(deserializer);
         return crate::api::tag::TagWithInfo {
             tag: var_tag,
             media_count: var_mediaCount,
@@ -2492,7 +2492,7 @@ impl SseEncode for crate::api::album::AlbumWithInfo {
         <crate::api::album::Album>::sse_encode(self.album, serializer);
         <i32>::sse_encode(self.media_count, serializer);
         <Option<String>>::sse_encode(self.cover_thumbnail_path, serializer);
-        <bool>::sse_encode(self.has_children, serializer);
+        <i32>::sse_encode(self.has_children, serializer);
     }
 }
 
@@ -2502,7 +2502,7 @@ impl SseEncode for crate::api::settings::AppSettings {
         <crate::api::settings::ThemeMode>::sse_encode(self.theme_mode, serializer);
         <i32>::sse_encode(self.grid_columns, serializer);
         <i32>::sse_encode(self.album_grid_columns, serializer);
-        <bool>::sse_encode(self.show_content_previews, serializer);
+        <i32>::sse_encode(self.show_content_previews, serializer);
         <i32>::sse_encode(self.thumbnail_quality, serializer);
         <String>::sse_encode(self.language, serializer);
     }
@@ -2832,7 +2832,7 @@ impl SseEncode for crate::api::tag::TagWithInfo {
         <crate::api::tag::Tag>::sse_encode(self.tag, serializer);
         <i32>::sse_encode(self.media_count, serializer);
         <Option<String>>::sse_encode(self.cover_thumbnail_path, serializer);
-        <bool>::sse_encode(self.has_children, serializer);
+        <i32>::sse_encode(self.has_children, serializer);
     }
 }
 
@@ -4061,7 +4061,7 @@ mod io {
         album: wire_cst_album,
         media_count: i32,
         cover_thumbnail_path: *mut wire_cst_list_prim_u_8_strict,
-        has_children: bool,
+        has_children: i32,
     }
     #[repr(C)]
     #[derive(Clone, Copy)]
@@ -4069,7 +4069,7 @@ mod io {
         theme_mode: i32,
         grid_columns: i32,
         album_grid_columns: i32,
-        show_content_previews: bool,
+        show_content_previews: i32,
         thumbnail_quality: i32,
         language: *mut wire_cst_list_prim_u_8_strict,
     }
@@ -4218,7 +4218,7 @@ mod io {
         tag: wire_cst_tag,
         media_count: i32,
         cover_thumbnail_path: *mut wire_cst_list_prim_u_8_strict,
-        has_children: bool,
+        has_children: i32,
     }
 }
 #[cfg(not(target_family = "wasm"))]

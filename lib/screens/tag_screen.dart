@@ -85,7 +85,7 @@ class _TagScreenState extends State<TagScreen> {
                   return _TagListItem(
                     tagInfo: tagInfo,
                     onTap: () {
-                      if (tagInfo.hasChildren) {
+                      if (tagInfo.hasChildren != 0) {
                         context.read<TagBloc>().add(
                               TagNavigateToEvent(tagInfo.tag.id),
                             );
@@ -186,7 +186,7 @@ class _TagListItem extends StatelessWidget {
         ),
         title: Text(tag.name),
         subtitle: Text('$mediaCount 项'),
-        trailing: hasChildren
+        trailing: hasChildren != 0
             ? const Icon(Icons.arrow_forward_ios, size: 16)
             : null,
         onTap: onTap,

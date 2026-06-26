@@ -130,7 +130,7 @@ class TagWithInfo {
   final Tag tag;
   final int mediaCount;
   final String? coverThumbnailPath;
-  final bool hasChildren;
+  final int hasChildren;
 
   const TagWithInfo({
     required this.tag,

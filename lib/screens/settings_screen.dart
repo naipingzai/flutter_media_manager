@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:file_picker/file_picker.dart';
 import '../bloc/bloc.dart';
 import '../src/rust/api/settings.dart' as rust_settings;
+import '../src/rust/api/import_export.dart' as rust_import_export;
 import 'api_test_screen.dart';
 
 /// 设置页面
@@ -70,13 +71,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 secondary: const Icon(Icons.preview),
                 title: const Text('内容预览'),
                 subtitle: const Text('在网格中显示文件预览信息'),
-                value: settings.showContentPreviews,
+                value: settings.showContentPreviews != 0,
                 onChanged: (val) {
                   final updated = rust_settings.AppSettings(
                     themeMode: settings.themeMode,
                     gridColumns: settings.gridColumns,
                     albumGridColumns: settings.albumGridColumns,
-                    showContentPreviews: val,
+                    showContentPreviews: val ? 1 : 0,
                     thumbnailQuality: settings.thumbnailQuality,
                     language: settings.language,
                   );
@@ -117,13 +118,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const _SectionHeader(title: '数据'),
               ListTile(
                 leading: const Icon(Icons.import_export),
-                title: const Text('导入数据'),
+                title: const Text('导入数据库 (.db)'),
+                subtitle: const Text('替换当前数据库'),
                 onTap: () => _showImportDialog(context),
               ),
               ListTile(
+                leading: const Icon(Icons.folder_zip),
+                title: const Text('导入 ZIP 包'),
+                subtitle: const Text('导入数据库+媒体文件'),
+                onTap: () => _showImportZipDialog(context),
+              ),
+              ListTile(
                 leading: const Icon(Icons.backup),
-                title: const Text('导出数据'),
+                title: const Text('导出数据库 (.db)'),
                 onTap: () => _showExportDialog(context),
+              ),
+              ListTile(
+                leading: const Icon(Icons.archive),
+                title: const Text('导出 ZIP 包'),
+                subtitle: const Text('导出数据库+媒体文件'),
+                onTap: () => _showExportZipDialog(context),
               ),
               ListTile(
                 leading: const Icon(Icons.delete_forever, color: Colors.red),
@@ -472,6 +486,194 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
         );
       },
+    );
+  }
+
+  void _showImportZipDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('导入 ZIP 包'),
+        content: const Text(
+          '选择包含数据库和媒体文件的 ZIP 备份包进行导入。\n\n'
+          '支持的冲突策略：\n'
+          '- 跳过：跳过已存在的文件\n'
+          '- 替换：覆盖已存在的文件\n'
+          '- 重命名：将已存在文件重命名为 .backup',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final result = await FilePicker.platform.pickFiles(
+                type: FileType.any,
+                allowedExtensions: ['zip'],
+              );
+              if (result != null && result.files.single.path != null) {
+                final path = result.files.single.path!;
+                // 显示冲突策略选择
+                if (!context.mounted) return;
+                final strategy = await showDialog<rust_import_export.ConflictStrategy>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('选择冲突策略'),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ListTile(
+                          title: const Text('跳过'),
+                          subtitle: const Text('跳过已存在的文件'),
+                          leading: const Icon(Icons.skip_next),
+                          onTap: () => Navigator.pop(ctx, rust_import_export.ConflictStrategy.skip),
+                        ),
+                        ListTile(
+                          title: const Text('替换'),
+                          subtitle: const Text('覆盖已存在的文件'),
+                          leading: const Icon(Icons.swap_horiz),
+                          onTap: () => Navigator.pop(ctx, rust_import_export.ConflictStrategy.replace),
+                        ),
+                        ListTile(
+                          title: const Text('重命名'),
+                          subtitle: const Text('重命名已存在文件为 .backup'),
+                          leading: const Icon(Icons.drive_file_rename_outline),
+                          onTap: () => Navigator.pop(ctx, rust_import_export.ConflictStrategy.rename),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+                if (strategy == null || !context.mounted) return;
+
+                // 显示导入进度
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (_) => const AlertDialog(
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('正在导入 ZIP 包...'),
+                      ],
+                    ),
+                  ),
+                );
+
+                try {
+                  final result = await rust_import_export.importPackage(
+                    packagePath: path,
+                    conflictStrategy: strategy,
+                  );
+                  if (!context.mounted) return;
+                  Navigator.pop(context); // 关闭进度
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('导入完成: ${result.status}')),
+                  );
+                  context.read<AppBloc>().add(const AppInitializeEvent());
+                  context.read<MediaBloc>().add(const MediaLoadAllEvent());
+                } catch (e) {
+                  if (!context.mounted) return;
+                  Navigator.pop(context); // 关闭进度
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('ZIP 导入失败: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text('选择 ZIP 文件'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showExportZipDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('导出 ZIP 包'),
+        content: const Text(
+          '导出为 ZIP 格式，包含数据库和媒体文件。\n\n'
+          '请选择保存位置和文件名（以 .zip 结尾）。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final result = await FilePicker.platform.saveFile(
+                type: FileType.any,
+                fileName: 'advance_media_kb_backup.zip',
+                allowedExtensions: ['zip'],
+              );
+              if (result == null || !context.mounted) return;
+
+              // 询问是否包含媒体文件
+              final includeMedia = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('导出选项'),
+                  content: const Text('是否包含媒体文件？\n不包含仅导出数据库。'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: const Text('仅数据库'),
+                    ),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: const Text('包含媒体'),
+                    ),
+                  ],
+                ),
+              );
+              if (includeMedia == null || !context.mounted) return;
+
+              // 显示导出进度
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (_) => const AlertDialog(
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(height: 16),
+                      Text('正在导出 ZIP 包...'),
+                    ],
+                  ),
+                ),
+              );
+
+              try {
+                final exportResult = await rust_import_export.exportPackage(
+                  exportPath: result,
+                  includeMedia: includeMedia,
+                );
+                if (!context.mounted) return;
+                Navigator.pop(context); // 关闭进度
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('导出完成: ${exportResult.status}')),
+                );
+              } catch (e) {
+                if (!context.mounted) return;
+                Navigator.pop(context); // 关闭进度
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('ZIP 导出失败: $e')),
+                );
+              }
+            },
+            child: const Text('导出 ZIP'),
+          ),
+        ],
+      ),
     );
   }
 

@@ -79,7 +79,7 @@ pub fn row_to_settings(row: &sqlx::sqlite::SqliteRow) -> AppSettings {
         },
         grid_columns: row.get::<i32, _>("grid_columns"),
         album_grid_columns: row.get::<i32, _>("album_grid_columns"),
-        show_content_previews: row.get::<i32, _>("show_content_previews") != 0,
+        show_content_previews: row.get::<i32, _>("show_content_previews"),
         thumbnail_quality: row.get::<i32, _>("thumbnail_quality"),
         language: row.get("language"),
     }

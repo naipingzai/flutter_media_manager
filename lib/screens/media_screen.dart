@@ -2,11 +2,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:permission_handler/permission_handler.dart';
 import '../bloc/bloc.dart';
 import '../widgets/media_grid.dart';
 import '../widgets/search_bar.dart';
 import '../widgets/file_browser_dialog.dart';
+import '../widgets/advanced_search_dialog.dart';
 import '../src/rust/api/media.dart';
 import '../src/rust/api/scanner.dart';
 import '../src/rust/api/tag.dart';
@@ -339,6 +339,19 @@ class _MediaScreenState extends State<MediaScreen> {
                       context
                           .read<MediaBloc>()
                           .add(const MediaLoadAllEvent());
+                    },
+                  ),
+                  const Divider(),
+                  ListTile(
+                    leading: const Icon(Icons.tune),
+                    title: const Text('高级搜索'),
+                    subtitle: const Text('组合关键词、类型、日期、标签、相册'),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      showDialog(
+                        context: context,
+                        builder: (_) => const AdvancedSearchDialog(),
+                      );
                     },
                   ),
                 ],

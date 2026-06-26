@@ -49,7 +49,7 @@ class AppSettings {
   final ThemeMode themeMode;
   final int gridColumns;
   final int albumGridColumns;
-  final bool showContentPreviews;
+  final int showContentPreviews;
   final int thumbnailQuality;
   final String language;
 

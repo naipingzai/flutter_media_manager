@@ -346,7 +346,7 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
       cst_encode_album(raw.album),
       cst_encode_i_32(raw.mediaCount),
       cst_encode_opt_String(raw.coverThumbnailPath),
-      cst_encode_bool(raw.hasChildren)
+      cst_encode_i_32(raw.hasChildren)
     ].jsify()!;
   }
 
@@ -357,7 +357,7 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
       cst_encode_theme_mode(raw.themeMode),
       cst_encode_i_32(raw.gridColumns),
       cst_encode_i_32(raw.albumGridColumns),
-      cst_encode_bool(raw.showContentPreviews),
+      cst_encode_i_32(raw.showContentPreviews),
       cst_encode_i_32(raw.thumbnailQuality),
       cst_encode_String(raw.language)
     ].jsify()!;
@@ -623,7 +623,7 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
       cst_encode_tag(raw.tag),
       cst_encode_i_32(raw.mediaCount),
       cst_encode_opt_String(raw.coverThumbnailPath),
-      cst_encode_bool(raw.hasChildren)
+      cst_encode_i_32(raw.hasChildren)
     ].jsify()!;
   }
 

@@ -101,7 +101,7 @@ class AlbumWithInfo {
   final Album album;
   final int mediaCount;
   final String? coverThumbnailPath;
-  final bool hasChildren;
+  final int hasChildren;
 
   const AlbumWithInfo({
     required this.album,

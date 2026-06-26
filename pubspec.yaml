@@ -27,6 +27,9 @@ dependencies:
   video_player: ^2.9.1
   chewie: ^1.8.5
 
+  # 音频播放
+  just_audio: ^0.9.41
+
   # 文件选择
   file_picker: ^8.0.7
 

@@ -533,7 +533,7 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
     wireObj.media_count = cst_encode_i_32(apiObj.mediaCount);
     wireObj.cover_thumbnail_path =
         cst_encode_opt_String(apiObj.coverThumbnailPath);
-    wireObj.has_children = apiObj.hasChildren ? 1 : 0;
+    wireObj.has_children = cst_encode_i_32(apiObj.hasChildren);
   }
 
   @protected
@@ -542,7 +542,7 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
     wireObj.theme_mode = cst_encode_theme_mode(apiObj.themeMode);
     wireObj.grid_columns = cst_encode_i_32(apiObj.gridColumns);
     wireObj.album_grid_columns = cst_encode_i_32(apiObj.albumGridColumns);
-    wireObj.show_content_previews = apiObj.showContentPreviews ? 1 : 0;
+    wireObj.show_content_previews = cst_encode_i_32(apiObj.showContentPreviews);
     wireObj.thumbnail_quality = cst_encode_i_32(apiObj.thumbnailQuality);
     wireObj.language = cst_encode_String(apiObj.language);
   }
@@ -683,7 +683,7 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
     wireObj.media_count = cst_encode_i_32(apiObj.mediaCount);
     wireObj.cover_thumbnail_path =
         cst_encode_opt_String(apiObj.coverThumbnailPath);
-    wireObj.has_children = apiObj.hasChildren ? 1 : 0;
+    wireObj.has_children = cst_encode_i_32(apiObj.hasChildren);
   }
 
   @protected
@@ -892,7 +892,7 @@ class RustLibWire implements BaseWire {
       : _lookup = lookup;
 
   void store_dart_post_cobject(
-    int ptr,
+    DartPostCObjectFnType ptr,
   ) {
     return _store_dart_post_cobject(
       ptr,
@@ -900,10 +900,10 @@ class RustLibWire implements BaseWire {
   }
 
   late final _store_dart_post_cobjectPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Int)>>(
+      _lookup<ffi.NativeFunction<ffi.Void Function(DartPostCObjectFnType)>>(
           'store_dart_post_cobject');
-  late final _store_dart_post_cobject =
-      _store_dart_post_cobjectPtr.asFunction<void Function(int)>();
+  late final _store_dart_post_cobject = _store_dart_post_cobjectPtr
+      .asFunction<void Function(DartPostCObjectFnType)>();
 
   void wire__crate__api__album__add_media_to_album(
     int port_,
@@ -1195,7 +1195,7 @@ class RustLibWire implements BaseWire {
   void wire__crate__api__import_export__export_package(
     int port_,
     ffi.Pointer<wire_cst_list_prim_u_8_strict> export_path,
-    ffi.Pointer<ffi.Int8> include_media,
+    bool include_media,
   ) {
     return _wire__crate__api__import_export__export_package(
       port_,
@@ -1206,15 +1206,13 @@ class RustLibWire implements BaseWire {
 
   late final _wire__crate__api__import_export__export_packagePtr = _lookup<
           ffi.NativeFunction<
-              ffi.Void Function(
-                  ffi.Int64,
-                  ffi.Pointer<wire_cst_list_prim_u_8_strict>,
-                  ffi.Pointer<ffi.Int8>)>>(
+              ffi.Void Function(ffi.Int64,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>, ffi.Bool)>>(
       'frbgen_advance_media_kb_wire__crate__api__import_export__export_package');
   late final _wire__crate__api__import_export__export_package =
       _wire__crate__api__import_export__export_packagePtr.asFunction<
-          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>,
-              ffi.Pointer<ffi.Int8>)>();
+          void Function(
+              int, ffi.Pointer<wire_cst_list_prim_u_8_strict>, bool)>();
 
   void wire__crate__api__import_export__export_to_download(
     int port_,
@@ -2203,6 +2201,15 @@ class RustLibWire implements BaseWire {
       _dummy_method_to_enforce_bundlingPtr.asFunction<int Function()>();
 }
 
+typedef DartPostCObjectFnType
+    = ffi.Pointer<ffi.NativeFunction<DartPostCObjectFnTypeFunction>>;
+typedef DartPostCObjectFnTypeFunction = ffi.Bool Function(
+    DartPort port_id, ffi.Pointer<ffi.Void> message);
+typedef DartDartPostCObjectFnTypeFunction = bool Function(
+    DartDartPort port_id, ffi.Pointer<ffi.Void> message);
+typedef DartPort = ffi.Int64;
+typedef DartDartPort = int;
+
 final class wire_cst_list_prim_u_8_strict extends ffi.Struct {
   external ffi.Pointer<ffi.Uint8> ptr;
 
@@ -2227,7 +2234,7 @@ final class wire_cst_app_settings extends ffi.Struct {
   @ffi.Int32()
   external int album_grid_columns;
 
-  @ffi.Int8()
+  @ffi.Int32()
   external int show_content_previews;
 
   @ffi.Int32()
@@ -2332,7 +2339,7 @@ final class wire_cst_album_with_info extends ffi.Struct {
 
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> cover_thumbnail_path;
 
-  @ffi.Int8()
+  @ffi.Int32()
   external int has_children;
 }
 
@@ -2404,7 +2411,7 @@ final class wire_cst_tag_with_info extends ffi.Struct {
 
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> cover_thumbnail_path;
 
-  @ffi.Int8()
+  @ffi.Int32()
   external int has_children;
 }
 

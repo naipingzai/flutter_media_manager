@@ -19,7 +19,7 @@ pub struct AppSettings {
     pub theme_mode: ThemeMode,
     pub grid_columns: i32,
     pub album_grid_columns: i32,
-    pub show_content_previews: bool,
+    pub show_content_previews: i32,
     pub thumbnail_quality: i32,
     pub language: String,
 }
@@ -51,7 +51,7 @@ pub async fn get_settings() -> Result<AppSettings, String> {
                 theme_mode: ThemeMode::System,
                 grid_columns: 3,
                 album_grid_columns: 2,
-                show_content_previews: true,
+                show_content_previews: 1,
                 thumbnail_quality: 85,
                 language: "zh_CN".to_string(),
             })
@@ -83,7 +83,7 @@ pub async fn save_settings(settings: AppSettings) -> Result<(), String> {
     .bind(theme_int)
     .bind(settings.grid_columns)
     .bind(settings.album_grid_columns)
-    .bind(if settings.show_content_previews { 1 } else { 0 })
+    .bind(settings.show_content_previews)
     .bind(settings.thumbnail_quality)
     .bind(&settings.language)
     .execute(&pool)

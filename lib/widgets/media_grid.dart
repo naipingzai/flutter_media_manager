@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/bloc.dart';
 import '../src/rust/api/media.dart';
-import '../screens/media_detail_screen.dart';
+import 'viewer/viewer_page.dart';
 
 /// 媒体网格展示组件
 class MediaGrid extends StatelessWidget {
@@ -61,8 +61,8 @@ class MediaGrid extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => MediaDetailScreen(
-          media: media,
+        builder: (context) => ViewerPage(
+          initialMedia: media,
           mediaList: mediaList,
         ),
       ),

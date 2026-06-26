@@ -42,3 +42,8 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 /rust/target/
+*.jpg
+*.so
+android/app/src/main/jniLibs/
+build/
+.gradle/

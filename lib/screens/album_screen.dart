@@ -92,7 +92,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
                   return _AlbumCard(
                     albumInfo: albumInfo,
                     onTap: () {
-                      if (albumInfo.hasChildren) {
+                      if (albumInfo.hasChildren != 0) {
                         context.read<AlbumBloc>().add(
                               AlbumNavigateToEvent(albumInfo.album.id),
                             );
@@ -211,7 +211,7 @@ class _AlbumCard extends StatelessWidget {
                         '$mediaCount 项',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
-                      if (hasChildren) ...[
+                      if (hasChildren != 0) ...[
                         const SizedBox(width: 8),
                         const Icon(
                           Icons.arrow_forward_ios,

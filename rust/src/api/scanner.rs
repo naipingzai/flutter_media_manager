@@ -1,7 +1,7 @@
 use flutter_rust_bridge::frb;
 use crate::api::media::{MediaItem, MediaType};
 use crate::db::get_pool;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::fs;
 use std::io::Read;
 use sha2::{Sha256, Digest};
@@ -28,7 +28,7 @@ pub struct ScanResult {
     pub media_items: Vec<MediaItem>,
 }
 
-/// 扫描目录并导入媒体
+/// 扫描目录并导入媒体（返回结果）
 #[frb]
 pub async fn scan_directory(path: String) -> Result<ScanResult, String> {
     let pool = get_pool()?;
@@ -50,13 +50,12 @@ pub async fn scan_directory(path: String) -> Result<ScanResult, String> {
         }
     }
 
-    let total = media_files.len();
     let mut imported = 0;
     let mut duplicates = 0;
     let mut failed = 0;
     let mut imported_items = vec![];
 
-    for (idx, file_path) in media_files.iter().enumerate() {
+    for file_path in &media_files {
         let path_str = file_path.to_string_lossy().to_string();
 
         // 计算文件哈希
