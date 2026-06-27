@@ -76,7 +76,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.12.0';
 
   @override
-  int get rustContentHash => -1179246925;
+  int get rustContentHash => 1895112508;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -272,6 +272,12 @@ abstract class RustLibApi extends BaseApi {
 
   Future<void> crateApiNoteUpdateNote(
       {required String id, String? title, String? content});
+
+  Future<void> crateApiTagUpdateTagColor(
+      {required String id, required String color});
+
+  Future<void> crateApiTagUpdateTagParent(
+      {required String id, String? parentId});
 }
 
 class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
@@ -2075,6 +2081,54 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateApiNoteUpdateNoteConstMeta => const TaskConstMeta(
         debugName: "update_note",
         argNames: ["id", "title", "content"],
+      );
+
+  @override
+  Future<void> crateApiTagUpdateTagColor(
+      {required String id, required String color}) {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        var arg0 = cst_encode_String(id);
+        var arg1 = cst_encode_String(color);
+        return wire.wire__crate__api__tag__update_tag_color(port_, arg0, arg1);
+      },
+      codec: DcoCodec(
+        decodeSuccessData: dco_decode_unit,
+        decodeErrorData: dco_decode_String,
+      ),
+      constMeta: kCrateApiTagUpdateTagColorConstMeta,
+      argValues: [id, color],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiTagUpdateTagColorConstMeta => const TaskConstMeta(
+        debugName: "update_tag_color",
+        argNames: ["id", "color"],
+      );
+
+  @override
+  Future<void> crateApiTagUpdateTagParent(
+      {required String id, String? parentId}) {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        var arg0 = cst_encode_String(id);
+        var arg1 = cst_encode_opt_String(parentId);
+        return wire.wire__crate__api__tag__update_tag_parent(port_, arg0, arg1);
+      },
+      codec: DcoCodec(
+        decodeSuccessData: dco_decode_unit,
+        decodeErrorData: dco_decode_String,
+      ),
+      constMeta: kCrateApiTagUpdateTagParentConstMeta,
+      argValues: [id, parentId],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiTagUpdateTagParentConstMeta => const TaskConstMeta(
+        debugName: "update_tag_parent",
+        argNames: ["id", "parentId"],
       );
 
   @protected

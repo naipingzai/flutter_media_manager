@@ -1,378 +1,116 @@
-# Skill-02: 数据库层完整规范
-
-## 前置依赖
-skill-01
+# Skill-02 数据库层
 
 ## 目标
-定义全部数据库查询、DAO 接口、事务规则、响应式数据流，确保所有数据访问都有明确的规范。
-
----
-
-## 1. 数据库配置
-
-| 配置项 | 值 | 说明 |
-|--------|---|------|
-| 数据库名称 | advance_media_kb | 文件名 |
-| 版本号 | 1 | 初始版本 |
-| 实体列表 | MediaItem, Album, Tag, Note, AlbumMedia, MediaTag | 全部 6 个实体 |
-| 导出 schema | 是 | 用于迁移验证 |
-
----
-
-## 2. DAO 接口清单
-
-共需要 6 个 DAO，每个实体一个：
-
-| DAO | 对应实体 | 职责 |
-|-----|---------|------|
-| MediaItemDao | MediaItem | 媒体项的增删改查 |
-| AlbumDao | Album | 相册的增删改查 |
-| TagDao | Tag | 标签的增删改查 |
-| NoteDao | Note | 笔记的增删改查 |
-| AlbumMediaDao | AlbumMedia | 相册-媒体关联的增删改查 |
-| MediaTagDao | MediaTag | 媒体-标签关联的增删改查 |
-
----
-
-## 3. MediaItemDao — 全部查询
-
-### 3.1 基础 CRUD
-
-| 方法 | 操作 | 说明 |
-|------|------|------|
-| insert(MediaItem) | INSERT | 插入一条媒体记录 |
-| insertAll(List<MediaItem>) | INSERT 批量 | 批量插入媒体记录（在事务中执行） |
-| update(MediaItem) | UPDATE | 更新一条媒体记录 |
-| delete(MediaItem) | DELETE | 删除一条媒体记录 |
-| deleteById(String id) | DELETE | 按 ID 删除 |
-
-### 3.2 查询方法
-
-| 方法 | 返回类型 | SQL 逻辑 | 用途 |
-|------|---------|---------|------|
-| getById(String id) | MediaItem? | SELECT * WHERE id = ? | 详情页加载单个媒体 |
-| observeById(String id) | Flow<MediaItem?> | 同上，响应式 | 详情页实时监听 |
-| getAll() | List<MediaItem> | SELECT * ORDER BY createdAt DESC | 批量操作用 |
-| observeAll() | Flow<List<MediaItem>> | 同上，响应式 | "所有媒体"Tab 默认列表 |
-| getByType(String type) | Flow<List<MediaItem>> | SELECT * WHERE type = ? ORDER BY createdAt DESC | 按类型过滤 |
-| getByFilterMode(FilterMode mode) | Flow<List<MediaItem>> | 见下方 3.3 | 过滤器切换 |
-| countAll() | Flow<Int> | SELECT COUNT(*) | 统计总数 |
-| getBySha256(String hash) | MediaItem? | SELECT * WHERE sha256Hash = ? | 导入时去重检查 |
-
-### 3.3 过滤模式查询（getByFilterMode 详细逻辑）
-
-```
-FilterMode.ALL:
-    SELECT * FROM media_items ORDER BY createdAt DESC
-
-FilterMode.WITH_TAGS:
-    SELECT * FROM media_items
-    WHERE EXISTS (
-        SELECT 1 FROM media_tags WHERE media_tags.mediaId = media_items.id
-    )
-    ORDER BY createdAt DESC
-
-FilterMode.WITHOUT_TAGS:
-    SELECT * FROM media_items
-    WHERE NOT EXISTS (
-        SELECT 1 FROM media_tags WHERE media_tags.mediaId = media_items.id
-    )
-    ORDER BY createdAt DESC
-
-FilterMode.WITH_ALBUMS:
-    SELECT * FROM media_items
-    WHERE EXISTS (
-        SELECT 1 FROM album_media WHERE album_media.mediaId = media_items.id
-    )
-    ORDER BY createdAt DESC
-
-FilterMode.WITHOUT_ALBUMS:
-    SELECT * FROM media_items
-    WHERE NOT EXISTS (
-        SELECT 1 FROM album_media WHERE album_media.mediaId = media_items.id
-    )
-    ORDER BY createdAt DESC
-```
-
-### 3.4 搜索查询
-
-| 方法 | SQL 逻辑 | 用途 |
-|------|---------|------|
-| searchByName(String keyword) | SELECT * WHERE originalName LIKE '%' \|\| ? \|\| '%' ORDER BY createdAt DESC | 全局搜索媒体文件名 |
-
-### 3.5 删除方法
-
-| 方法 | SQL 逻辑 | 说明 |
-|------|---------|------|
-| deleteByIds(List<String> ids) | DELETE FROM media_items WHERE id IN (?) | 批量删除（在事务中执行） |
-
----
-
-## 4. AlbumDao — 全部查询
-
-### 4.1 基础 CRUD
-
-| 方法 | 操作 | 说明 |
-|------|------|------|
-| insert(Album) | INSERT | 创建相册 |
-| update(Album) | UPDATE | 更新相册 |
-| delete(Album) | DELETE | 删除相册（级联删除子相册） |
-| deleteById(String id) | DELETE | 按 ID 删除 |
-
-### 4.2 查询方法
-
-| 方法 | 返回类型 | SQL 逻辑 | 用途 |
-|------|---------|---------|------|
-| getById(String id) | Album? | SELECT * WHERE id = ? | 加载单个相册 |
-| observeById(String id) | Flow<Album?> | 同上，响应式 | 相册详情实时监听 |
-| getTopLevel() | List<Album> | SELECT * WHERE parentId IS NULL ORDER BY sortOrder ASC, createdAt ASC | 顶层相册列表 |
-| observeTopLevel() | Flow<List<Album>> | 同上，响应式 | 相册 Tab 展示 |
-| getChildren(String parentId) | List<Album> | SELECT * WHERE parentId = ? ORDER BY sortOrder ASC, createdAt ASC | 子相册列表 |
-| observeChildren(String parentId) | Flow<List<Album>> | 同上，响应式 | 相册详情页子相册区 |
-| getAll() | List<Album> | SELECT * ORDER BY sortOrder ASC, createdAt ASC | 添加到相册对话框（显示全部相册含子相册） |
-| observeAll() | Flow<List<Album>> | 同上，响应式 | — |
-| countMediaInAlbum(String albumId) | Flow<Int> | SELECT COUNT(*) FROM album_media WHERE albumId = ? | 相册卡片显示媒体数量 |
-| getAllWithMediaCount() | Flow<List<AlbumWithCount>> | 见下方 SQL | 相册列表带媒体数量 |
-
-### 4.3 相册带媒体数量的查询
-
-```
-SELECT a.*,
-    (SELECT COUNT(*) FROM album_media am WHERE am.albumId = a.id) AS mediaCount
-FROM albums a
-ORDER BY a.sortOrder ASC, a.createdAt ASC
-```
-
-返回的数据类 AlbumWithCount：
-- album: Album
-- mediaCount: Int
-
-### 4.4 相册带封面和数量的查询
-
-```
-SELECT a.*,
-    (SELECT COUNT(*) FROM album_media am WHERE am.albumId = a.id) AS mediaCount,
-    (SELECT mi.thumbnailPath FROM media_items mi WHERE mi.id = a.coverMediaId) AS coverThumbnailPath
-FROM albums a
-WHERE a.parentId IS NULL
-ORDER BY a.sortOrder ASC, a.createdAt ASC
-```
-
-返回的数据类 AlbumDisplayInfo：
-- album: Album
-- mediaCount: Int
-- coverThumbnailPath: String?
-
----
-
-## 5. TagDao — 全部查询
-
-### 5.1 基础 CRUD
-
-| 方法 | 操作 | 说明 |
-|------|------|------|
-| insert(Tag) | INSERT | 创建标签 |
-| update(Tag) | UPDATE | 更新标签 |
-| delete(Tag) | DELETE | 删除标签（级联删除子标签） |
-| deleteById(String id) | DELETE | 按 ID 删除 |
-
-### 5.2 查询方法
-
-| 方法 | 返回类型 | SQL 逻辑 | 用途 |
-|------|---------|---------|------|
-| getById(String id) | Tag? | SELECT * WHERE id = ? | 加载单个标签 |
-| observeById(String id) | Flow<Tag?> | 同上，响应式 | — |
-| getAll() | List<Tag> | SELECT * ORDER BY name ASC | 标签选择器 |
-| observeAll() | Flow<List<Tag>> | 同上，响应式 | 标签 Tab 展示 |
-| getChildren(String parentId) | List<Tag> | SELECT * WHERE parentId = ? ORDER BY name ASC | 子标签列表 |
-| observeChildren(String parentId) | Flow<List<Tag>> | 同上，响应式 | — |
-| getTagsForMedia(String mediaId) | Flow<List<Tag>> | 见下方 SQL | 详情页标签面板 |
-| getMediaCountForTag(String tagId) | Flow<Int> | SELECT COUNT(*) FROM media_tags WHERE tagId = ? | 标签列表显示数量 |
-| getAllWithMediaCount() | Flow<List<TagWithCount>> | 见下方 SQL | 标签 Tab 带数量 |
-| searchByName(String keyword) | Flow<List<Tag>> | SELECT * WHERE name LIKE '%' \|\| ? \|\| '%' ORDER BY name ASC | 标签搜索 |
-
-### 5.3 查询媒体的所有标签
-
-```
-SELECT t.*
-FROM tags t
-INNER JOIN media_tags mt ON mt.tagId = t.id
-WHERE mt.mediaId = ?
-ORDER BY t.name ASC
-```
-
-### 5.4 标签带媒体数量的查询
-
-```
-SELECT t.*,
-    (SELECT COUNT(*) FROM media_tags mt WHERE mt.tagId = t.id) AS mediaCount
-FROM tags t
-ORDER BY t.name ASC
-```
-
-返回的数据类 TagWithCount：
-- tag: Tag
-- mediaCount: Int
-
----
-
-## 6. NoteDao — 全部查询
-
-### 6.1 基础 CRUD
-
-| 方法 | 操作 | 说明 |
-|------|------|------|
-| insert(Note) | INSERT | 创建笔记 |
-| update(Note) | UPDATE | 更新笔记 |
-| delete(Note) | DELETE | 删除笔记 |
-| deleteById(String id) | DELETE | 按 ID 删除 |
-
-### 6.2 查询方法
-
-| 方法 | 返回类型 | SQL 逻辑 | 用途 |
-|------|---------|---------|------|
-| getById(String id) | Note? | SELECT * WHERE id = ? | 笔记编辑页加载 |
-| observeById(String id) | Flow<Note?> | 同上，响应式 | — |
-| getForMedia(String mediaId) | Flow<List<Note>> | SELECT * WHERE mediaId = ? ORDER BY updatedAt DESC | 详情页笔记面板 |
-| getIndependent() | Flow<List<Note>> | SELECT * WHERE mediaId IS NULL ORDER BY updatedAt DESC | 独立笔记列表 |
-| observeAll() | Flow<List<Note>> | SELECT * ORDER BY updatedAt DESC | 笔记列表页 |
-| searchByTitleAndContent(String keyword) | Flow<List<Note>> | SELECT * WHERE title LIKE '%' \|\| ? \|\| '%' OR content LIKE '%' \|\| ? \|\| '%' ORDER BY updatedAt DESC | 全局搜索笔记 |
-
----
-
-## 7. AlbumMediaDao — 全部查询
-
-### 7.1 基础操作
-
-| 方法 | 操作 | 说明 |
-|------|------|------|
-| insert(AlbumMedia) | INSERT | 将媒体加入相册 |
-| insertAll(List<AlbumMedia>) | INSERT 批量 | 批量将多个媒体加入相册 |
-| delete(AlbumMedia) | DELETE | 将媒体移出相册 |
-| deleteByAlbumAndMediaIds(String albumId, List<String> mediaIds) | DELETE | 批量将多个媒体移出相册 |
-| deleteByAlbumId(String albumId) | DELETE | 删除相册时清理所有关联 |
-| deleteByMediaId(String mediaId) | DELETE | 删除媒体时清理所有关联 |
-
-### 7.2 查询方法
-
-| 方法 | 返回类型 | SQL 逻辑 | 用途 |
-|------|---------|---------|------|
-| getMediaForAlbum(String albumId) | Flow<List<MediaItem>> | 见下方 SQL | 相册详情页媒体网格 |
-| getAlbumsForMedia(String mediaId) | Flow<List<Album>> | 见下方 SQL | 查询媒体属于哪些相册 |
-| isInAlbum(String mediaId, String albumId) | Flow<Boolean> | SELECT EXISTS(SELECT 1 FROM album_media WHERE mediaId=? AND albumId=?) | 检查关联是否存在 |
-
-### 7.3 查询相册内所有媒体
-
-```
-SELECT mi.*
-FROM media_items mi
-INNER JOIN album_media am ON am.mediaId = mi.id
-WHERE am.albumId = ?
-ORDER BY am.addedAt DESC
-```
-
-### 7.4 查询媒体所属的所有相册
-
-```
-SELECT a.*
-FROM albums a
-INNER JOIN album_media am ON am.albumId = a.id
-WHERE am.mediaId = ?
-ORDER BY a.name ASC
-```
-
----
-
-## 8. MediaTagDao — 全部查询
-
-### 8.1 基础操作
-
-| 方法 | 操作 | 说明 |
-|------|------|------|
-| insert(MediaTag) | INSERT | 给媒体打标签 |
-| insertAll(List<MediaTag>) | INSERT 批量 | 批量给多个媒体打同一个标签 |
-| delete(MediaTag) | DELETE | 移除媒体的标签 |
-| deleteByMediaAndTagId(String mediaId, String tagId) | DELETE | 按 ID 移除 |
-| deleteByMediaId(String mediaId) | DELETE | 删除媒体时清理所有关联 |
-| deleteByTagId(String tagId) | DELETE | 删除标签时清理所有关联 |
-
-### 8.2 查询方法
-
-| 方法 | 返回类型 | SQL 逻辑 | 用途 |
-|------|---------|---------|------|
-| getTagsForMedia(String mediaId) | Flow<List<Tag>> | 见 Skill-02 §5.3 | 详情页标签面板 |
-| getMediaForTag(String tagId) | Flow<List<MediaItem>> | 见下方 SQL | 标签媒体列表页 |
-| getTagIdsForMedia(String mediaId) | List<String> | SELECT tagId FROM media_tags WHERE mediaId = ? | 标签选择器判断已关联状态 |
-| isTagged(String mediaId, String tagId) | Flow<Boolean> | SELECT EXISTS(SELECT 1 FROM media_tags WHERE mediaId=? AND tagId=?) | 检查关联是否存在 |
-
-### 8.3 查询标签下所有媒体
-
-```
-SELECT mi.*
-FROM media_items mi
-INNER JOIN media_tags mt ON mt.mediaId = mi.id
-WHERE mt.tagId = ?
-ORDER BY mi.createdAt DESC
-```
-
----
-
-## 9. 事务规则
-
-以下操作必须在数据库事务中执行（全部成功或全部回滚）：
-
-| 操作 | 涉及的 DAO | 说明 |
-|------|-----------|------|
-| 批量导入媒体 | MediaItemDao.insertAll | 一条失败则全部回滚 |
-| 批量删除媒体 | MediaItemDao.deleteByIds + AlbumMediaDao.deleteByMediaId + MediaTagDao.deleteByMediaId + NoteDao (按mediaId) | 级联清理在事务中 |
-| 批量添加到相册 | AlbumMediaDao.insertAll | 一条失败则全部回滚 |
-| 批量移出相册 | AlbumMediaDao.deleteByAlbumAndMediaIds | 一条失败则全部回滚 |
-| 批量打标签 | MediaTagDao.insertAll | 一条失败则全部回滚 |
-| 删除相册 | AlbumDao.delete + AlbumMediaDao.deleteByAlbumId + AlbumDao (删除子相册) | 级联清理在事务中 |
-| 删除标签 | TagDao.delete + MediaTagDao.deleteByTagId + TagDao (删除子标签) | 级联清理在事务中 |
-
----
-
-## 10. 响应式数据流规则
-
-- 所有以 `observe` 开头的方法返回 `Flow<T>` 或 `Flow<List<T>>`
-- Flow 必须是 Room 自动生成的响应式查询 Flow（数据库变化时自动发出新值）
-- 不允许手动轮询或定时刷新
-- ViewModel 层将 Flow 转换为 StateFlow 供 UI 层消费
-- UI 层使用 collectAsState 触发自动重组
-
-**数据流链路**：
-```
-数据库 INSERT/UPDATE/DELETE
-    → Room DAO 的 Flow 自动发出新值
-    → Repository 透传
-    → ViewModel 的 StateFlow 更新
-    → UI 的 collectAsState 触发重组
-    → 所有观察该数据的页面同时自动刷新
-```
-
----
-
-## 11. DI 提供规则
-
-数据库和 DAO 必须通过依赖注入容器提供：
-- 数据库实例：单例作用域
-- 每个 DAO 实例：从数据库实例获取，单例作用域
-- 所有 DAO 通过接口暴露，实现类在 core-database 模块中
-
----
-
-## 12. 验证标准
-
-完成本 skill 后，必须满足以下全部条件：
-
-- [ ] 6 个 DAO 接口全部定义完成
-- [ ] 每个 DAO 的所有查询方法（observe + 一次性查询）全部实现
-- [ ] 所有 observe 方法返回 Flow 类型
-- [ ] 过滤模式查询（5 种）的 SQL 全部正确
-- [ ] 事务规则全部正确标注
-- [ ] 级联删除在事务中正确执行
-- [ ] 数据库实例为单例
-- [ ] 所有 DAO 通过 DI 正确提供
-- [ ] 数据库可正常创建和打开
-- [ ] 所有 Flow 查询在数据变化时能自动发出新值
+
+定义 Room Database、6 个 DAO 的查询契约、迁移策略、Flow 暴露规范,作为 Repository 的数据访问入口。
+
+## 设计要点
+
+| 项 | 设计 |
+|---|------|
+| Database | `AppDatabase` 抽象类,位于 `:core-database` 模块的 `com.advancemediakb.core.database` 包 |
+| 数据库名 | `advance_media_kb.db` |
+| Database 版本 | `version = 1`(目前单版本,后续需显式 `Migration`) |
+| 迁移策略 | `.fallbackToDestructiveMigration()`(开发期) |
+| DAO 数量 | **6 个**(每个 Entity 一个) |
+| 返回类型 | 列表查询返回 `Flow<List<X>>`,单条返回 `Flow<X?>` 或 `suspend` |
+| 写入操作 | `suspend fun` + `@Insert/@Update/@Delete` |
+| 关系查询 | `@Query` + 多表 `JOIN` + `WITH RECURSIVE` CTE(用于树面包屑) |
+| 去重查询 | `WHERE sha256_hash = :hash LIMIT 1` |
+| 线程 | Room 主线程不允许写;`viewModelScope` / `repositoryScope` 调用 |
+
+### DAO 关键查询约定(基于实际代码)
+
+#### `MediaItemDao` (table: `media_items`)
+
+- `insert / insertAll` — REPLACE 策略写入,返回 `List<Long>`(rowId,不是自增主键)
+- `getById(id: String) / observeById(id: String): Flow<MediaItemEntity?>` — F1/F13 详情页
+- `observeAll(): Flow<List<MediaItemEntity>>` — F0 主页全部
+- `observeByType(type: String): Flow<List<MediaItemEntity>>` — 主页按 IMAGE/VIDEO 筛选
+- `getByHash(hash: String): MediaItemEntity?` — F1 去重
+- `searchMedia(query: String): Flow<List<MediaItemEntity>>` — F6 关键字搜索 (匹配 `original_name` 或关联 tag 名)
+- `filterMedia(type?, startDate?, endDate?, albumId?, tagIds?, tagCount?): Flow<List<MediaItemEntity>>` — F0 多维过滤
+- `observeWithAnyTag() / observeWithoutAnyTag()` — F0 「仅带标签 / 仅不含标签」快捷过滤
+- `observeWithAnyAlbum() / observeWithoutAnyAlbum()` — F0 「仅带相册 / 仅不含相册」快捷过滤
+- `observeByTag(tagId): Flow<List<MediaItemEntity>>` — 标签详情
+- `getPreviousMedia / getNextMedia(mediaId)` — F13/F17 翻页(基于 `created_at` 排序)
+- `count() / totalSize()` — F16 统计
+
+#### `AlbumDao` (table: `albums`)
+
+- `insert / update / delete / getById / observeById` — CRUD
+- `observeRootAlbums() / observeChildren(parentId)` — F3 树展开
+- `findRootByName(name)` — 重名检测
+- `getMediaCount(albumId) / getChildCount(albumId)` — 计数徽标
+- `getCoverThumbnailPath(coverMediaId)` — 封面图
+- `observeAlbumMedia(albumId)` — F3 相册内媒体(JOIN `album_media`)
+- `getAllDescendantIds(albumId)` — **递归 CTE**(`WITH RECURSIVE sub_albums`)用于跨级批量
+- `getBreadcrumbPath(albumId)` — **递归 CTE** 用于面包屑导航
+- `setCoverMedia(albumId, mediaId)` — 设置封面
+- `getAlbumsByMediaId(mediaId)` — 反查媒体所属相册
+
+#### `AlbumMediaDao` (table: `album_media`)
+
+- `insert / insertAll` — 媒体入册(REPLACE)
+- `observeByAlbum / observeByMedia` — 关系 Flow
+- `getMediaIdsByAlbum(albumId): List<String>` — 反查
+- `delete(albumId, mediaId) / deleteByAlbum(albumId) / deleteByMedia(mediaId)`
+- `countByAlbum(albumId): Int`
+
+#### `TagDao` (table: `tags`)
+
+- CRUD + `observeAll() / getByName(name)`
+- `getTagsForMedia(mediaId): Flow<List<TagEntity>>` — JOIN `media_tags`
+- `deleteByMediaAndTag(mediaId, tagId)` — 删关联
+
+#### `MediaTagDao` (table: `media_tags`)
+
+- `insert / insertAll` — 打标签(REPLACE)
+- `observeByMedia / observeByTag`
+- `getTagIdsByMedia / getMediaIdsByTag` — 反查
+- `delete / deleteByMedia / deleteByTag`
+- `countByTag(tagId)`
+
+#### `NoteDao` (table: `notes`)
+
+- `insert / update / delete / getById / observeById`
+- `getByMedia(mediaId) / observeByMedia(mediaId): Flow<NoteEntity?>` — **一对一**关系(每个媒体最多一条笔记)
+- `observeAll(): Flow<List<NoteEntity>>` — F14 全部笔记列表
+- `deleteByMedia(mediaId)` — 媒体删除时 CASCADE 兜底
+
+### Hilt 注入
+
+- `DatabaseModule`(`@InstallIn(SingletonComponent::class)`)提供:
+  - `@Singleton AppDatabase`(通过 `Room.databaseBuilder`)
+  - 6 个 DAO(`@Provides fun ... = database.xxxDao()`)
+
+## 代码检查点
+
+- [ ] 所有 DAO 列表查询返回 `Flow<List<X>>`,**不**返回 `List<X>`(失去响应式)。
+- [ ] 所有 DAO 字符串 ID 参数使用 `String`(不是 `Long`),与 Entity UUID PK 对齐。
+- [ ] `@Query` 中无 N+1:相同样查询应通过 JOIN 一次完成(参考 `observeAlbumMedia`、`getTagsForMedia`)。
+- [ ] 删除节点时的级联:删除 `MediaItemEntity` 会 CASCADE 清理 `NoteEntity` / `AlbumMediaEntity` / `MediaTagEntity`(ForeignKey 保证)。
+- [ ] Room 写入 suspend 函数没有调用 `runBlocking`。
+- [ ] 没有 `allowMainThreadQueries()`。
+- [ ] 数据库版本号 + 显式 `Migration` 必须同步修改;目前用 `fallbackToDestructiveMigration()` 仅适合开发期。
+- [ ] 所有 DAO 都位于 `com.advancemediakb.core.database.dao` 包,AppDatabase 位于 `com.advancemediakb.core.database` 包。
+
+## 验收标准
+
+- 启动后查询主页响应延迟 < 200ms(冷启动不计)。
+- 删除一个 `MediaItemEntity`,其所有 `NoteEntity` / `AlbumMediaEntity` / `MediaTagEntity` 自动消失(CASCADE 验证)。
+- 删除一个顶级 `AlbumEntity`,其所有子相册和 `AlbumMediaEntity` 自动消失(CASCADE 验证)。
+- 关闭再开 App,F1 导入产生的媒体立即出现在主页(因为 Room 直接返回 Flow)。
+- `getAllDescendantIds(rootId)` 包含 root 自身 + 全部后代 ID。
+- `getBreadcrumbPath(leafId)` 返回从根到叶的 ID/name 序列(按 level DESC)。
+
+## 相关文件
+
+- `core-database/src/main/java/com/advancemediakb/core/database/AppDatabase.kt`
+- `core-database/src/main/java/com/advancemediakb/core/database/dao/MediaItemDao.kt`
+- `core-database/src/main/java/com/advancemediakb/core/database/dao/AlbumDao.kt`
+- `core-database/src/main/java/com/advancemediakb/core/database/dao/AlbumMediaDao.kt`
+- `core-database/src/main/java/com/advancemediakb/core/database/dao/TagDao.kt`
+- `core-database/src/main/java/com/advancemediakb/core/database/dao/MediaTagDao.kt`
+- `core-database/src/main/java/com/advancemediakb/core/database/dao/NoteDao.kt`
+- `core-database/src/main/java/com/advancemediakb/core/database/di/DatabaseModule.kt`

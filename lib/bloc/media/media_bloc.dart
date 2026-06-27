@@ -198,6 +198,19 @@ class MediaBloc extends Bloc<MediaEvent, MediaState> {
     emit(state.copyWith(selectedMediaIds: {}));
   }
 
+  void _onToggleSelectAll(
+    MediaToggleSelectAllEvent event,
+    Emitter<MediaState> emit,
+  ) {
+    final filteredIds = state.filteredList.map((m) => m.id).toSet();
+    // 若当前过滤列表已全选则取消全选，否则全选
+    final allSelected =
+        filteredIds.isNotEmpty && state.selectedMediaIds.containsAll(filteredIds);
+    emit(state.copyWith(
+      selectedMediaIds: allSelected ? <String>{} : filteredIds,
+    ));
+  }
+
   void _onToggleSelectionMode(
     MediaToggleSelectionModeEvent event,
     Emitter<MediaState> emit,

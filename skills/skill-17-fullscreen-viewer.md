@@ -1,125 +1,75 @@
-# Skill-17: 全屏查看器规范
-
-## 前置依赖
-skill-00
+# Skill-17 全屏预览详细行为 (F5 补充)
 
 ## 目标
-定义独立全屏 Activity 的图片查看、视频播放、手势操作的完整行为规范。
+skill-13 的 Activity 层补充:Activity 生命周期、Intent 参数、退出动画、与主页的交互。
 
----
+## 设计要点
 
-## 1. Activity 配置
+| 项 | 设计 |
+|---|------|
+| Activity | `MediaViewerActivity : ComponentActivity` |
+| 主题 | `@AndroidEntryPoint` + `AdvanceMediaKBTheme(themeMode)` |
+| Intent 参数 | `EXTRA_MEDIA_IDS: LongArray`、`EXTRA_START_INDEX: Int`、`EXTRA_LIST_TITLE: String?` |
+| 返回 | `onBackPressedDispatcher` + 顶栏返回按钮 |
+| 退出动画 | 共享元素动画(`SharedTransitionLayout` 或 `Modifier.animateBoundsAsState`) |
+| 进程模型 | 独立进程?否,与主进程同进程,共享 Room 实例 |
 
-| 配置项 | 值 |
-|--------|---|
-| 进入动画 | 淡入 |
-| 退出动画 | 淡出 |
-| 状态栏 | 隐藏（全屏沉浸模式） |
-| 导航栏 | 隐藏 |
-| 屏幕方向 | 跟随系统 |
-| 保持屏幕常亮 | 播放视频时 |
+### Intent 传递
 
----
-
-## 2. 图片查看器
-
-### 2.1 功能
-
-| 功能 | 说明 |
-|------|------|
-| 双指缩放 | 1x ~ 5x（超过 1x 时可平移） |
-| 双击缩放 | 在 1x 和 2x 之间切换 |
-| 拖拽平移 | 缩放状态下（1x 时不平移，>1x 时可平移） |
-| 水平滑动 | 1x 状态下左滑/右滑切换上/下一张（仅在列表上下文中） |
-| 缩放后滑动 | >1x 时先平移到边缘，再翻页 |
-| 向下滑动 | 1x 状态下向下滑动关闭查看器 |
-
-### 2.2 UI 元素
-
-| 元素 | 说明 |
-|------|------|
-| 关闭按钮 | 左上角，点击关闭 Activity |
-| 页码指示器 | 底部居中，显示"3 / 10"格式（仅在列表上下文中） |
-| 操作栏 | 底部，滑动上滑出现（仅在列表上下文中） |
-
-### 2.3 操作栏（列表上下文）
-
-```
-┌─────────────────────────────────────────┐
-│                                         │
-│              [图片内容]                  │
-│                                         │
-├─────────────────────────────────────────┤
-│  [分享]  [删除]  [添加标签]  [添加笔记]  │
-└─────────────────────────────────────────┘
+```kotlin
+val intent = Intent(context, MediaViewerActivity::class.java).apply {
+  putExtra("EXTRA_MEDIA_IDS", mediaIds.toLongArray())
+  putExtra("EXTRA_START_INDEX", startIndex)
+  putExtra("EXTRA_LIST_TITLE", listTitle)
+}
+context.startActivity(intent)
 ```
 
-| 按钮 | 行为 |
+### 生命周期
+
+| 阶段 | 行为 |
 |------|------|
-| 分享 | 调用系统分享 |
-| 删除 | 确认后删除当前媒体并切换到下一张 |
-| 添加标签 | 打开标签选择器 |
-| 添加笔记 | 打开笔记编辑 |
+| onCreate | 读 Intent → `MediaViewerViewModel.init` → `setContent { ViewerScreen() }` |
+| onStart | 请求 `WindowInsetsController` 显示状态栏 |
+| onResume | 视频页 `player.play()`(若自动播放设置) |
+| onPause | 视频页 `player.pause()`,保存当前播放位置到 ViewModel |
+| onStop | 不释放 player(快速回到 App 仍能继续) |
+| onDestroy | 释放 player,ViewModel.onCleared |
 
----
+### 与主页的交互
 
-## 3. 视频播放器
+- 进入 `MediaViewerActivity` 时,主页 `HomeScreen` **不**销毁,只是 onPause。
+- `HomeUiState` 保留当前 Tab / 多选状态 / 筛选模式。
+- 用户在 `MediaViewerActivity` 改了标签 / 删了媒体,返回主页后通过 Room Flow 自动刷新。
 
-### 3.1 功能
+### 退出动画
 
-| 功能 | 说明 |
-|------|------|
-| 播放/暂停 | 点击中央按钮或视频区域 |
-| 进度条 | 可拖拽跳转 |
-| 当前时间 | 左侧显示 mm:ss |
-| 总时长 | 右侧显示 mm:ss |
-| 音量 | 跟随系统音量键 |
+- 共享元素:从主页缩略图 → 详情页大图,使用 `Modifier.sharedBounds` + `AnimatedContent`。
+- 若实现复杂,可简化为「淡入淡出」过渡。
 
-### 3.2 控制栏
+## 代码检查点
 
-```
-┌─────────────────────────────────────────┐
-│                                         │
-│              [▶ 播放按钮]                │
-│                                         │
-├─────────────────────────────────────────┤
-│  01:23 ━━━━━━━━━●━━━━━━━━━━━━ 05:00    │  ← 进度条
-├─────────────────────────────────────────┤
-│  [关闭]                                  │
-└─────────────────────────────────────────┘
-```
+- [ ] `MediaViewerActivity` 在 `AndroidManifest.xml` 注册 `parentActivityName=".MainActivity"`。
+- [ ] Intent 参数解析空安全(`getLongArrayExtra(EXTRA_MEDIA_IDS)` 为 null 时退出)。
+- [ ] ViewModel 持有 player 引用,Activity 不能持有(配置变更存活)。
+- [ ] 进程不分离(避免 Room 实例不同步)。
+- [ ] `onNewIntent` 处理(单 Task 复用时,新 intent 替换旧内容)。
 
-### 3.3 视频手势
+## 验收标准
 
-| 手势 | 行为 |
-|------|------|
-| 单击视频区域 | 显示/隐藏控制栏 |
-| 向下滑动 | 关闭查看器 |
-| 双击左侧 | 后退 10 秒 |
-| 双击右侧 | 前进 10 秒 |
+- 从主页缩略图点击,详情页平滑出现。
+- 按返回,详情页平滑消失,主页原位置。
+- 在详情页删除媒体,返回主页,对应格子消失。
+- 旋转屏幕不重建 Activity(`configChanges` 或依赖 ViewModel)。
 
----
+## 已知问题
 
-## 4. 通用行为
+- 共享元素动画在 Compose 1.6 之前不稳定,可能闪烁。
+- 单 Task 复用需自定义 `launchMode="singleTask"`,否则多次启动会重叠。
 
-| 行为 | 说明 |
-|------|------|
-| 打开方式 | 从媒体详情页点击预览区或全屏按钮 |
-| 参数传递 | 通过 Intent extras 传递媒体 ID |
-| 返回键 | 关闭 Activity |
-| 横屏支持 | 自动适配横屏布局 |
+## 相关文件
 
----
-
-## 5. 验证标准
-
-- [ ] 全屏沉浸模式正确（状态栏和导航栏隐藏）
-- [ ] 图片缩放 1x ~ 5x 正确
-- [ ] 双击切换缩放正确
-- [ ] 图片列表中左右滑动切换正确
-- [ ] 视频播放/暂停正确
-- [ ] 视频进度条拖拽正确
-- [ ] 双击前进/后退 10 秒正确
-- [ ] 控制栏显示/隐藏正确
-- [ ] 关闭查看器动画正确
-- [ ] 操作栏功能正确（分享、删除、标签、笔记）
+- `app/src/main/java/com/advancemediakb/MediaViewerActivity.kt`
+- `feature-detail/src/main/java/com/advancemediakb/detail/MediaViewerScreen.kt`
+- `feature-detail/src/main/java/com/advancemediakb/detail/MediaViewerViewModel.kt`
+- `app/src/main/AndroidManifest.xml`

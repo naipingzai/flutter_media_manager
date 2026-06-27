@@ -1,75 +1,76 @@
-# AdvanceMediaKB Skills 执行手册
+# AdvanceMediaKB Skills 索引
 
-## 使用说明
-
-本目录包含 AdvanceMediaKB 项目的全部实现技能（Skills），按执行顺序编号。
-
-**执行规则（强制）**：
-1. 必须从 skill-00 开始，按编号顺序依次执行
-2. 每个 skill 中的每一项都必须完整实现，**禁止跳过、简化、预留、不实现**
-3. 每个 skill 完成后必须通过该 skill 中列出的验证标准
-4. 如果某个 skill 依赖其他 skill，必须先完成依赖项
-5. 本文档只描述**流程、规范和行为**，不预设技术栈。实现者自行选择合适的技术方案
-
-## Skills 清单
-
-| Skill | 文件 | 依赖 | 说明 |
-|-------|------|------|------|
-| skill-00 | skill-00-project-architecture.md | 无 | 项目架构与模块划分规范 |
-| skill-01 | skill-01-data-model.md | 00 | 数据模型：全部实体、字段、约束、索引 |
-| skill-02 | skill-02-database-layer.md | 01 | 数据库层：全部查询、事务、响应式数据流 |
-| skill-03 | skill-03-design-system.md | 00 | 设计系统：颜色、字体、间距、动画完整规范 |
-| skill-04 | skill-04-permission-management.md | 00 | 权限管理：全部权限申请流程与降级策略 |
-| skill-05 | skill-05-file-scanner.md | 04 | 文件扫描器：目录扫描、文件过滤、面包屑导航 |
-| skill-06 | skill-06-media-import-pipeline.md | 01, 05 | 媒体导入管线：6步处理、去重、进度、结果报告 |
-| skill-07 | skill-07-thumbnail-generator.md | 00 | 缩略图生成器：图片缩放、视频帧提取、缓存策略 |
-| skill-08 | skill-08-settings-storage.md | 00 | 设置存储：全部设置项、持久化、默认值 |
-| skill-09 | skill-09-app-shell-and-navigation.md | 00 | 应用壳与导航：Activity、路由、覆盖层、返回栈 |
-| skill-10 | skill-10-home-screen.md | 03, 09 | 首页：媒体网格、过滤器、多选、导入触发 |
-| skill-11 | skill-11-album-module.md | 03, 09 | 相册模块：列表、详情、无限层级、CRUD |
-| skill-12 | skill-12-tag-module.md | 03, 09 | 标签模块：列表、层级、颜色、CRUD |
-| skill-13 | skill-13-detail-screen.md | 03, 09 | 详情页：媒体预览、信息面板、标签面板、笔记面板 |
-| skill-14 | skill-14-note-module.md | 03, 09 | 笔记模块：列表、编辑器、关联/独立笔记 |
-| skill-15 | skill-15-search-module.md | 03, 09 | 搜索模块：实时搜索、媒体结果、笔记结果 |
-| skill-16 | skill-16-settings-screen.md | 03, 08, 09 | 设置页面：主题、语言、网格列数、内容预览 |
-| skill-17 | skill-17-fullscreen-viewer.md | 00 | 全屏查看器：翻页、缩放、视频播放、沉浸式 |
-| skill-18 | skill-18-internationalization.md | 00, 08 | 国际化：中英文全部字符串、语言切换 |
-| skill-19 | skill-19-state-machine.md | 00, 01, 06, 08 | 状态机与异常处理：全部状态转换、异常场景、恢复策略 |
-| skill-20 | skill-20-testing.md | 00~19 | 测试验证：验收标准、手动测试场景、边界测试 |
+> **用途**: 把 `docs/AdvanceMediaKB_完整设计方案.md` 拆分为 22 份可执行的 AI 步骤,
+> 每份 skill 是「代码评审 checklist」+「功能实现指南」。
+>
+> **使用方式**:
+> - **代码评审**: AI 拿到 PR 后,按对应 skill 内的「代码检查点」逐项核对。
+> - **新功能开发**: AI 按对应 skill 的「设计要点」+「验收标准」实现。
+> - **回归测试**: AI 按「已知问题清单」找潜在回归。
 
 ---
 
-## 全局约束与禁止行为
+## Skill 列表
 
-以下是贯穿所有 skill 的硬性约束，**任何 skill 实现中都不得违反**：
+| # | 文件 | 主设计文档章节 | 主题 |
+|---|------|--------------|------|
+| 00 | `skill-00-project-architecture.md` | 第一部分 | 模块架构 / 依赖关系 / 单 Activity |
+| 01 | `skill-01-data-model.md` | 第二部分 | 6 个 Room Entity + 关系 |
+| 02 | `skill-02-database-layer.md` | 第二部分 | Room DAO + Database + 迁移 |
+| 03 | `skill-03-design-system.md` | 第三 + 第五部分 | Material3 主题 / 颜色 / 字体 |
+| 04 | `skill-04-permission-management.md` | F1 + F0.5 | 存储权限 + SAF |
+| 05 | `skill-05-file-scanner.md` | F1 | 文件扫描器(支持的格式) |
+| 06 | `skill-06-media-import-pipeline.md` | F1 | 媒体导入管线(去重 / 进度 / 状态机) |
+| 07 | `skill-07-thumbnail-generator.md` | F1 | 缩略图生成(图 / 视频) |
+| 08 | `skill-08-settings-storage.md` | F8 | DataStore + 10 个设置 |
+| 09 | `skill-09-app-shell-and-navigation.md` | F0 + 第五部分 | 主屏 Shell + 三个主页 + 搜索/设置覆盖 |
+| 10 | `skill-10-home-screen.md` | F2 | 所有媒体主页 + HomeFilterMode + 多选 |
+| 11 | `skill-11-album-module.md` | F3 | 相册树 + 多选 |
+| 12 | `skill-12-tag-module.md` | F4 | 标签树 + TagSelectorDialog(两种模式) |
+| 13 | `skill-13-detail-screen.md` | F5 | 详情页 — MediaViewerActivity(独立 Activity) |
+| 14 | `skill-14-note-module.md` | (空 / 作废) | **项目不做笔记** — 仅留标记 |
+| 15 | `skill-15-search-module.md` | F6 | 搜索(关键字 + 标签筛选 + 历史) |
+| 16 | `skill-16-settings-screen.md` | F8 | 设置页 UI(7 分区 + 6 操作) |
+| 17 | `skill-17-fullscreen-viewer.md` | F5 | MediaViewerActivity 详细行为 |
+| 18 | `skill-18-internationalization.md` | 第六部分 | 中英 i18n + strings.xml |
+| 19 | `skill-19-state-machine.md` | F1 + F9 | 导入 / AMB 导出 / AMB 导入状态机 |
+| 20 | `skill-20-testing.md` | 附录 | 测试策略(项目当前未实现) |
+| 21 | `skill-21-amb-package-format.md` | F9 | AMB ZIP 格式 + manifest.json |
 
-### UI/UX 约束
-- **所有用户可见字符串必须使用字符串资源**（`@string/xxx`），禁止硬编码中文/英文
-- **所有 UI 必须支持 RTL 布局**（阿拉伯语等从右到左语言）
-- **所有可交互元素必须有最小触摸区域 48dp × 48dp**
-- **所有列表必须使用 RecyclerView 或 LazyColumn**（Compose），禁止使用 ScrollView 嵌套列表
-- **所有对话框必须支持返回键关闭**
-- **所有覆盖层（BottomSheet/覆盖层）必须支持下滑关闭**
+---
 
-### 数据约束
-- **所有数据库操作必须在后台线程执行**，禁止在主线程执行数据库读写
-- **所有数据库写操作必须使用事务**
-- **删除媒体文件时必须级联清理**：数据库记录 + 文件 + 缩略图 + 标签关联 + 相册关联 + 笔记
-- **所有 Flow 查询必须使用 `Dispatchers.IO`**
+## 配套文档
 
-### 架构约束
-- **UI 层不得直接依赖数据库层**，必须通过 ViewModel + Repository
-- **ViewModel 不得持有 Activity/Fragment 引用**
-- **覆盖层使用 BackStack 管理**，不使用嵌套 NavHost
-- **Compose 和 View 系统可混用**，但单个页面内应保持一致
+| 文档 | 路径 | 用途 |
+|------|------|------|
+| 主设计文档 | `docs/AdvanceMediaKB_完整设计方案.md` | 总览,所有功能的权威说明 |
+| 设计草稿 | `docs/00-设计草稿.md` | 过程性讨论、决策记录 |
+| 一致性审查 | `docs/audit-skills-vs-code.md` | skill 与代码的对齐情况 |
 
-### 性能约束
-- **图片加载必须使用 Coil**，禁止直接使用 BitmapFactory
-- **缩略图必须使用独立的缩略文件**，禁止在列表中加载原图
-- **视频缩略图提取必须在 IO 线程执行**
-- **列表项点击必须防抖（300ms）**，防止重复跳转
+---
 
-### 安全约束
-- **删除操作必须有确认对话框**，禁止一键直接删除
-- **清除全部数据必须有双重确认**
-- **文件路径必须验证**，防止路径遍历攻击
+## Skill 文件模板
+
+每份 skill 应包含以下章节:
+
+```markdown
+# Skill-XX 主题
+
+## 目标
+(用 1-2 句话说清这个 skill 涵盖什么)
+
+## 设计要点
+(从主设计文档提取关键设计,通常是一个表格)
+
+## 代码检查点
+(评审 PR 时,AI 应核对的具体事项,用 checklist 形式)
+
+## 验收标准
+(实现新功能时,AI 应达到的标准)
+
+## 已知问题
+(在主设计文档「6.5 已知问题清单」中对应的项)
+
+## 相关文件
+(本 skill 涉及的核心代码文件)
+```

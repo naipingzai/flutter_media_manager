@@ -1,198 +1,68 @@
-# Skill-09: 应用壳与导航规范
-
-## 前置依赖
-skill-00
+# Skill-09 应用壳与导航 (F0 + F1 入口)
 
 ## 目标
-定义应用入口、页面路由、覆盖层管理、返回栈处理的完整行为规范。
+定义 App 启动后第一个可见的 UI 结构(主屏壳),包含三个主页、所有覆盖层、顶栏 / 底栏 / 多选底栏。
 
----
+## 设计要点
 
-## 1. Activity 清单
+| 项 | 设计 |
+|---|------|
+| 启动 Activity | `MainActivity` (LAUNCHER) |
+| 唯一根 Composable | `HomeScreen()` |
+| 三个主页 | `AllMediaPage` / `AlbumPage` / `TagPage` |
+| 切换方式 | 顶栏 Tab 或底部导航;项目当前用 **顶部 Tab**(由设置决定) |
+| 覆盖层 | `SearchOverlay` / `SettingsOverlay` / `ImportOverlay` / `AmbOverlay` |
+| 全屏 Activity | `MediaViewerActivity`(独立),通过 Intent 启动 |
+| 状态提升 | 主页模式 / 多选集 / 当前覆盖层全部提升到 `HomeScreen` 状态 |
 
-| Activity | 用途 | 说明 |
-|----------|------|------|
-| MainActivity | 主 Activity | 承载所有 Compose 页面和导航 |
-| MediaViewerActivity | 全屏查看器 | 独立 Activity，全屏显示媒体 |
-
----
-
-## 2. MainActivity 规范
-
-### 2.1 基本配置
-
-| 配置项 | 值 | 说明 |
-|--------|---|------|
-| 主题 | 跟随设置 | 使用设计系统主题 |
-| 全屏 | 否 | 正常显示状态栏和导航栏 |
-| 返回键处理 | 自定义 | 在覆盖层页面时先关闭覆盖层 |
-
-### 2.2 返回键处理逻辑
+### HomeScreen 内部状态机
 
 ```
-用户按下返回键
-    │
-    ├─ 有覆盖层打开？
-    │   └─ 关闭最上层覆盖层（动画滑出）
-    │
-    ├─ 在多选模式？
-    │   └─ 退出多选模式
-    │
-    ├─ 在文件浏览器中？
-    │   └─ 返回上一级目录
-    │       └─ 已在根目录？→ 关闭文件浏览器
-    │
-    └─ 以上都不是
-        └─ 执行默认返回行为（退出应用）
+data class HomeUiState(
+  val currentTab: HomeTab,            // ALL_MEDIA / ALBUM / TAG
+  val filterMode: HomeFilterMode,
+  val multiSelect: MultiSelectState,
+  val overlay: HomeOverlay? = null,   // null 表示无覆盖
+  val selectedAlbumId: Long? = null,  // ALBUM Tab 下进入某相册
+  val selectedTagId: Long? = null,    // TAG Tab 下进入某标签
+)
 ```
 
----
+### 启动流程(F0)
 
-## 3. 路由定义
+1. `Application.onCreate` 设置 `MODE_NIGHT_YES`。
+2. `MainActivity.onCreate`:
+   - `installSplashScreen()`
+   - `enableEdgeToEdge()`
+   - `setContent { AdvanceMediaKBTheme(themeMode) { HomeScreen() } }`
+3. `HomeScreen` 内 `LaunchedEffect` 异步加载 `SettingsDataStore`(主题 / 语言)。
+4. 触发 `permissionGate` 校验;未授权弹引导。
 
-### 3.1 路由路径表
+## 代码检查点
 
-| 路由路径 | 页面 | 参数 | 说明 |
-|---------|------|------|------|
-| home | 首页（主框架） | 无 | 底部导航宿主 |
-| album_detail/{albumId} | 相册详情 | albumId: String | 覆盖层 |
-| tag_media/{tagId} | 标签媒体列表 | tagId: String | 覆盖层 |
-| media_detail/{mediaId} | 媒体详情 | mediaId: String | 覆盖层 |
-| note_list | 独立笔记列表 | 无 | 覆盖层 |
-| note_edit/{noteId} | 笔记编辑 | noteId: String? | 覆盖层，null = 新建 |
-| search | 搜索 | 无 | 覆盖层 |
-| settings | 设置 | 无 | 覆盖层 |
+- [ ] `MainActivity` **不持有任何业务状态**,只委托给 `HomeScreen`。
+- [ ] 没有引入 Navigation Compose;**不**使用 `NavHost` / `composable`。
+- [ ] `HomeScreen` 接收 `HomeViewModel` 的 `StateFlow<HomeUiState>`,**不**用 `MutableState` 顶层。
+- [ ] 顶栏 Tab 切换保持滚动位置(scrolling 状态在 ViewModel / `rememberSaveable`)。
+- [ ] 覆盖层进入 / 退出有明确动画(`AnimatedVisibility` 或 `Crossfade`)。
+- [ ] `MediaViewerActivity` 启动参数从 `HomeUiState.selectedMediaIds + index` 拿。
 
-### 3.2 路由行为规则
+## 验收标准
 
-| 规则 | 说明 |
-|------|------|
-| 覆盖层路由 | album_detail, tag_media, media_detail, note_list, note_edit, search, settings 均为覆盖层 |
-| 主页面路由 | home 是主页面，不在覆盖层栈中 |
-| 栈管理 | 覆盖层按入栈顺序堆叠，返回时按出栈顺序关闭 |
-| 参数传递 | 通过路由路径参数传递，不使用全局状态 |
+- App 启动到主页可见 < 800ms(冷启动)。
+- 切换 Tab / 进入覆盖层,数据不丢失。
+- 进入 `MediaViewerActivity`,主页状态保留;返回后仍在原位置。
 
----
+## 已知问题
 
-## 4. 覆盖层规范
+- 项目早期有 Navigation Compose 残留,Review 时如发现 `androidx.navigation:*` 依赖应移除。
+- `MainActivity` 偶尔会出现 `installSplashScreen` 报错(API 31 兼容),需要 `isAtLeastS` 保护。
 
-### 4.1 覆盖层类型
+## 相关文件
 
-所有非主页面都是覆盖层，包括：
-- 相册详情页
-- 标签媒体列表页
-- 媒体详情页
-- 笔记列表页
-- 笔记编辑页
-- 搜索页
-- 设置页
-
-### 4.2 覆盖层栈行为
-
-| 操作 | 行为 | 动画 |
-|------|------|------|
-| 打开新覆盖层 | 新覆盖层从右侧滑入，覆盖当前页面 | 滑入 + 淡入 |
-| 关闭当前覆盖层 | 当前覆盖层向右侧滑出，露出下方页面 | 滑出 + 淡出 |
-| 连续打开 | 多个覆盖层依次堆叠，每层都可以独立关闭 | 每层独立动画 |
-
-### 4.3 覆盖层之间的导航
-
-允许从一个覆盖层打开另一个覆盖层：
-
-| 源页面 | 可打开的目标页面 |
-|--------|----------------|
-| 相册详情 | 媒体详情 |
-| 标签媒体列表 | 媒体详情 |
-| 媒体详情 | 笔记编辑 |
-| 笔记列表 | 笔记编辑 |
-| 搜索结果 | 媒体详情 |
-| 任意覆盖层 | 搜索（通过标题栏搜索图标） |
-
----
-
-## 5. 底部导航栏规范
-
-### 5.1 Tab 定义
-
-| Tab | 图标 | 标签文字 | 说明 |
-|-----|------|---------|------|
-| 所有媒体 | 图片图标 | "所有媒体" | 默认选中 |
-| 相册 | 相册图标 | "相册" | — |
-| 标签 | 标签图标 | "标签" | — |
-
-### 5.2 Tab 切换行为
-
-| 行为 | 说明 |
-|------|------|
-| 选中态 | 图标和文字使用 Primary 色 |
-| 未选中态 | 图标和文字使用 OnSurfaceVariant 色 |
-| 切换动画 | 内容区淡出当前 Tab → 淡入新 Tab |
-| 状态保持 | 每个 Tab 的滚动位置和过滤器状态保持不变 |
-| 导航栏显示/隐藏 | 始终显示，不随滚动隐藏 |
-
----
-
-## 6. TopAppBar 规范
-
-### 6.1 默认状态（所有媒体 Tab）
-
-```
-┌─────────────────────────────────────────┐
-│ 📷 AdvanceMediaKB          [🔍] [⋮]    │
-└─────────────────────────────────────────┘
-```
-
-- 左侧：应用 Logo/名称
-- 右侧：搜索图标（打开搜索覆盖层）、更多菜单（打开设置）
-
-### 6.2 多选状态
-
-```
-┌─────────────────────────────────────────┐
-│ ← 已选中 3 项              [全选] [取消] │
-└─────────────────────────────────────────┘
-```
-
-- 左侧：返回按钮 + 选中计数
-- 右侧：全选按钮 + 取消按钮
-
-### 6.3 覆盖层页面
-
-```
-┌─────────────────────────────────────────┐
-│ ← 页面标题                              │
-└─────────────────────────────────────────┘
-```
-
-- 左侧：返回按钮
-- 中间：页面标题
-
----
-
-## 7. 应用生命周期
-
-| 事件 | 处理 |
-|------|------|
-| 首次启动 | 初始化依赖注入容器、数据库、设置存储 |
-| 从后台恢复 | 无特殊处理，状态自动恢复 |
-| 语言切换 | 重建 Activity |
-| 主题切换 | 自动重组（无需重建） |
-
----
-
-## 8. 验证标准
-
-完成本 skill 后，必须满足以下全部条件：
-
-- [ ] Application 类正确初始化
-- [ ] MainActivity 正确配置
-- [ ] MediaViewerActivity 独立于 MainActivity
-- [ ] 底部导航栏 3 个 Tab 正确显示和切换
-- [ ] 覆盖层正确从右侧滑入
-- [ ] 覆盖层正确向右侧滑出
-- [ ] 覆盖层栈正确管理（后进先出）
-- [ ] 返回键在各场景下行为正确
-- [ ] 路由参数正确传递
-- [ ] Tab 切换时状态正确保持
-- [ ] TopAppBar 在不同状态下正确显示
-- [ ] 多选模式下 TopAppBar 正确切换
+- `app/src/main/java/com/advancemediakb/MainActivity.kt`
+- `app/src/main/java/com/advancemediakb/AdvanceMediaKBApplication.kt`
+- `feature-home/src/main/java/com/advancemediakb/home/HomeScreen.kt`
+- `feature-home/src/main/java/com/advancemediakb/home/HomeViewModel.kt`
+- `feature-home/src/main/java/com/advancemediakb/home/HomeUiState.kt`
+- `feature-home/src/main/java/com/advancemediakb/home/tab/`

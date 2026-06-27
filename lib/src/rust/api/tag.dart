@@ -7,7 +7,7 @@ import '../frb_generated.dart';
 import 'media.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `get_tags_by_parent`
+// These functions are ignored because they are not marked as `pub`: `get_tags_by_parent`, `is_descendant_or_self`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`
 
 /// 获取所有标签
@@ -34,6 +34,16 @@ Future<void> deleteTag({required String id}) =>
 /// 重命名标签
 Future<void> renameTag({required String id, required String newName}) =>
     RustLib.instance.api.crateApiTagRenameTag(id: id, newName: newName);
+
+/// 更新标签颜色
+Future<void> updateTagColor({required String id, required String color}) =>
+    RustLib.instance.api.crateApiTagUpdateTagColor(id: id, color: color);
+
+/// 更新标签父标签（设为 None 表示设为根标签）。
+///
+/// 包含循环引用检测：不允许将标签设置为自身父标签或自身后代的父标签。
+Future<void> updateTagParent({required String id, String? parentId}) =>
+    RustLib.instance.api.crateApiTagUpdateTagParent(id: id, parentId: parentId);
 
 /// 获取标签面包屑路径
 Future<List<TagBreadcrumb>> getTagBreadcrumb({required String tagId}) =>

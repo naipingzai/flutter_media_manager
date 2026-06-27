@@ -22,6 +22,8 @@ class TagBloc extends Bloc<TagEvent, TagState> {
     on<TagCreateEvent>(_onCreate);
     on<TagDeleteEvent>(_onDelete);
     on<TagRenameEvent>(_onRename);
+    on<TagUpdateColorEvent>(_onUpdateColor);
+    on<TagUpdateParentEvent>(_onUpdateParent);
     on<TagAddToMediaEvent>(_onAddToMedia);
     on<TagRemoveFromMediaEvent>(_onRemoveFromMedia);
     on<TagLoadMediaTagsEvent>(_onLoadMediaTags);
@@ -152,6 +154,50 @@ class TagBloc extends Bloc<TagEvent, TagState> {
       }
     } catch (e) {
       _logger.e('重命名标签失败: $e');
+      emit(state.copyWith(errorMessage: e.toString()));
+    }
+  }
+
+  Future<void> _onUpdateColor(
+    TagUpdateColorEvent event,
+    Emitter<TagState> emit,
+  ) async {
+    try {
+      await RustLib.instance.api.crateApiTagUpdateTagColor(
+        id: event.tagId,
+        color: event.color,
+      );
+      _logger.i('更新标签颜色成功: ${event.tagId}');
+      // 刷新当前列表
+      if (state.currentParentId != null) {
+        add(TagLoadChildrenEvent(state.currentParentId!));
+      } else {
+        add(const TagLoadRootsEvent());
+      }
+    } catch (e) {
+      _logger.e('更新标签颜色失败: $e');
+      emit(state.copyWith(errorMessage: e.toString()));
+    }
+  }
+
+  Future<void> _onUpdateParent(
+    TagUpdateParentEvent event,
+    Emitter<TagState> emit,
+  ) async {
+    try {
+      await RustLib.instance.api.crateApiTagUpdateTagParent(
+        id: event.tagId,
+        parentId: event.parentId,
+      );
+      _logger.i('更新标签父标签成功: ${event.tagId}');
+      // 刷新当前列表
+      if (state.currentParentId != null) {
+        add(TagLoadChildrenEvent(state.currentParentId!));
+      } else {
+        add(const TagLoadRootsEvent());
+      }
+    } catch (e) {
+      _logger.e('更新标签父标签失败: $e');
       emit(state.copyWith(errorMessage: e.toString()));
     }
   }

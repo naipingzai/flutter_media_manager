@@ -1,137 +1,70 @@
-# Skill-18: 国际化规范
-
-## 前置依赖
-skill-00, skill-08
+# Skill-18 国际化 (i18n)
 
 ## 目标
-定义中英文双语支持的字符串资源、语言切换、日期格式化的完整规范。
+定义 AdvanceMediaKB 的中英双语支持策略,资源文件结构、运行时切换、`AppCompatDelegate` 集成。
 
----
+## 设计要点
 
-## 1. 支持语言
+| 项 | 设计 |
+|---|------|
+| 支持语言 | `zh` / `en`(其他语言显示英文) |
+| 默认 | 系统语言 |
+| 强制设置 | `SettingsDataStore.language_override` 提供 `SYSTEM / ZH / EN` |
+| 实现 | 通过 `AppCompatDelegate.setApplicationLocales(LocaleListCompat)` |
+| 资源限定 | `app/build.gradle.kts` 的 `resourceConfigurations += setOf("zh", "en")` |
+| 资源目录 | `values-zh/strings.xml`、`values-en/strings.xml`、`values/strings.xml`(默认 = 英文) |
 
-| 语言代码 | 语言 | 资源目录 |
-|---------|------|---------|
-| zh | 中文（简体） | 默认目录（values/） |
-| en | English | values-en/ |
+### strings.xml 组织
 
-**默认语言**：中文（简体）
+```
+res/
+├── values/strings.xml            (默认英文,作为 fallback)
+├── values-zh/strings.xml         (简体中文)
+└── values-en/strings.xml         (英文)
+```
 
----
+### 运行时切换
 
-## 2. 字符串资源规范
+```
+SettingsDataStore.setLanguageOverride(LanguageOverride.ZH)
+  ↓
+AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("zh"))
+  ↓
+Activity 自动重建 → 资源重新加载
+```
 
-### 2.1 禁止硬编码的场景
+### 多语言字符串规范
 
-所有用户可见的文本必须使用字符串资源，包括但不限于：
+- 复数:用 `<plurals>` 资源,不是手写「X 个项目 / X items」。
+- 占位符:`<string name="import_progress">已导入 %1$d / %2$d</string>`。
+- 顺序敏感文案:`getString(R.string.x, arg1, arg2)`,不用字符串拼接。
 
-| 场景 | 说明 |
-|------|------|
-| 页面标题 | 所有 TopAppBar 标题 |
-| 按钮文字 | 所有按钮标签 |
-| 菜单项 | 所有菜单和下拉选项 |
-| 过滤器标签 | FilterChip 文字 |
-| 空状态消息 | 所有空状态的主提示和副提示 |
-| 对话框文本 | 确认/取消按钮、标题、内容 |
-| Toast 消息 | 所有 Toast 提示 |
-| 错误提示 | 所有错误信息 |
-| 设置项标签 | 设置页面所有文字 |
-| 底部导航标签 | Tab 标签文字 |
-| 字段标签 | 详情页信息面板字段名 |
+## 代码检查点
 
-### 2.2 字符串资源命名规范
+- [ ] 所有用户可见字符串必须在 `strings.xml`,**不**硬编码在 Composable。
+- [ ] `resourceConfigurations` 仅含 `"zh"` `"en"`,其他语言不会被打包。
+- [ ] `values/strings.xml`(默认)与 `values-en/strings.xml` 内容一致。
+- [ ] 切换语言后,`AppCompatDelegate.setApplicationLocales` 调用,App 自动重建。
+- [ ] 不在 Composable 中 `Locale.getDefault()` 读取语言,只通过 `LocalConfiguration.current.locales` 拿。
+- [ ] 字符串中**不**混用英语标点(逗号 / 句号),用半角。
 
-| 类别 | 命名格式 | 示例 |
-|------|---------|------|
-| 页面标题 | title_{page} | title_home, title_settings |
-| 按钮 | btn_{action} | btn_save, btn_cancel, btn_confirm |
-| 标签 | label_{name} | label_all, label_image, label_video |
-| 消息 | msg_{context} | msg_no_media, msg_import_success |
-| 对话框标题 | dialog_{context} | dialog_delete_confirm |
-| 对话框内容 | dialog_msg_{context} | dialog_msg_delete_media |
-| 菜单项 | menu_{action} | menu_share, menu_delete |
-| 设置项 | settings_{key} | settings_theme_mode |
-| Tab | tab_{name} | tab_all_media, tab_album, tab_tag |
-| 字段 | field_{name} | field_type, field_size, field_dimension |
+## 验收标准
 
----
+- 系统切到英文,App 显示英文。
+- 设置中强制中文,即使系统英文,App 也显示中文。
+- 重新安装 App,语言设置从系统继承(SYSTEM 模式下)。
+- 所有 Composable 内的文案都在 `strings.xml` 中可找到。
 
-## 3. 语言切换行为
+## 已知问题
 
-| 设置值 | 行为 |
-|--------|------|
-| SYSTEM | 读取系统 Locale，匹配 zh 用中文，其他用英文 |
-| ZH | 强制使用中文资源 |
-| EN | 强制使用英文资源 |
+- 部分 Compose Material3 组件默认字符串硬编码英文(如 Snackbar 默认 action),需显式覆盖。
+- `LocaleListCompat` 在 API 31 之前需要手动 wrap 兼容。
 
-### 3.1 切换流程
+## 相关文件
 
-1. 用户在设置页更改语言
-2. 持久化语言设置
-3. 重建当前 Activity 使新语言生效
-4. 显示 Toast："语言设置已更改"
-
-### 3.2 Locale 覆盖
-
-| 设置值 | Locale |
-|--------|--------|
-| SYSTEM | 不覆盖，使用系统默认 |
-| ZH | Locale("zh") |
-| EN | Locale("en") |
-
----
-
-## 4. 日期时间格式化
-
-| 场景 | 中文格式 | 英文格式 |
-|------|---------|---------|
-| 导入时间（完整） | yyyy年MM月dd日 HH:mm | MMM dd, yyyy HH:mm |
-| 笔记更新时间 | yyyy-MM-dd HH:mm | MMM dd, yyyy HH:mm |
-| 搜索结果日期 | yyyy-MM-dd | MMM dd, yyyy |
-| 视频时长 | mm:ss | mm:ss |
-
-### 4.1 文件大小格式化
-
-| 范围 | 中文 | 英文 |
-|------|------|------|
-| < 1 KB | {n} B | {n} B |
-| < 1 MB | {n} KB | {n} KB |
-| < 1 GB | {n} MB | {n} MB |
-| ≥ 1 GB | {n} GB | {n} GB |
-
----
-
-## 5. 复数处理
-
-| 场景 | 中文 | 英文 |
-|------|------|------|
-| 媒体数量 | {count} 个媒体 | {count} media (plural handling) |
-| 相册媒体数 | {count} 个媒体 | {count} media |
-| 笔记数量 | {count} 条笔记 | {count} notes |
-| 选中数量 | 已选中 {count} 项 | {count} selected |
-
----
-
-## 6. 数字格式化
-
-| 场景 | 格式 |
-|------|------|
-| 像素尺寸 | 使用系统默认数字格式（不使用千位分隔符） |
-| 网格列数 | 纯数字 |
-| 进度百分比 | {n}% |
-
----
-
-## 7. 验证标准
-
-完成本 skill 后，必须满足以下全部条件：
-
-- [ ] 所有用户可见文本已提取到字符串资源
-- [ ] 中文和英文资源文件完整且一致
-- [ ] 无硬编码字符串（UI 层）
-- [ ] 语言切换正确生效
-- [ ] 跟随系统语言正确工作
-- [ ] 日期时间格式正确
-- [ ] 文件大小格式正确
-- [ ] 复数形式正确
-- [ ] 设置页语言选项正确显示三种选项
+- `app/src/main/res/values/strings.xml`
+- `app/src/main/res/values-en/strings.xml`
+- `app/src/main/res/values-zh/strings.xml`(如存在,中文 fallback)
+- `core-common/src/main/java/com/advancemediakb/common/i18n/LanguageManager.kt`
+- `app/build.gradle.kts`(`resourceConfigurations`)
+- `core-model/src/main/java/com/advancemediakb/model/LanguageOverride.kt`

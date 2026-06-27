@@ -83,6 +83,13 @@ class MediaClearSelectionEvent extends MediaEvent {
   const MediaClearSelectionEvent();
 }
 
+/// 全选当前过滤结果
+///
+/// 选中 state.filteredList 中的所有媒体 ID。若已全选，则切换为取消全选。
+class MediaToggleSelectAllEvent extends MediaEvent {
+  const MediaToggleSelectAllEvent();
+}
+
 /// 加载相邻媒体（用于浏览导航）
 class MediaLoadAdjacentEvent extends MediaEvent {
   final String mediaId;

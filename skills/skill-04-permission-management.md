@@ -1,144 +1,91 @@
-# Skill-04: 权限管理规范
-
-## 前置依赖
-skill-00
+# Skill-04 权限管理
 
 ## 目标
-定义存储权限申请的完整流程、降级策略和用户引导。
 
----
+定义 Android 存储权限模型、`MANAGE_EXTERNAL_STORAGE` 申请路径,保证 F1 导入能扫到目标文件。
 
-## 1. 权限需求清单
+## 设计要点
 
-| 权限 | Android 版本 | 说明 |
-|------|------------|------|
-| READ_EXTERNAL_STORAGE | Android 10 及以下 | 读取外部存储 |
-| READ_MEDIA_IMAGES | Android 13+ | 读取图片媒体 |
-| READ_MEDIA_VIDEO | Android 13+ | 读取视频媒体 |
-| MANAGE_EXTERNAL_STORAGE | Android 11-12（可选） | 管理所有文件（降级方案） |
+### 实际代码的权限管理实现
 
----
+| 项 | 设计 |
+|---|------|
+| 类名 | `StoragePermissionManager`(object 单例) |
+| 包路径 | `com.advancemediakb.core.common.permission`(非 `com.advancemediakb.common.permission`) |
+| 目标 SDK | 见 `build.gradle.kts`(待确认) |
+| 权限声明 | `READ_EXTERNAL_STORAGE` + `MANAGE_EXTERNAL_STORAGE` |
+| 全盘访问 | API ≥ 30(R)用 `Environment.isExternalStorageManager()` |
+| 低版本回退 | API < 30 检查 `READ_EXTERNAL_STORAGE` |
 
-## 2. 权限判断流程
+### AndroidManifest.xml 实际声明
 
-```
-应用启动 / 触发文件浏览器
-    │
-    ├─ Android 13+？
-    │   └─ 申请 READ_MEDIA_IMAGES + READ_MEDIA_VIDEO
-    │       ├─ 授予 → 正常功能
-    │       └─ 拒绝 → 降级策略
-    │
-    ├─ Android 11-12？
-    │   └─ 申请 READ_EXTERNAL_STORAGE
-    │       ├─ 授予 → 正常功能
-    │       ├─ 拒绝 → 提示 MANAGE_EXTERNAL_STORAGE
-    │       │   └─ 引导用户到系统设置开启
-    │       └─ 再次拒绝 → 降级策略
-    │
-    └─ Android 10 及以下？
-        └─ 申请 READ_EXTERNAL_STORAGE
-            ├─ 授予 → 正常功能
-            └─ 拒绝 → 降级策略
+```xml
+<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+<uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
 ```
 
----
+> **注意**:Manifest 中**没有**声明 `READ_MEDIA_IMAGES` / `READ_MEDIA_VIDEO`(Android 13+),也**没有** `tools:ignore="ScopedStorage"`。
+> 实际代码**有** `android:requestLegacyExternalStorage="true"` — v4 设想说已废弃但实际代码保留了。
 
-## 3. 降级策略
+### StoragePermissionManager API
 
-当权限被拒绝时，应用仍然可用，但功能受限：
-
-| 场景 | 正常功能 | 降级后功能 |
-|------|---------|-----------|
-| 文件浏览器 | 显示系统目录树，允许选择目录和文件 | 仅显示空白页面 + 权限申请提示 |
-| 媒体导入 | 扫描目录中的图片/视频文件 | 无法扫描，显示引导提示 |
-| 媒体网格 | 显示已导入的媒体 | 正常显示（已导入的媒体在应用私有目录中，不需要权限） |
-
-**核心规则**：已导入的媒体存储在应用私有目录中，查看已导入内容不需要任何权限。权限仅在文件浏览器扫描外部存储时需要。
-
----
-
-## 4. 权限申请时机
-
-| 时机 | 说明 |
+| 方法 | 说明 |
 |------|------|
-| 首次打开文件浏览器 | 用户点击"FAB → 从设备导入"时 |
-| 权限被撤销后再次使用 | 用户手动撤销权限后再次触发文件浏览器 |
+| `hasAllFilesAccess(context): Boolean` | API≥30 用 `isExternalStorageManager()`;API<30 检查 `READ_EXTERNAL_STORAGE` |
+| `requestAllFilesAccess(context)` | 简化版,内部调用 `requestAllFilesAccessPermission`,自动 `findActivity` 启动 Intent |
+| `requestAllFilesAccessPermission(context, onIntentLaunched, onError)` | 带回调版本,支持 `ActivityResultLauncher`;尝试 3 种 Intent 兼容不同 ROM |
+| `hasReadStoragePermission(context): Boolean` | 检查 `READ_EXTERNAL_STORAGE` |
 
-**禁止的时机**：
-- 禁止在应用启动时直接申请权限（没有使用场景时不应打扰用户）
-- 禁止在没有明确用户意图时弹出权限对话框
+### Intent 兼容策略(3 种降级)
 
----
+1. `ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION`(Android 11+ 推荐,精确到包名)
+2. `ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION`(全盘权限列表)
+3. `ACTION_APPLICATION_DETAILS_SETTINGS`(应用信息页兜底)
 
-## 5. 权限拒绝后的用户引导
+### v4 设想 vs 实际代码差异
 
-当权限被拒绝时，显示以下提示：
+| 设想 | 实际 |
+|------|------|
+| `READ_MEDIA_IMAGES` / `READ_MEDIA_VIDEO` | ❌ 未声明 |
+| `tools:ignore="ScopedStorage"` | ❌ 未声明 |
+| `requestLegacyExternalStorage` 已废弃 | ❌ 实际代码保留了 `requestLegacyExternalStorage="true"` |
+| SAF `ActivityResultContracts.OpenDocument` | ❌ 未实现 SAF 文件选择 |
+| `takePersistableUriPermission` | ❌ 未实现 SAF 权限持久化 |
+| 最低 SDK 31 | ⚠️ 待确认 `build.gradle.kts` |
+| `PermissionGate.kt` | ❌ 不存在 |
 
-**UI 组件**：
-- 页面中央显示空状态图标（文件夹图标 + 禁止符号）
-- 主提示文字："需要存储权限才能浏览文件"
-- 副提示文字："请在系统设置中授予存储权限"
-- 操作按钮："去设置"（打开系统应用设置页面）
-- 操作按钮："重新申请"（重新触发系统权限对话框）
+### 授权流程(实际)
 
-**行为规则**：
-- 如果用户选择"去设置"，打开系统设置的应用详情页
-- 用户从设置返回后，自动重新检查权限状态
-- 如果权限已授予，自动刷新页面内容
-- 如果用户选择"重新申请"，再次弹出系统权限对话框
+1. App 启动 → 检查 `hasAllFilesAccess(context)`
+2. 未授权 → 调用 `requestAllFilesAccess(context)` → 跳系统设置页
+3. 用户授权后返回 → 再次检查
+4. 扫描器(`MediaFileScanner`)直接用 `File.listFiles()`,依赖全盘访问权限
 
----
+## 代码检查点
 
-## 6. 权限状态管理
+- [x] `AndroidManifest.xml` 含 `MANAGE_EXTERNAL_STORAGE` 声明。
+- [ ] **有** `requestLegacyExternalStorage="true"` — v4 设想废弃,实际代码保留(可能需要清理)。
+- [ ] **未声明** `READ_MEDIA_IMAGES` / `READ_MEDIA_VIDEO`(Android 13+ 需要)。
+- [ ] **未使用** SAF `ActivityResultLauncher` / `OpenDocumentTree`。
+- [ ] **未调用** `takePersistableUriPermission`。
+- [x] `StoragePermissionManager` 是 `object` 单例,方法均为静态调用。
+- [x] 3 种 Intent 降级策略,兼容不同 ROM。
+- [x] `findActivity` 通过 ContextWrapper 链查找 Activity,兼容 Compose。
 
-权限管理器需要维护以下状态：
+## 验收标准
 
-| 状态 | 含义 | UI 表现 |
-|------|------|---------|
-| GRANTED | 权限已授予 | 正常显示文件浏览器 |
-| DENIED | 权限被拒绝（用户可再次申请） | 显示权限申请提示 |
-| PERMANENTLY_DENIED | 权限被永久拒绝（用户勾选"不再询问"） | 显示"去设置"引导 |
+- 全新安装后,引导用户授权全盘访问,授权后能扫到 `/sdcard/DCIM/`、`/sdcard/Pictures/`。
+- 拒绝授权,App 仍能正常打开但 F1 导入功能被禁用,有明确提示。
+- 3 种 Intent 降级确保不同设备至少能打开设置页。
 
-**状态判断逻辑**：
-- 如果 `shouldShowRequestPermissionRationale` 返回 false 且权限未授予，则为 PERMANENTLY_DENIED
-- 如果返回 true 且权限未授予，则为 DENIED
+## 已知问题
 
----
+- `requestLegacyExternalStorage="true"` 在 Android 11+ 实际无效,建议清理。
+- 缺少 `READ_MEDIA_IMAGES` / `READ_MEDIA_VIDEO`,Android 13+ 可能需要。
+- 不支持 SAF 文件选择和持久化 URI 权限。
+- `requestAllFilesAccess` 内部 `findActivity` 失败时用 `FLAG_ACTIVITY_NEW_TASK` 兜底。
 
-## 7. 事件通知机制
+## 相关文件
 
-权限状态变化时需要通知 UI 层：
-
-| 事件 | 触发时机 | 携带数据 |
-|------|---------|---------|
-| 权限授予 | 用户在系统对话框中点击"允许" | 授予的权限列表 |
-| 权限拒绝 | 用户在系统对话框中点击"拒绝" | 拒绝的权限列表 |
-| 权限永久拒绝 | 系统判断用户已永久拒绝 | 拒绝的权限列表 |
-
-UI 层监听这些事件来更新页面状态。
-
----
-
-## 8. 写入权限说明
-
-本应用**不需要写入外部存储权限**，原因：
-- 所有导入的媒体文件存储在应用私有目录中（不需要权限）
-- 应用不修改或删除外部存储中的原始文件
-- 应用不向公共相册写入内容
-
----
-
-## 9. 验证标准
-
-完成本 skill 后，必须满足以下全部条件：
-
-- [ ] 权限管理器正确判断 Android 版本并申请对应权限
-- [ ] 权限授予后文件浏览器正常工作
-- [ ] 权限拒绝后显示引导提示页面
-- [ ] 永久拒绝后显示"去设置"按钮并能正确跳转
-- [ ] 从设置返回后能自动重新检查权限
-- [ ] 已导入的媒体在无权限时仍可正常查看
-- [ ] 权限状态变化事件正确通知 UI 层
-- [ ] 应用启动时不主动申请权限
-- [ ] 权限管理器通过 DI 正确提供
+- `app/src/main/AndroidManifest.xml`
+- `core-common/src/main/java/com/advancemediakb/core/common/permission/StoragePermissionManager.kt` (101 行)

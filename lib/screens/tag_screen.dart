@@ -598,37 +598,156 @@ class _TagScreenState extends State<TagScreen> {
     );
   }
 
-  void _showEditTagDialog(BuildContext context, dynamic tagInfo) {
+  /// 递归收集一个标签及其所有后代的 ID（用于防止循环父子检测）
+  static Set<String> _collectDescendantIds(
+      List<tag_api.Tag> allTags, String rootId) {
+    final result = <String>{rootId};
+    final children = allTags.where((t) => t.parentId == rootId).map((t) => t.id).toList();
+    for (final childId in children) {
+      result.addAll(_collectDescendantIds(allTags, childId));
+    }
+    return result;
+  }
+
+  /// 编辑标签对话框（支持修改名字、颜色、父标签）
+  void _showEditTagDialog(BuildContext context, dynamic tagInfo) async {
     final loc = AppLocalizations.of(context);
-    final controller = TextEditingController(text: tagInfo.tag.name);
+    final tag = tagInfo.tag;
+    final nameController = TextEditingController(text: tag.name);
+
+    // 获取所有可用父标签（排除自身及自身的后代以防循环）
+    List<tag_api.Tag> allTags = [];
+    try {
+      allTags = await tag_api.getAllTags();
+    } catch (_) {
+      // 忽略错误，保持空列表
+    }
+
+    // 计算禁止的父标签 ID：自身 + 所有后代
+    final forbiddenIds = _collectDescendantIds(allTags, tag.id);
+
+    String selectedColor = tag.color ?? _colorOptions.first;
+    String? selectedParentId = tag.parentId;
+
+    if (!mounted) return;
+
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(loc.edit),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            hintText: loc.tagName,
-            border: const OutlineInputBorder(),
-          ),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(loc.cancel)),
-          FilledButton(
-            onPressed: () {
-              final name = controller.text.trim();
-              if (name.isNotEmpty) {
-                context.read<TagBloc>().add(
-                      TagRenameEvent(tagInfo.tag.id, name),
-                    );
-                Navigator.pop(ctx);
-              }
-            },
-            child: Text(loc.confirm),
-          ),
-        ],
-      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setState) {
+            return AlertDialog(
+              title: Text(loc.edit),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 名字
+                      TextField(
+                        controller: nameController,
+                        decoration: InputDecoration(
+                          hintText: loc.tagName,
+                          border: const OutlineInputBorder(),
+                        ),
+                        autofocus: true,
+                      ),
+                      const SizedBox(height: 16),
+                      // 颜色选择
+                      Text(
+                        loc.selectTagColor,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _colorOptions.map((color) {
+                          final isSelected = selectedColor == color;
+                          return GestureDetector(
+                            onTap: () => setState(() => selectedColor = color),
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: Color(int.parse(color.replaceFirst('#', '0xFF'))),
+                                shape: BoxShape.circle,
+                                border: isSelected
+                                    ? Border.all(color: Colors.white, width: 3)
+                                    : null,
+                                boxShadow: isSelected
+                                    ? [BoxShadow(color: Colors.black26, blurRadius: 4)]
+                                    : null,
+                              ),
+                              child: isSelected
+                                  ? const Icon(Icons.check, color: Colors.white, size: 18)
+                                  : null,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 16),
+                      // 父标签选择
+                      Text(
+                        loc.tagParent,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String?>(
+                        value: selectedParentId,
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                        items: [
+                          DropdownMenuItem<String?>(
+                            value: null,
+                            child: Text('(${loc.none})'),
+                          ),
+                          ...allTags
+                              .where((t) => !forbiddenIds.contains(t.id))
+                              .map((t) => DropdownMenuItem<String?>(
+                                    value: t.id,
+                                    child: Text(t.name),
+                                  )),
+                        ],
+                        onChanged: (val) => setState(() => selectedParentId = val),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text(loc.cancel),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    final name = nameController.text.trim();
+                    if (name.isEmpty) return;
+                    final bloc = context.read<TagBloc>();
+                    if (name != tag.name) {
+                      bloc.add(TagRenameEvent(tag.id, name));
+                    }
+                    if (selectedColor != tag.color) {
+                      bloc.add(TagUpdateColorEvent(tag.id, selectedColor));
+                    }
+                    if (selectedParentId != tag.parentId) {
+                      bloc.add(TagUpdateParentEvent(tag.id, selectedParentId));
+                    }
+                    Navigator.pop(ctx);
+                  },
+                  child: Text(loc.confirm),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
@@ -716,9 +835,20 @@ class _TagScreenState extends State<TagScreen> {
     });
   }
 
-  static const _colorOptions = [
-    '#FF6750A4', '#FFE53935', '#FF1E88E5', '#FF43A047',
-    '#FFFB8C00', '#FF8E24AA', '#FF00ACC1', '#FFD81B60',
+  /// 12 种预设颜色（Material 调色板 + 互补色）
+  static const List<String> _colorOptions = [
+    '#FF6750A4', // Deep Purple
+    '#FFE53935', // Red
+    '#FF1E88E5', // Blue
+    '#FF43A047', // Green
+    '#FFFB8C00', // Orange
+    '#FF8E24AA', // Purple
+    '#FF00ACC1', // Cyan
+    '#FFD81B60', // Pink
+    '#FF3949AB', // Indigo
+    '#FF00897B', // Teal
+    '#FF7CB342', // Light Green
+    '#FFC0CA33', // Lime
   ];
 }
 

@@ -258,12 +258,12 @@ pub async fn get_media_by_filter(filter: FilterMode) -> Result<Vec<MediaItem>, S
         }
         FilterMode::WithAlbums => {
             "SELECT DISTINCT m.* FROM media_items m
-             INNER JOIN media_albums ma ON m.id = ma.media_id
+             INNER JOIN album_media am ON m.id = am.media_id
              ORDER BY m.created_at DESC"
         }
         FilterMode::WithoutAlbums => {
             "SELECT m.* FROM media_items m
-             WHERE m.id NOT IN (SELECT media_id FROM media_albums)
+             WHERE m.id NOT IN (SELECT media_id FROM album_media)
              ORDER BY m.created_at DESC"
         }
     };

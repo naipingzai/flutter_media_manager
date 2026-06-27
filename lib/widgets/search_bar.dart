@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/bloc.dart';
+import '../core/i18n/app_localizations.dart';
 
 /// 媒体搜索栏
 class MediaSearchBar extends StatefulWidget {
@@ -23,12 +24,13 @@ class _MediaSearchBarState extends State<MediaSearchBar> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: SearchBar(
         controller: _controller,
         focusNode: _focusNode,
-        hintText: '搜索媒体...',
+        hintText: loc.searchMediaHint,
         leading: const Icon(Icons.search),
         trailing: [
           if (_controller.text.isNotEmpty)

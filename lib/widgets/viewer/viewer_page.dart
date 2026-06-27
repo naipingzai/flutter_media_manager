@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../bloc/bloc.dart';
+import '../../core/i18n/app_localizations.dart';
 import '../../src/rust/api/media.dart' as media_api;
 import '../../src/rust/api/note.dart' as note_api;
 import '../../src/rust/api/tag.dart' as tag_api;
@@ -10,7 +11,7 @@ import 'image_viewer.dart';
 import 'video_player_widget.dart';
 import 'audio_player_widget.dart';
 
-/// 全屏媒体查看器 - 替代原有的 MediaDetailScreen
+/// 全屏媒体查看器
 ///
 /// 功能:
 /// - HorizontalPager 翻页浏览
@@ -18,7 +19,7 @@ import 'audio_player_widget.dart';
 /// - 图片双指/双击缩放
 /// - 视频播放控制
 /// - 音频播放控制
-/// - 详情模式面板
+/// - 详情模式面板（信息/笔记/标签）
 /// - 标签管理
 /// - 笔记编辑
 /// - 分享/导出
@@ -42,7 +43,7 @@ class _ViewerPageState extends State<ViewerPage> {
   bool _showBars = true;
   bool _detailMode = false;
   Timer? _hideTimer;
-  String? _noteContent;
+  List<note_api.Note> _mediaNotes = [];
   List<tag_api.Tag> _mediaTags = [];
 
   media_api.MediaItem get _currentMedia => widget.mediaList[_currentIndex];
@@ -89,17 +90,17 @@ class _ViewerPageState extends State<ViewerPage> {
   }
 
   void _loadMediaData() {
-    _noteContent = null;
+    _mediaNotes = [];
     _mediaTags = [];
-    _loadNote();
+    _loadNotes();
     _loadTags();
   }
 
-  Future<void> _loadNote() async {
+  Future<void> _loadNotes() async {
     try {
       final notes = await note_api.getNotesByMediaId(mediaId: _currentMedia.id);
       if (mounted) {
-        setState(() => _noteContent = notes.isNotEmpty ? notes.first.content : null);
+        setState(() => _mediaNotes = notes);
       }
     } catch (_) {}
   }
@@ -120,6 +121,7 @@ class _ViewerPageState extends State<ViewerPage> {
   }
 
   void _showMoreOptions() {
+    final loc = AppLocalizations.of(context);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.grey[900],
@@ -129,7 +131,7 @@ class _ViewerPageState extends State<ViewerPage> {
           children: [
             ListTile(
               leading: const Icon(Icons.edit, color: Colors.white),
-              title: const Text('编辑名称', style: TextStyle(color: Colors.white)),
+              title: Text(loc.rename, style: const TextStyle(color: Colors.white)),
               onTap: () {
                 Navigator.pop(ctx);
                 _showRenameDialog();
@@ -137,7 +139,7 @@ class _ViewerPageState extends State<ViewerPage> {
             ),
             ListTile(
               leading: const Icon(Icons.note_add, color: Colors.white),
-              title: const Text('编辑笔记', style: TextStyle(color: Colors.white)),
+              title: Text(loc.editNote, style: const TextStyle(color: Colors.white)),
               onTap: () {
                 Navigator.pop(ctx);
                 _showNoteDialog();
@@ -145,7 +147,7 @@ class _ViewerPageState extends State<ViewerPage> {
             ),
             ListTile(
               leading: const Icon(Icons.label, color: Colors.white),
-              title: const Text('管理标签', style: TextStyle(color: Colors.white)),
+              title: Text(loc.manageTags, style: const TextStyle(color: Colors.white)),
               onTap: () {
                 Navigator.pop(ctx);
                 _showTagManagerDialog();
@@ -153,7 +155,7 @@ class _ViewerPageState extends State<ViewerPage> {
             ),
             ListTile(
               leading: const Icon(Icons.info_outline, color: Colors.white),
-              title: const Text('详情模式', style: TextStyle(color: Colors.white)),
+              title: Text(loc.detailMode, style: const TextStyle(color: Colors.white)),
               trailing: Icon(
                 _detailMode ? Icons.toggle_on : Icons.toggle_off_outlined,
                 color: Colors.white,
@@ -165,7 +167,7 @@ class _ViewerPageState extends State<ViewerPage> {
             ),
             ListTile(
               leading: const Icon(Icons.share, color: Colors.white),
-              title: const Text('分享', style: TextStyle(color: Colors.white)),
+              title: Text(loc.share, style: const TextStyle(color: Colors.white)),
               onTap: () {
                 Navigator.pop(ctx);
                 _shareMedia();
@@ -173,7 +175,7 @@ class _ViewerPageState extends State<ViewerPage> {
             ),
             ListTile(
               leading: const Icon(Icons.delete, color: Colors.red),
-              title: const Text('删除', style: TextStyle(color: Colors.red)),
+              title: Text(loc.delete, style: const TextStyle(color: Colors.red)),
               onTap: () {
                 Navigator.pop(ctx);
                 _showDeleteConfirm();
@@ -186,20 +188,21 @@ class _ViewerPageState extends State<ViewerPage> {
   }
 
   void _showRenameDialog() {
+    final loc = AppLocalizations.of(context);
     final controller = TextEditingController(text: _currentMedia.originalName);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('重命名'),
+        title: Text(loc.rename),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(labelText: '新名称'),
+          decoration: InputDecoration(labelText: loc.newName),
           autofocus: true,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
+            child: Text(loc.cancel),
           ),
           TextButton(
             onPressed: () async {
@@ -229,7 +232,7 @@ class _ViewerPageState extends State<ViewerPage> {
                 }
               }
             },
-            child: const Text('保存'),
+            child: Text(loc.save),
           ),
         ],
       ),
@@ -237,16 +240,19 @@ class _ViewerPageState extends State<ViewerPage> {
   }
 
   void _showNoteDialog() {
-    final controller = TextEditingController(text: _noteContent ?? '');
+    final loc = AppLocalizations.of(context);
+    // 把已有笔记内容预填（取最新一条）
+    final initialContent = _mediaNotes.isNotEmpty ? _mediaNotes.first.content : '';
+    final controller = TextEditingController(text: initialContent);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('编辑笔记'),
+        title: Text(loc.editNote),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(
-            labelText: '笔记内容',
-            hintText: '输入笔记...',
+          decoration: InputDecoration(
+            labelText: loc.noteContent,
+            hintText: loc.noteContentHint,
           ),
           maxLines: 5,
           autofocus: true,
@@ -254,7 +260,7 @@ class _ViewerPageState extends State<ViewerPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
+            child: Text(loc.cancel),
           ),
           TextButton(
             onPressed: () async {
@@ -263,11 +269,11 @@ class _ViewerPageState extends State<ViewerPage> {
                 content: controller.text,
               );
               if (mounted) {
-                setState(() => _noteContent = controller.text);
+                _loadNotes();
                 Navigator.pop(ctx);
               }
             },
-            child: const Text('保存'),
+            child: Text(loc.save),
           ),
         ],
       ),
@@ -288,15 +294,16 @@ class _ViewerPageState extends State<ViewerPage> {
   }
 
   void _showDeleteConfirm() {
+    final loc = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('确认删除'),
-        content: Text('确定要删除 "${_currentMedia.originalName}" 吗？'),
+        title: Text(loc.confirmDeleteMedia),
+        content: Text(loc.confirmDeleteMediaMsg),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
+            child: Text(loc.cancel),
           ),
           TextButton(
             onPressed: () async {
@@ -308,7 +315,7 @@ class _ViewerPageState extends State<ViewerPage> {
               }
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('删除'),
+            child: Text(loc.delete),
           ),
         ],
       ),
@@ -316,16 +323,17 @@ class _ViewerPageState extends State<ViewerPage> {
   }
 
   void _shareMedia() {
+    final loc = AppLocalizations.of(context);
     final media = _currentMedia;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('分享: ${media.originalName}'),
+        content: Text('${loc.share}: ${media.originalName}'),
         action: SnackBarAction(
-          label: '复制路径',
+          label: loc.copyPath,
           onPressed: () {
             Clipboard.setData(ClipboardData(text: media.filePath));
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('路径已复制到剪贴板')),
+              SnackBar(content: Text(loc.filePathCopied)),
             );
           },
         ),
@@ -423,6 +431,7 @@ class _ViewerPageState extends State<ViewerPage> {
   }
 
   Widget _buildTopBar() {
+    final loc = AppLocalizations.of(context);
     return Positioned(
       top: 0, left: 0, right: 0,
       child: Container(
@@ -458,10 +467,13 @@ class _ViewerPageState extends State<ViewerPage> {
                 ),
                 const SizedBox(width: 8),
                 IconButton(
+                  tooltip: loc.detailMode,
                   icon: Icon(Icons.info_outline, color: _detailMode ? Colors.blue : Colors.white),
                   onPressed: _toggleDetailMode),
-                IconButton(icon: const Icon(Icons.more_vert, color: Colors.white),
-                    onPressed: _showMoreOptions),
+                IconButton(
+                  tooltip: loc.edit,
+                  icon: const Icon(Icons.more_vert, color: Colors.white),
+                  onPressed: _showMoreOptions),
               ],
             ),
           ),
@@ -471,6 +483,7 @@ class _ViewerPageState extends State<ViewerPage> {
   }
 
   Widget _buildBottomBar() {
+    final loc = AppLocalizations.of(context);
     return Positioned(
       bottom: 0, left: 0, right: 0,
       child: Container(
@@ -488,19 +501,19 @@ class _ViewerPageState extends State<ViewerPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildBottomAction(Icons.note_add_outlined, '笔记', () {
+                _buildBottomAction(Icons.note_add_outlined, loc.note, () {
                   _hideTimer?.cancel();
                   _showNoteDialog();
                 }),
-                _buildBottomAction(Icons.label_outline, '标签', () {
+                _buildBottomAction(Icons.label_outline, loc.tag, () {
                   _hideTimer?.cancel();
                   _showTagManagerDialog();
                 }),
-                _buildBottomAction(Icons.share_outlined, '分享', () {
+                _buildBottomAction(Icons.share_outlined, loc.share, () {
                   _hideTimer?.cancel();
                   _shareMedia();
                 }),
-                _buildBottomAction(Icons.delete_outline, '删除', () {
+                _buildBottomAction(Icons.delete_outline, loc.delete, () {
                   _hideTimer?.cancel();
                   _showDeleteConfirm();
                 }, color: Colors.red),
@@ -530,7 +543,9 @@ class _ViewerPageState extends State<ViewerPage> {
     );
   }
 
+  /// 详情模式面板：信息 / 笔记 / 标签 三段式
   Widget _buildDetailPanel() {
+    final loc = AppLocalizations.of(context);
     return Positioned(
       bottom: 0, left: 0, right: 0,
       child: GestureDetector(
@@ -554,33 +569,39 @@ class _ViewerPageState extends State<ViewerPage> {
                   Text(_currentMedia.originalName, style: const TextStyle(
                       color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
-                  _buildInfoRow(Icons.insert_drive_file, '类型', _currentMedia.mimeType),
-                  _buildInfoRow(Icons.storage, '大小', _formatFileSize(_currentMedia.size)),
-                  _buildInfoRow(Icons.folder, '路径', _currentMedia.filePath),
-                  _buildInfoRow(Icons.calendar_today, '创建时间', _formatDate(_currentMedia.createdAt)),
+                  // ── 信息面板 ──
+                  _buildSectionHeader(loc.infoPanel),
+                  _buildInfoRow(Icons.insert_drive_file, loc.typeLabel, _currentMedia.mimeType),
+                  _buildInfoRow(Icons.storage, loc.fileSize, _formatFileSize(_currentMedia.size)),
+                  _buildInfoRow(Icons.folder, loc.fullPath, _currentMedia.filePath),
+                  _buildInfoRow(Icons.calendar_today, loc.createdAt, _formatDate(_currentMedia.createdAt)),
                   if (_currentMedia.width != null && _currentMedia.height != null)
-                    _buildInfoRow(Icons.aspect_ratio, '分辨率',
+                    _buildInfoRow(Icons.aspect_ratio, loc.resolution,
                         '${_currentMedia.width} x ${_currentMedia.height}'),
                   if (_currentMedia.duration != null && _currentMedia.duration! > 0)
-                    _buildInfoRow(Icons.timer, '时长', '${_currentMedia.duration! ~/ 1000} 秒'),
+                    _buildInfoRow(Icons.timer, loc.duration, '${_currentMedia.duration! ~/ 1000} s'),
                   const SizedBox(height: 16),
-                  if (_noteContent != null && _noteContent!.isNotEmpty) ...[
-                    const Text('笔记', style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 4),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(_noteContent!, style: const TextStyle(color: Colors.white, fontSize: 14)),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                  if (_mediaTags.isNotEmpty) ...[
-                    const Text('标签', style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 8),
+                  // ── 笔记面板 ──
+                  _buildSectionHeader('${loc.notePanel} (${_mediaNotes.length})'),
+                  if (_mediaNotes.isEmpty)
+                    Text(loc.noNotes, style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 13))
+                  else
+                    ..._mediaNotes.map((n) => Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.only(bottom: 6),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(n.content, style: const TextStyle(color: Colors.white, fontSize: 14)),
+                        )),
+                  const SizedBox(height: 16),
+                  // ── 标签面板 ──
+                  _buildSectionHeader(loc.tagPanel),
+                  if (_mediaTags.isEmpty)
+                    Text(loc.noTags, style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 13))
+                  else
                     Wrap(
                       spacing: 8, runSpacing: 4,
                       children: _mediaTags.map((tag) {
@@ -592,13 +613,20 @@ class _ViewerPageState extends State<ViewerPage> {
                         );
                       }).toList(),
                     ),
-                  ],
                 ],
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildSectionHeader(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(label,
+          style: const TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w600)),
     );
   }
 
@@ -681,7 +709,7 @@ class _TagSelectorDialogState extends State<_TagSelectorDialog> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('操作失败: $e')),
+          SnackBar(content: Text('${AppLocalizations.of(context).operationFailed}: $e')),
         );
       }
     }
@@ -689,15 +717,16 @@ class _TagSelectorDialogState extends State<_TagSelectorDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return AlertDialog(
-      title: const Text('管理标签'),
+      title: Text(loc.manageTags),
       content: SizedBox(
         width: double.maxFinite,
         height: 400,
         child: _loading
             ? const Center(child: CircularProgressIndicator())
             : _allTags.isEmpty
-                ? const Center(child: Text('暂无可用标签'))
+                ? Center(child: Text(loc.noTagsCreateFirst))
                 : ListView.builder(
                     itemCount: _allTags.length,
                     itemBuilder: (ctx, index) {
@@ -726,9 +755,10 @@ class _TagSelectorDialogState extends State<_TagSelectorDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('关闭'),
+          child: Text(loc.close),
         ),
       ],
     );
   }
 }
+

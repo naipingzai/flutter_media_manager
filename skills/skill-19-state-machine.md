@@ -1,156 +1,104 @@
-# Skill-19: 状态机与异常处理规范
-
-## 前置依赖
-skill-00, skill-01, skill-06, skill-08
+# Skill-19 状态机(F1 + F9)
 
 ## 目标
-定义应用中关键操作的状态机模型、异常处理策略、日志记录规范。
+统一定义 ImportUseCase(媒体导入)与 AmbUseCase(导出 / 导入 AMB 包)的状态机,作为异步任务的契约。
 
----
+## 设计要点
 
-## 1. 状态机定义
-
-### 1.1 导入管线状态机
+### F1 导入状态机
 
 ```
-[Idle] ──start──→ [Validating]
-                       │
-                       ├──验证失败──→ [Error] ──retry──→ [Idle]
-                       │
-                       ├──验证通过──→ [Hashing]
-                                         │
-                                         ├──哈希失败──→ [PartialError]
-                                         │                  │
-                                         ├──哈希成功──→ [Deduplicating]
-                                                           │
-                                                           ├──全部重复──→ [Completed(skipped)]
-                                                           │
-                                                           └──有新文件──→ [Copying]
-                                                                            │
-                                                                            ├──复制失败──→ [PartialError]
-                                                                            │
-                                                                            └──复制成功──→ [Extracting]
-                                                                                             │
-                                                                                             └──→ [GeneratingThumbnails]
-                                                                                                    │
-                                                                                                    └──→ [SavingToDb]
-                                                                                                           │
-                                                                                                           ├──成功──→ [Completed(success)]
-                                                                                                           │
-                                                                                                           └──失败──→ [PartialError]
+[Idle]
+  ↓ start(sources)
+[Pending]              ← ImportTaskEntity created
+  ↓ workers 启动
+[Running]              ← processedCount 持续更新
+  ↓ all done
+[Success]              ← addedCount = processedCount, skippedCount = 0
+  ↓ 部分失败
+[Partial]              ← 部分成功,errorMessage 含失败列表
+  ↓ 整体失败
+[Failed]               ← errorMessage 含原因
+  ↓ 用户取消
+[Canceled]             ← CancellationException 捕获后
 ```
 
-| 状态 | 说明 | 可执行操作 |
-|------|------|-----------|
-| Idle | 空闲状态 | start |
-| Validating | 验证选择 | cancel |
-| Hashing | 计算哈希 | cancel |
-| Deduplicating | 检查重复 | cancel |
-| Copying | 复制文件 | cancel |
-| Extracting | 提取元数据 | cancel |
-| GeneratingThumbnails | 生成缩略图 | cancel |
-| SavingToDb | 保存数据库 | — |
-| Completed | 完成 | — |
-| Error | 错误 | retry |
-| PartialError | 部分错误 | retry |
+状态枚举持久化为 `String`(见 skill-01 设计要点)。
 
----
+### F9 导出 AMB 状态机
 
-## 2. 异常处理策略
+```
+[Idle]
+  ↓ exportToDir(sources, destDir)
+[Collecting]           ← 收集 mediaId / tagId / albumId
+  ↓
+[CopyingFiles]         ← 复制 media 到 staging 目录
+  ↓
+[BuildingManifest]     ← 写 manifest.json
+  ↓
+[Zipping]              ← 打包成 .amb (ZIP)
+  ↓
+[Cleaning]             ← 删除 staging 目录
+  ↓
+[Success]              ← 返回 .amb 路径
+  ↓ 失败
+[Failed]               ← errorMessage 含原因
+  ↓ 用户取消
+[Canceled]
+```
 
-### 2.1 异常分类
+### F9 导入 AMB 状态机
 
-| 分类 | 处理方式 | 示例 |
-|------|---------|------|
-| 可恢复异常 | 重试或降级 | 文件读取失败、网络超时 |
-| 不可恢复异常 | 记录日志 + 提示用户 | 数据库损坏、存储空间不足 |
-| 业务逻辑异常 | 提示用户 | 重复文件、无效输入 |
-| 系统异常 | 记录日志 + 提示用户 | OOM、权限被撤销 |
+```
+[Idle]
+  ↓ importFromFile(ambFile)
+[ValidatingManifest]   ← 检查 ZIP + manifest.json
+  ↓
+[Extracting]           ← 解压到 staging
+  ↓
+[ImportingDatabase]    ← 逐条 importTask → MediaDao.insert (按 manifest)
+  ↓
+[ImportingFiles]       ← 把 media/ 复制到 SAF 持久化目录
+  ↓
+[Cleaning]             ← 删除 staging
+  ↓
+[Success]              ← 返回导入的 mediaId 列表
+  ↓ 失败
+[Failed]
+```
 
-### 2.2 各模块异常处理
+### 状态机实现位置
 
-| 模块 | 异常类型 | 处理方式 |
-|------|---------|---------|
-| 文件扫描 | 目录不存在 | 提示 + 返回上级 |
-| 文件扫描 | 权限不足 | 申请权限 |
-| 文件扫描 | 目录为空 | 显示空状态 |
-| 导入管线 | 文件不可读 | 跳过 + 记录失败列表 |
-| 导入管线 | 存储空间不足 | 提示 + 终止导入 |
-| 导入管线 | 哈希计算失败 | 跳过 + 记录失败列表 |
-| 导入管线 | 复制失败 | 跳过 + 清理部分文件 + 记录失败列表 |
-| 导入管线 | 元数据提取失败 | 降级（设为 null） |
-| 导入管线 | 缩略图生成失败 | 降级（使用占位图） |
-| 导入管线 | 数据库保存失败 | 事务回滚 + 记录失败列表 |
-| 缩略图生成 | OOM | 降低采样率重试 |
-| 缩略图生成 | 文件损坏 | 使用占位图 |
-| 数据库 | 写入失败 | 事务回滚 + 提示用户 |
-| 数据库 | 读取失败 | 返回空结果 + 记录日志 |
-| 设置存储 | 读取失败 | 使用默认值 |
-| 设置存储 | 写入失败 | 记录日志 + 提示用户 |
+- 导入:`ImportTaskEntity.status` + `ImportUseCase`。
+- 导出 / 导入 AMB:`AmbTaskEntity.status`(如果存在)或在内存 ViewModel 中维护。
 
----
+## 代码检查点
 
-## 3. 事务管理规范
+- [ ] 状态转移**不**直接写 enum 字段,走 Repository 提供的 `markXxx(taskId)` 函数。
+- [ ] `CancellationException` 必须捕获并标记 `Canceled`,不能直接抛出给 UI。
+- [ ] 状态字段持久化为 `String`(name),不是 ordinal。
+- [ ] 状态变更通过 `Flow` 推送给 UI,UI 不轮询。
+- [ ] 失败信息包含错误堆栈摘要(不超过 1KB),不泄漏完整路径。
+- [ ] 进度(`processedCount`)更新频率 < 100ms/次,避免 UI 抖动。
 
-| 场景 | 事务策略 |
-|------|---------|
-| 单个媒体导入 | 单条记录事务 |
-| 批量媒体导入 | 批量事务（一条失败全部回滚） |
-| 删除媒体 | 单事务（删除记录 + 关联 + 缩略图文件） |
-| 清除全部数据 | 单事务（删除所有表数据） |
-| 创建/编辑相册 | 单条记录事务 |
-| 删除相册 | 单事务（级联删除子相册和关联） |
-| 创建/编辑标签 | 单条记录事务 |
-| 删除标签 | 单事务（级联删除子标签和关联） |
+## 验收标准
 
----
+- 5 个状态(Pending/Running/Success/Partial/Failed/Canceled)都能从 UI 观察到。
+- 取消后,任务 DB 记录仍在,标记 `Canceled`,用户可查看历史。
+- 导出 AMB 中途断电,重启后状态正确(若实现持久化)。
+- 导入 AMB 时如目标媒体已存在,跳过而非覆盖(`sha256` 去重)。
 
-## 4. 日志记录规范
+## 已知问题
 
-### 4.1 日志级别
+- 导出 AMB 大文件(>1GB)可能 OOM,需要流式压缩。
+- 导入 AMB 当前不做版本兼容校验(manifest 缺 `version` 字段)。
 
-| 级别 | 用途 |
-|------|------|
-| DEBUG | 开发调试信息 |
-| INFO | 关键操作记录（导入开始/完成、删除操作） |
-| WARN | 可恢复异常（文件跳过、降级处理） |
-| ERROR | 不可恢复异常（数据库错误、系统异常） |
+## 相关文件
 
-### 4.2 必须记录的操作
-
-| 操作 | 日志级别 | 内容 |
-|------|---------|------|
-| 导入开始 | INFO | 文件数量 |
-| 单个文件导入成功 | DEBUG | 文件名、大小 |
-| 单个文件导入失败 | WARN | 文件名、失败原因 |
-| 导入完成 | INFO | 成功/跳过/失败数量 |
-| 删除媒体 | INFO | 媒体 ID |
-| 清除全部数据 | INFO | 操作结果 |
-| 数据库异常 | ERROR | 异常类型、消息 |
-| 权限被拒绝 | WARN | 权限类型 |
-
----
-
-## 5. 用户提示规范
-
-| 提示类型 | 使用场景 | 展示方式 |
-|---------|---------|---------|
-| Toast | 短暂操作结果（保存成功、删除完成） | 自动消失（2 秒） |
-| Snackbar | 可撤销操作（删除完成） | 带撤销按钮 |
-| 对话框 | 需要确认的操作（删除、清除数据） | 阻塞式 |
-| 空状态 | 无数据时 | 内嵌在页面中 |
-
----
-
-## 6. 验证标准
-
-完成本 skill 后，必须满足以下全部条件：
-
-- [ ] 导入管线状态机正确实现
-- [ ] 各状态之间的转换正确
-- [ ] 取消操作在各状态下正确执行
-- [ ] 可恢复异常正确重试或降级
-- [ ] 不可恢复异常正确提示用户
-- [ ] 事务管理符合规范（批量导入一条失败全部回滚）
-- [ ] 关键操作有日志记录
-- [ ] 用户提示类型选择正确
+- `domain/src/main/java/com/advancemediakb/domain/usecase/ImportUseCase.kt`
+- `domain/src/main/java/com/advancemediakb/domain/usecase/AmbExportUseCase.kt`
+- `domain/src/main/java/com/advancemediakb/domain/usecase/AmbImportUseCase.kt`
+- `data/src/main/java/com/advancemediakb/data/import/ImportWorker.kt`
+- `data/src/main/java/com/advancemediakb/data/amb/AmbExporter.kt`
+- `data/src/main/java/com/advancemediakb/data/amb/AmbImporter.kt`
+- `core-model/src/main/java/com/advancemediakb/model/ImportTaskEntity.kt`

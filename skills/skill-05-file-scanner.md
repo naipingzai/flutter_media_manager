@@ -1,201 +1,81 @@
-# Skill-05: 文件扫描器规范
-
-## 前置依赖
-skill-04
+# Skill-05 文件扫描器
 
 ## 目标
-定义文件系统扫描、目录浏览、文件过滤、面包屑导航的完整行为规范。
 
----
+定义从磁盘扫描媒体文件的算法、支持的文件格式、白名单策略,作为 F1 的输入。
 
-## 1. 功能概述
+## 设计要点
 
-文件扫描器提供两个核心能力：
-1. **目录浏览**：显示系统目录树，用户可逐层进入子目录
-2. **文件扫描**：扫描指定目录中的所有图片和视频文件
+### 实际代码的扫描器实现
 
----
+| 项 | 设计 |
+|---|------|
+| 类名 | `MediaFileScanner`(非 `FileScanner` / `MediaStoreScanner` / `SafTreeScanner`) |
+| 包路径 | `com.advancemediakb.core.common.scanner`(非 `com.advancemediakb.data.scanner`) |
+| 扫描源 | `Environment.getExternalStorageDirectory()` + 6 个常见公共目录(DOWNLOADS/DOCUMENTS/PICTURES/MOVIES/DCIM/Android/media) |
+| 返回类型 | `suspend fun scanAllFiles(): List<MediaFile>`(非 `Flow<ScannedFile>`) |
+| 去重 | `distinctBy { it.path }`,按 `dateModified DESC` 排序 |
+| 线程 | `withContext(Dispatchers.IO)` |
+| 数据类 | `MediaFile(uri, path, name, size, dateModified, mimeType, isSupported)` |
 
-## 2. 根目录列表
+### 支持的文件格式(白名单)
 
-文件浏览器启动时显示以下根目录：
+| 分类 | 扩展名 | 对应 MIME |
+|------|--------|-----------|
+| 图片 | jpg, jpeg, png, gif, webp, bmp, heic, heif | image/jpeg, image/png, image/gif, image/webp, image/bmp, image/heic |
+| 视频 | mp4, mkv, avi, mov, webm, 3gp, flv, wmv | video/mp4, video/x-matroska, video/x-msvideo, video/quicktime, video/webm, video/3gpp, video/x-flv, video/x-ms-wmv |
 
-| 目录 | 路径 | 图标 | 说明 |
-|------|------|------|------|
-| 内部存储 | /storage/emulated/0 | 手机图标 | 设备主存储 |
-| SD 卡（如有） | /storage/xxxx-xxxx | SD 卡图标 | 外部 SD 卡，动态检测是否存在 |
-| 下载 | /storage/emulated/0/Download | 下载图标 | 常用目录快捷入口 |
-| DCIM | /storage/emulated/0/DCIM | 相机图标 | 相机拍摄目录 |
-| 图片 | /storage/emulated/0/Pictures | 图片图标 | 截图等图片目录 |
+### 扫描步骤
 
-**动态检测规则**：
-- SD 卡路径通过系统 API 动态检测
-- 如果 SD 卡不存在，列表中不显示该项
-- 根目录列表在每次打开文件浏览器时重新检测
+1. **递归扫描外部存储根目录**:`scanDirectoryRecursive(externalStorage)`
+2. **扫描 6 个公共目录**:DOWNLOADS / DOCUMENTS / PICTURES / MOVIES / DCIM / Android/media
+3. **去重并排序**:`distinctBy { it.path }` → `sortedByDescending { it.dateModified }`
+4. **产出**:`List<MediaFile>` 交给导入管线
 
----
+### v4 设想 vs 实际代码差异
 
-## 3. 目录浏览行为
-
-### 3.1 进入子目录
-
-| 步骤 | 行为 | 说明 |
-|------|------|------|
-| 1 | 用户点击目录项 | 触发进入子目录 |
-| 2 | 扫描该目录的直接子项 | 不递归，只读一层 |
-| 3 | 分离目录和文件 | 先显示目录，再显示文件 |
-| 4 | 目录按名称排序（字母序） | 忽略大小写 |
-| 5 | 文件按名称排序（字母序） | 忽略大小写 |
-| 6 | 更新面包屑导航 | 添加新的路径段 |
-| 7 | 滚动位置重置到顶部 | 新目录内容从头显示 |
-
-### 3.2 返回上级目录
-
-| 步骤 | 行为 | 说明 |
-|------|------|------|
-| 1 | 用户点击返回键或面包屑 | 触发返回 |
-| 2 | 回到父目录的内容 | 保持之前的滚动位置 |
-| 3 | 更新面包屑导航 | 移除最后一个路径段 |
-
-### 3.3 目录列表项显示
-
-每个目录项显示：
-- 目录图标（文件夹图标）
-- 目录名称（截断显示，单行）
-
-### 3.4 文件列表项显示
-
-每个文件项显示（仅在非预览模式下显示）：
-- 文件图标（根据文件类型显示不同图标）
-- 文件名称（截断显示，单行）
-- 文件大小（格式化后，如 "2.5 MB"）
-
----
-
-## 4. 文件过滤规则
-
-### 4.1 支持的文件类型
-
-**图片文件**（按 MIME type 判断）：
-- image/jpeg
-- image/png
-- image/gif
-- image/webp
-- image/bmp
-- image/heic
-- image/heif
-
-**视频文件**（按 MIME type 判断）：
-- video/mp4
-- video/quicktime (.mov)
-- video/x-msvideo (.avi)
-- video/webm
-- video/3gpp
-- video/x-matroska (.mkv)
-
-### 4.2 过滤逻辑
-
-- 扫描时自动过滤非媒体文件（不显示 .txt、.pdf 等）
-- 过滤逻辑基于文件的 MIME type，不基于扩展名
-- 隐藏文件（以 "." 开头的文件/目录）不显示
-- 无法读取的目录/文件不显示（权限不足等情况）
-
----
-
-## 5. 面包屑导航
-
-### 5.1 结构
-
-面包屑显示从根目录到当前目录的完整路径：
-
-```
-内部存储 > DCIM > Camera > 2024
-```
-
-### 5.2 行为规则
-
-| 操作 | 行为 |
+| 设想 | 实际 |
 |------|------|
-| 点击面包屑中的某一段 | 直接跳转到该目录 |
-| 点击"返回"按钮 | 回到上一级目录 |
-| 在根目录时点击返回 | 关闭文件浏览器 |
+| SAF 持久化 URI 树扫描 | ❌ 不存在 SAF 扫描,纯 `File.listFiles()` 递归 |
+| `MediaStore` 查询 | ❌ 不使用 MediaStore |
+| `.nomedia` 排除 | ❌ **不排除** `.nomedia`,递归包含所有子目录 |
+| 隐藏文件排除 | ❌ **不排除** 隐藏文件(注释明确写"包含隐藏文件") |
+| 小于 10KB 过滤 | ❌ 不按大小过滤 |
+| `Flow<ScannedFile>` | ❌ 用 `suspend fun List<MediaFile>` |
+| `SharedFlow<Int>` 进度 | ❌ 无进度回调 |
+| `.tmp` / `.part` 排除 | ❌ 不排除 |
 
-### 5.3 显示规则
+### 补充方法
 
-- 每段之间用 " > " 分隔
-- 最后一段（当前目录）高亮显示
-- 路径过长时允许水平滚动
-- 根目录段显示友好的名称（如"内部存储"而非"/storage/emulated/0"）
+- `isSupportedExtension(ext: String): Boolean` — 检查扩展名是否在白名单
+- `getMimeTypeForExtension(ext: String): String` — 扩展名转 MIME
+- `scanSupportedMediaFiles(limit: Int = 1000): List<MediaFile>` — 只返回支持的文件,限制数量
 
----
+## 代码检查点
 
-## 6. 扫描性能规则
+- [x] MIME 过滤走白名单(`supportedExtensions` Set),**不**用黑名单。
+- [x] 不在扫描阶段计算 SHA-256,交给导入管线异步做。
+- [x] 扫描器使用 `suspend fun`,`withContext(Dispatchers.IO)`,不阻塞主线程。
+- [ ] **未使用** SAF `DocumentFile.fromTreeUri`(v4 设想但实际没有)。
+- [ ] **未使用** `MediaStore` / `ContentResolver.query`(v4 设想但实际没有)。
+- [ ] **未排除** `.nomedia` 和隐藏文件 — 与 v4 设想不符,实际代码包含所有文件。
+- [ ] **无进度回调** — `scanAllFiles()` 是一次性返回完整列表。
+- [x] `MediaFileScanner` 不是 Hilt 注入(普通 class,构造器接收 `Context`)。
 
-| 规则 | 说明 |
-|------|------|
-| 不递归扫描 | 只扫描当前目录的直接子项，不递归进入子目录 |
-| 异步执行 | 扫描在后台线程执行，不阻塞 UI |
-| 取消机制 | 用户离开当前目录时，取消正在进行的扫描 |
-| 超时处理 | 单个目录扫描超过 5 秒，显示加载提示 |
+## 验收标准
 
----
+- 扫描 1000 张照片,`Dispatchers.IO` 不阻塞主线程。
+- `distinctBy { path }` 确保同一文件不重复入列。
+- `scanSupportedMediaFiles(limit=1000)` 限制返回数量,避免性能问题。
+- `getMimeType` 对未知扩展名返回 `application/octet-stream`。
 
-## 7. 错误处理
+## 已知问题
 
-| 场景 | 处理方式 |
-|------|---------|
-| 目录不存在 | 显示"目录不存在"提示，自动返回上级 |
-| 权限不足 | 显示权限申请提示（参见 skill-04） |
-| 目录为空 | 显示"此目录为空"提示 |
-| 扫描失败 | 显示"无法读取此目录"提示，保留返回上级的能力 |
-| SD 卡已移除 | 显示"存储设备已移除"提示，返回根目录列表 |
+- 实际代码**不排除** `.nomedia` 和隐藏文件 — 与设计意图不符,建议后续修复。
+- 无进度回调,大量文件扫描时 UI 无法显示进度。
+- 不使用 MediaStore,纯 `File.listFiles()`,在 Android 11+ 需要 `MANAGE_EXTERNAL_STORAGE`。
+- 不支持 SAF 树 URI 扫描。
 
----
+## 相关文件
 
-## 8. 文件浏览器 UI 结构
-
-```
-┌─────────────────────────────────┐
-│ ← 文件浏览器        [全选] [确认] │  ← 标题栏
-├─────────────────────────────────┤
-│ 内部存储 > DCIM > Camera         │  ← 面包屑
-├─────────────────────────────────┤
-│ 📁 2024                         │  ← 目录列表
-│ 📁 2023                         │
-│ 📁 Screenshots                  │
-├─────────────────────────────────┤
-│ 🖼 IMG_001.jpg    2.5 MB        │  ← 文件列表
-│ 🖼 IMG_002.jpg    1.8 MB        │
-│ 🎬 VID_001.mp4    15.2 MB       │
-│ ...                              │
-└─────────────────────────────────┘
-```
-
----
-
-## 9. 文件选择规则
-
-| 规则 | 说明 |
-|------|------|
-| 默认选中所有文件 | 进入目录后默认选中所有媒体文件 |
-| 用户可取消选中 | 点击文件项切换选中状态 |
-| "全选"按钮 | 选中当前目录所有文件 |
-| 目录不可选中 | 目录项只用于导航，不参与选择 |
-| 确认选择 | 点击"确认"按钮开始导入选中的文件 |
-
----
-
-## 10. 验证标准
-
-完成本 skill 后，必须满足以下全部条件：
-
-- [ ] 根目录列表正确显示（包含内部存储、常用目录）
-- [ ] SD 卡动态检测正确
-- [ ] 进入子目录正确更新内容和面包屑
-- [ ] 返回上级目录正确恢复内容
-- [ ] 面包屑点击可正确跳转
-- [ ] 文件过滤只显示图片和视频
-- [ ] 隐藏文件不显示
-- [ ] 空目录显示提示
-- [ ] 扫描在后台线程执行
-- [ ] 错误场景有正确的提示和恢复
+- `core-common/src/main/java/com/advancemediakb/core/common/scanner/MediaFileScanner.kt` (130 行)

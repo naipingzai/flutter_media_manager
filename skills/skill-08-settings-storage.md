@@ -1,119 +1,91 @@
-# Skill-08: 设置存储规范
-
-## 前置依赖
-skill-00
+# Skill-08 设置存储
 
 ## 目标
-定义全部设置项、持久化方式、默认值、变更通知机制。
 
----
+用 DataStore Preferences 持久化用户设置;所有写操作走 `SettingsDataStore`,UI 通过 Flow 订阅。
 
-## 1. 设置项清单
+## 设计要点
 
-共 6 个设置项，全部必须实现：
+### 实际代码的 11 个设置项
 
-| # | 设置项 | 类型 | 默认值 | 可选值 | 说明 |
-|---|--------|------|--------|--------|------|
-| 1 | themeMode | Enum | SYSTEM | SYSTEM, LIGHT, DARK | 主题模式 |
-| 2 | dynamicColor | Boolean | false | true, false | 是否启用 Material You 动态颜色 |
-| 3 | language | Enum | SYSTEM | SYSTEM, ZH, EN | 语言偏好 |
-| 4 | gridColumns | Int | 3 | 2, 3, 4, 5 | 媒体网格列数 |
-| 5 | showContentPreview | Boolean | true | true, false | 是否显示内容预览 |
-| 6 | lastScanPath | String? | null | 任意路径 | 上次扫描的目录路径（记忆功能） |
+| Key (PreferencesKey) | 类型 | 默认值 | 含义 | Flow 暴露 | setter |
+|----------------------|------|--------|------|-----------|--------|
+| `default_import_tags` | StringSet | `setOf("默认")` | 导入时自动打的标签 | `defaultImportTags: Flow<Set<String>>` | `setDefaultImportTags(Set<String>)` |
+| `import_conflict_strategy` | String | `"skip"` | 导入冲突策略 | `importConflictStrategy: Flow<String>` | `setImportConflictStrategy(String)` |
+| `delete_original_after_import` | Boolean | `false` | 导入后删除原文件 | `deleteOriginalAfterImport: Flow<Boolean>` | `setDeleteOriginalAfterImport(Boolean)` |
+| `theme_mode` | String | `"system"` | 主题模式(system/light/dark) | `themeMode: Flow<String>` | `setThemeMode(String)` |
+| `thumbnail_quality` | Int | `80` | 缩略图 JPEG 质量 | `thumbnailQuality: Flow<Int>` | `setThumbnailQuality(Int)` |
+| `home_grid_columns` | Int | `DEFAULT_GRID_COLUMNS(3)` | 主页网格列数 | `homeGridColumns: Flow<Int>` | `setHomeGridColumns(Int)` |
+| `album_grid_columns` | Int | `3` | 相册 Tab 网格列数 | `albumGridColumns: Flow<Int>` | `setAlbumGridColumns(Int)` |
+| `search_grid_columns` | Int | `3` | 搜索 Tab 网格列数 | `searchGridColumns: Flow<Int>` | `setSearchGridColumns(Int)` |
+| `tag_grid_columns` | Int | `3` | 标签 Tab 网格列数 | `tagGridColumns: Flow<Int>` | `setTagGridColumns(Int)` |
+| `predictive_back_enabled` | Boolean | `true` | 是否启用预测式返回手势 | `predictiveBackEnabled: Flow<Boolean>` | `setPredictiveBackEnabled(Boolean)` |
+| `show_content_previews` | Boolean | `true` | Album/Tag Tab 是否展示内容预览 | `showContentPreviews: Flow<Boolean>` | `setShowContentPreviews(Boolean)` |
 
----
+> **注意**:v4 之前 skill-08 列了 10 项(`import_concurrency`、`default_home_filter`、`show_video_in_home`、`language_override`、`viewer_auto_play`、`backup_reminder`、`import_root_paths`、`last_seen_changelog`),但**实际代码中不存在这些 key**。实际代码只有上述 11 项。
 
-## 2. ThemeMode 枚举
+### 包路径修正
 
-| 值 | 说明 | 系统行为 |
-|----|------|---------|
-| SYSTEM | 跟随系统 | 读取系统深色模式设置 |
-| LIGHT | 始终浅色 | 强制浅色主题 |
-| DARK | 始终深色 | 强制深色主题 |
+- 实际包名:`com.advancemediakb.core.common.settings`(非 `com.advancemediakb.common.settings`)
+- DataStore name: `"settings"`
+- 注入:`@Singleton class SettingsDataStore @Inject constructor(@ApplicationContext context: Context)`
 
----
+### API 形态
 
-## 3. Language 枚举
+```kotlin
+@Singleton
+class SettingsDataStore @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
+    val themeMode: Flow<String> = context.dataStore.data
+        .map { it[THEME_MODE] ?: "system" }
 
-| 值 | 说明 | 系统行为 |
-|----|------|---------|
-| SYSTEM | 跟随系统 | 使用系统语言设置 |
-| ZH | 中文 | 强制中文（简体） |
-| EN | English | 强制英文 |
+    suspend fun setThemeMode(mode: String) {
+        context.dataStore.edit { it[THEME_MODE] = mode }
+    }
+    // ... 其余 10 项同模式
+}
+```
 
----
+### 未实现的设置项(v4 设想 vs 实际)
 
-## 4. 持久化方式
+| 设想 key | 状态 | 说明 |
+|----------|------|------|
+| `import_concurrency` | ❌ 不存在 | 导入并发数未持久化 |
+| `default_home_filter` | ❌ 不存在 | 主页默认筛选未持久化 |
+| `show_video_in_home` | ❌ 不存在 | 主页视频可见性未持久化 |
+| `language_override` | ❌ 不存在 | 语言切换未走 DataStore |
+| `viewer_auto_play` | ❌ 不存在 | 视频自动播放未持久化 |
+| `backup_reminder` | ❌ 不存在 | 备份提醒未持久化 |
+| `import_root_paths` | ❌ 不存在 | SAF 树 URI 未持久化 |
+| `last_seen_changelog` | ❌ 不存在 | Changelog 版本未持久化 |
+| `ThemeMode.kt` / `HomeFilterMode.kt` | ❌ 不存在 | 无枚举类,直接用 String |
 
-| 规则 | 说明 |
-|------|------|
-| 存储方式 | 键值对持久化（类似 SharedPreferences / DataStore） |
-| 存储位置 | 应用私有目录 |
-| 线程安全 | 读写操作必须线程安全 |
-| 初始化 | 应用启动时从持久化存储加载全部设置到内存 |
-| 写入时机 | 设置变更时立即持久化 |
+## 代码检查点
 
----
+- [x] 所有设置**没有**使用 SharedPreferences,只走 DataStore Preferences(`preferencesDataStore(name = "settings")`)。
+- [x] DataStore 写入 `suspend fun`,**不**阻塞主线程。
+- [ ] 每个 `Flow<X>` 是否有 `distinctUntilChanged` — **实际代码未加**,建议补上。
+- [x] 没有把整个 DataStore 暴露成单例可变 Map,只暴露具体字段的 Flow + suspend setter。
+- [x] `@Singleton` + `@Inject` 构造器注入,符合 Hilt 规范。
+- [x] 包路径 `com.advancemediakb.core.common.settings`。
+- [ ] `themeMode` 用 String 而非枚举 — 建议未来引入 `ThemeMode` 枚举类。
+- [ ] 4 个独立的 grid columns(Home/Album/Search/Tag)— v4 设想只有 1 个 `grid_columns`。
 
-## 5. 默认值规则
+## 验收标准
 
-| 设置项 | 首次安装默认值 | 说明 |
-|--------|--------------|------|
-| themeMode | SYSTEM | 跟随系统主题 |
-| dynamicColor | false | 默认不启用动态颜色 |
-| language | SYSTEM | 跟随系统语言 |
-| gridColumns | 3 | 3 列网格 |
-| showContentPreview | true | 默认显示预览 |
-| lastScanPath | null | 无记忆路径 |
+- 修改设置后,杀进程重启仍生效。
+- 多个 Composable 订阅同一个设置,一处修改,其他处立刻收到新值。
+- DataStore 损坏时不崩溃,有默认值兜底(`?: 默认值`)。
+- `DEFAULT_GRID_COLUMNS = 3` 常量定义在 companion object。
 
----
+## 已知问题
 
-## 6. 设置变更通知
+- DataStore 第一次读是异步的,UI 需要在 `Loading` 状态等待。
+- `themeMode` 等 String 值直接持久化,无类型安全(建议未来引入枚举)。
+- 实际代码的 Flow 未加 `distinctUntilChanged`,可能产生多余重组。
+- 8 项 v4 设想的设置未实现(language/backup/viewer 等)。
 
-设置变更时必须通知所有观察者：
+## 相关文件
 
-| 机制 | 说明 |
-|------|------|
-| 观察模式 | 响应式数据流（Flow/StateFlow） |
-| 通知时机 | 值变更后立即通知 |
-| 通知范围 | 所有正在观察该设置项的组件 |
-| 初始值 | 订阅时立即发出当前值 |
-
-**各设置项的生效范围**：
-
-| 设置项 | 即时生效范围 | 需要重建的组件 |
-|--------|------------|--------------|
-| themeMode | 全局主题切换 | 无（Compose 自动重组） |
-| dynamicColor | 全局颜色切换 | 无（Compose 自动重组） |
-| language | 需要重建 Activity | 当前 Activity |
-| gridColumns | 媒体网格重新布局 | 无（Compose 自动重组） |
-| showContentPreview | 网格项切换预览/非预览 | 无（Compose 自动重组） |
-| lastScanPath | 文件浏览器初始路径 | 无 |
-
----
-
-## 7. 设置存储接口
-
-设置存储器需要提供以下能力：
-
-| 能力 | 方法签名模式 | 说明 |
-|------|------------|------|
-| 读取单个设置 | getXxx(): Type | 同步读取当前值 |
-| 观察单个设置 | observeXxx(): Flow<Type> | 响应式观察变化 |
-| 写入单个设置 | setXxx(value: Type) | 同步写入 |
-| 读取全部设置 | getAll(): SettingsData | 一次性读取所有设置 |
-
----
-
-## 8. 验证标准
-
-完成本 skill 后，必须满足以下全部条件：
-
-- [ ] 6 个设置项全部定义和实现
-- [ ] 每个设置项有正确的默认值
-- [ ] 设置变更后持久化正确
-- [ ] 应用重启后设置正确恢复
-- [ ] 每个设置项支持响应式观察
-- [ ] 设置变更能正确通知 UI 层
-- [ ] 线程安全
-- [ ] 设置存储通过 DI 正确提供
+- `core-common/src/main/java/com/advancemediakb/core/common/settings/SettingsDataStore.kt` (125 行)

@@ -1,105 +1,79 @@
-# Skill-15: 搜索模块规范
-
-## 前置依赖
-skill-03, skill-09
+# Skill-15 搜索模块 (F6)
 
 ## 目标
-定义全局搜索页面的搜索行为、结果展示的完整规范。
+实现关键字搜索 + 标签筛选,搜索结果显示为媒体网格,带搜索历史。
 
----
+## 设计要点
 
-## 1. 搜索页面结构
+| 项 | 设计 |
+|---|------|
+| 入口 | 主页顶栏搜索图标 → `SearchOverlay` 全屏覆盖层 |
+| 关键字 | 匹配 `displayName` LIKE / `relativePath` LIKE / `dateTakenSec` 解析的日期串 |
+| 标签筛选 | 多选标签,组合关系「OR」(任一命中) |
+| 历史 | `SearchHistoryEntity` 持久化,最多展示 20 条 |
+| 去抖 | 输入框 `debounce(300ms)` 后触发查询 |
+| 结果布局 | `LazyVerticalGrid` 复用主页缩略图组件 |
+| 空状态 | 无结果时显示「试试其他关键字」+ 清除筛选 |
+| 取消 | 顶栏返回按钮 / 系统返回键 |
+
+### 数据流
 
 ```
-┌─────────────────────────────────────────┐
-│ [←] [  输入搜索关键词...        ] [清空] │  ← 搜索栏
-├─────────────────────────────────────────┤
-│ 媒体 (5)                                 │  ← 媒体结果区标题
-│ ┌───┐ ┌───┐ ┌───┐ ┌───┐ ┌───┐        │
-│ │   │ │   │ │   │ │   │ │   │         │  ← 媒体结果网格
-│ └───┘ └───┘ └───┘ └───┘ └───┘        │
-├─────────────────────────────────────────┤
-│ 笔记 (3)                                 │  ← 笔记结果区标题
-│ 笔记标题1         2024-01-15            │
-│ 匹配的内容预览...                        │
-│ 笔记标题2         2024-01-14            │
-│ 匹配的内容预览2...                       │
-└─────────────────────────────────────────┘
+SearchViewModel.query(keyword, tagIds)
+  ↓ (debounce 300ms + flatMapLatest)
+MediaDao.searchByKeyword(keyword, tagIds) : Flow<List<MediaEntity>>
+  ↓
+SearchResultsGrid(media)
 ```
 
----
+### 关键字匹配规则
 
-## 2. 搜索栏行为
+| 字段 | 匹配方式 |
+|------|---------|
+| `displayName` | `LIKE '%keyword%'`(不区分大小写) |
+| `relativePath` | `LIKE '%keyword%'` |
+| `dateTakenSec` | 若 keyword 是 `yyyy-MM-dd` / `yyyyMMdd` / `yyyy` 格式,匹配该日期 / 年份 |
+| `tag.name` | 通过 JOIN `MediaTagCrossRef + Tag` 也参与 LIKE |
 
-| 规则 | 说明 |
-|------|------|
-| 自动聚焦 | 打开搜索页时输入框自动聚焦并弹出键盘 |
-| 防抖 | 输入停止 300ms 后才触发搜索 |
-| 最小长度 | 至少输入 1 个字符才触发搜索 |
-| 清空按钮 | 输入框非空时显示清空按钮，点击清空输入和结果 |
-| 返回按钮 | 关闭搜索页（覆盖层） |
+### SQL 示例
 
----
+```sql
+SELECT DISTINCT m.* FROM media m
+LEFT JOIN media_tag_cross_ref mc ON m.id = mc.mediaId
+LEFT JOIN tag t ON mc.tagId = t.id
+WHERE
+  (:keyword IS NULL OR m.displayName LIKE :kwPattern OR m.relativePath LIKE :kwPattern
+   OR t.name LIKE :kwPattern
+   OR strftime('%Y-%m-%d', m.dateTakenSec, 'unixepoch') = :keyword)
+  AND (:hasTagFilter = 0 OR m.id IN (SELECT mediaId FROM media_tag_cross_ref WHERE tagId IN (:tagIds)))
+ORDER BY m.dateTakenSec DESC
+LIMIT 1000
+```
 
-## 3. 搜索逻辑
+## 代码检查点
 
-### 3.1 媒体搜索
-- 按文件名（originalName）模糊匹配
-- SQL: `WHERE originalName LIKE '%keyword%'`
-- 结果按 createdAt 降序排列
+- [ ] 搜索输入框用 `OutlinedTextField`,有清除按钮。
+- [ ] 查询走 `flatMapLatest`,旧查询自动取消。
+- [ ] debounce 至少 250ms,避免每个按键触发查询。
+- [ ] 关键字 trim 后非空才查询。
+- [ ] 搜索历史去重(`upsert`),相同 keyword `useCount++`。
+- [ ] 进入搜索页时,自动 focus 输入框(`FocusRequester`)。
 
-### 3.2 笔记搜索
-- 按标题和内容模糊匹配
-- SQL: `WHERE title LIKE '%keyword%' OR content LIKE '%keyword%'`
-- 结果按 updatedAt 降序排列
+## 验收标准
 
-### 3.3 并行搜索
-- 媒体搜索和笔记搜索并行执行
-- 搜索在后台线程执行
+- 输入「2024」能搜到 2024 年所有媒体(按 `dateTakenSec`)。
+- 多选标签筛选结果为「OR」组合。
+- 杀进程重启,搜索历史仍在。
+- 搜索结果点击 → 进入 `MediaViewerActivity`,列表是搜索结果列表(不是全量)。
 
----
+## 已知问题
 
-## 4. 结果展示
+- 大表全 LIKE 较慢,可考虑 FTS4 / FTS5(后续优化)。
+- 搜索结果超过 1000 条不展示更多(限制)。
 
-### 4.1 媒体结果区
-- 区域标题："媒体 ({count})"
-- 使用与首页相同的网格布局（gridColumns 列）
-- 点击媒体项打开媒体详情页（覆盖层叠加在搜索页之上）
-- 最多显示 20 条，超出显示"查看更多"
+## 相关文件
 
-### 4.2 笔记结果区
-- 区域标题："笔记 ({count})"
-- 列表项显示：标题、更新时间、内容预览（关键词高亮）
-- 点击笔记项打开笔记编辑页（覆盖层叠加）
-- 最多显示 20 条，超出显示"查看更多"
-
-### 4.3 结果高亮
-- 笔记搜索结果中，匹配的关键词用 Primary 色高亮显示
-- 文件名搜索结果中，匹配的关键词同样高亮
-
----
-
-## 5. 空状态
-
-| 场景 | 显示 |
-|------|------|
-| 未输入关键词 | 居中图标 + "输入关键词搜索媒体和笔记" |
-| 搜索中 | 显示加载指示器 |
-| 无结果 | 居中图标 + "未找到匹配「{keyword}」的结果" |
-| 只有媒体结果 | 不显示笔记区域 |
-| 只有笔记结果 | 不显示媒体区域 |
-
----
-
-## 6. 验证标准
-
-- [ ] 搜索栏自动聚焦
-- [ ] 防抖 300ms 正确
-- [ ] 媒体按文件名模糊搜索正确
-- [ ] 笔记按标题和内容模糊搜索正确
-- [ ] 搜索结果正确分区显示
-- [ ] 关键词高亮正确
-- [ ] 最多显示 20 条 + 查看更多
-- [ ] 点击结果正确打开对应详情页
-- [ ] 各空状态正确显示
-- [ ] 清空按钮正确清空输入和结果
+- `feature-search/src/main/java/com/advancemediakb/search/SearchOverlay.kt`
+- `feature-search/src/main/java/com/advancemediakb/search/SearchViewModel.kt`
+- `feature-search/src/main/java/com/advancemediakb/search/SearchHistoryPanel.kt`
+- `core-database/src/main/java/com/advancemediakb/db/MediaDao.kt`(`searchByKeyword` 方法)

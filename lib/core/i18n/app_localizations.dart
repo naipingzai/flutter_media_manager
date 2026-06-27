@@ -54,6 +54,7 @@ class AppLocalizations {
   // ─── 媒体 ───
   String get importMedia => _get('importMedia');
   String get importFromDevice => _get('importFromDevice');
+  String get importFromDirectory => _get('importFromDirectory');
   String get noMedia => _get('noMedia');
   String get noMediaDesc => _get('noMediaDesc');
   String get image => _get('image');
@@ -63,6 +64,10 @@ class AppLocalizations {
 
   // ─── 过滤器 ───
   String get filterAll => _get('filterAll');
+  String get filterImages => _get('filterImages');
+  String get filterVideos => _get('filterVideos');
+  String get filterAudios => _get('filterAudios');
+  String get filterDocuments => _get('filterDocuments');
   String get filterWithTags => _get('filterWithTags');
   String get filterWithoutTags => _get('filterWithoutTags');
   String get filterWithAlbums => _get('filterWithAlbums');
@@ -94,6 +99,8 @@ class AppLocalizations {
   String get removeTag => _get('removeTag');
   String get confirmDeleteTag => _get('confirmDeleteTag');
   String get selectTagColor => _get('selectTagColor');
+  String get tagParent => _get('tagParent');
+  String get none => _get('none');
 
   // ─── 笔记 ───
   String get note => _get('note');
@@ -111,6 +118,20 @@ class AppLocalizations {
   String get discardChanges => _get('discardChanges');
   String get unsavedChanges => _get('unsavedChanges');
   String get unsavedChangesDesc => _get('unsavedChangesDesc');
+  String get confirmDeleteNote => _get('confirmDeleteNote');
+  String get linkedMedia => _get('linkedMedia');
+  String get emptyTitle => _get('emptyTitle');
+  String get noteEmpty => _get('noteEmpty');
+  String get leaveEditor => _get('leaveEditor');
+  String get continueEditing => _get('continueEditing');
+  String get noteLinkToMedia => _get('noteLinkToMedia');
+  String get noteUnlinkFromMedia => _get('noteUnlinkFromMedia');
+  String get noteCreatedAt => _get('noteCreatedAt');
+  String get noteUpdatedAt => _get('noteUpdatedAt');
+  String get allNotes => _get('allNotes');
+  String get mediaNotes => _get('mediaNotes');
+  String get saveFailed => _get('saveFailed');
+  String get loadFailed => _get('loadFailed');
 
   // ─── 搜索 ───
   String get search => _get('search');
@@ -163,6 +184,40 @@ class AppLocalizations {
   String get storageManagementDesc => _get('storageManagementDesc');
   String get languageChangeRestart => _get('languageChangeRestart');
   String get version => _get('version');
+  String get detailMode => _get('detailMode');
+  String get copyPath => _get('copyPath');
+  String get operationFailed => _get('operationFailed');
+  String get typeLabel => _get('typeLabel');
+  String get fileManager => _get('fileManager');
+  String get sortByName => _get('sortByName');
+  String get sortByType => _get('sortByType');
+  String get importSelected => _get('importSelected');
+  String get backToHome => _get('backToHome');
+  String get selectThisFolder => _get('selectThisFolder');
+  String get noSubfolders => _get('noSubfolders');
+  String get needStoragePermission => _get('needStoragePermission');
+  String get gotoSettings => _get('gotoSettings');
+  String get advSearch => _get('advSearch');
+  String get reset => _get('reset');
+  String get keyword => _get('keyword');
+  String get searchFileName => _get('searchFileName');
+  String get mediaType => _get('mediaType');
+  String get dateRange => _get('dateRange');
+  String get selectDateRange => _get('selectDateRange');
+  String get tagFilter => _get('tagFilter');
+  String get matchMode => _get('matchMode');
+  String get matchAnyTag => _get('matchAnyTag');
+  String get matchAllTags => _get('matchAllTags');
+  String get albumFilter => _get('albumFilter');
+  String get selectAlbum => _get('selectAlbum');
+  String get searchMediaHint => _get('searchMediaHint');
+  String get directoryNotAccessible => _get('directoryNotAccessible');
+  String cannotReadDirectory(String err) =>
+      _get('cannotReadDirectory').replaceAll('%s', err);
+  String get manageAllFilesPermissionDesc =>
+      _get('manageAllFilesPermissionDesc');
+  String importSelectedWithCount(int count) =>
+      _get('importSelected').replaceAll('%s', count == 0 ? '' : ' ($count)');
 
   // ─── 文件浏览器 ───
   String get selectFolder => _get('selectFolder');
@@ -240,11 +295,14 @@ const Map<String, String> _zhStrings = {
   'success': '成功', 'unknown': '未知', 'selectAll': '全选',
   'deselectAll': '取消全选', 'selected': '已选中',
   'tabAllMedia': '所有媒体', 'tabAlbums': '相册', 'tabTags': '标签',
-  'tabNotes': '笔记', 'tabMedia': '媒体',
+  'tabNotes': '笔记', 'tabMedia': '所有媒体',
   'importMedia': '导入媒体', 'importFromDevice': '从设备导入',
+  'importFromDirectory': '从文件夹导入',
   'noMedia': '还没有媒体文件', 'noMediaDesc': '点击下方按钮导入您的第一张图片或视频',
   'image': '图片', 'video': '视频', 'audio': '音频', 'document': '文档',
-  'filterAll': '全部', 'filterWithTags': '有标签的', 'filterWithoutTags': '无标签的',
+  'filterAll': '全部', 'filterImages': '图片', 'filterVideos': '视频',
+  'filterAudios': '音频', 'filterDocuments': '文档',
+  'filterWithTags': '有标签的', 'filterWithoutTags': '无标签的',
   'filterWithAlbums': '有相册的', 'filterWithoutAlbums': '无相册的',
   'album': '相册', 'albums': '相册', 'createAlbum': '创建相册',
   'editAlbum': '编辑相册', 'deleteAlbum': '删除相册', 'albumName': '相册名称',
@@ -256,12 +314,27 @@ const Map<String, String> _zhStrings = {
   'noTagsDesc': '点击下方按钮创建您的第一个标签', 'addTag': '添加标签',
   'removeTag': '移除标签', 'confirmDeleteTag': '确定删除此标签吗？',
   'selectTagColor': '选择标签颜色',
+  'tagParent': '父标签', 'none': '无',
   'note': '笔记', 'notes': '笔记', 'createNote': '创建笔记', 'editNote': '编辑笔记',
   'deleteNote': '删除笔记', 'noteTitle': '笔记标题', 'noteContent': '笔记内容',
   'noNotes': '还没有笔记', 'noNotesDesc': '点击下方按钮创建您的第一条笔记',
   'noteTitleHint': '输入标题（可选）', 'noteContentHint': '输入笔记内容...',
   'saveNote': '保存笔记', 'discardChanges': '放弃修改',
   'unsavedChanges': '未保存的修改', 'unsavedChangesDesc': '您有未保存的修改，确定要离开吗？',
+  'confirmDeleteNote': '确定要删除此笔记吗？',
+  'linkedMedia': '关联媒体',
+  'emptyTitle': '（无标题）',
+  'noteEmpty': '（笔记为空）',
+  'leaveEditor': '离开',
+  'continueEditing': '继续编辑',
+  'noteLinkToMedia': '关联到媒体',
+  'noteUnlinkFromMedia': '取消关联媒体',
+  'noteCreatedAt': '创建于',
+  'noteUpdatedAt': '更新于',
+  'allNotes': '全部笔记',
+  'mediaNotes': '关联笔记',
+  'saveFailed': '保存失败',
+  'loadFailed': '加载失败',
   'search': '搜索', 'searchHint': '搜索媒体和笔记...',
   'searchMedia': '搜索媒体', 'searchNotes': '搜索笔记',
   'noResults': '未找到结果', 'noResultsDesc': '尝试使用其他关键词搜索',
@@ -283,6 +356,23 @@ const Map<String, String> _zhStrings = {
   'confirmClearData': '确定要清除所有数据吗？此操作不可恢复！',
   'storageManagement': '存储管理', 'storageManagementDesc': '管理缩略图缓存和未引用的文件',
   'languageChangeRestart': '语言设置将在应用重启后生效', 'version': '版本',
+  'detailMode': '详情模式', 'copyPath': '复制路径',
+  'operationFailed': '操作失败', 'typeLabel': '类型',
+  'fileManager': '文件管理器', 'sortByName': '按名称',
+  'sortByType': '按类型', 'importSelected': '导入%s',
+  'backToHome': '返回首页', 'selectThisFolder': '选择此文件夹',
+  'noSubfolders': '此目录无子文件夹',
+  'needStoragePermission': '需要存储权限', 'gotoSettings': '去设置',
+  'advSearch': '高级搜索', 'reset': '重置', 'keyword': '关键词',
+  'searchFileName': '搜索文件名...', 'mediaType': '媒体类型',
+  'dateRange': '日期范围', 'selectDateRange': '选择日期范围',
+  'tagFilter': '标签筛选', 'matchMode': '匹配模式',
+  'matchAnyTag': '任一标签', 'matchAllTags': '所有标签',
+  'albumFilter': '相册筛选', 'selectAlbum': '选择相册',
+  'searchMediaHint': '搜索媒体...',
+  'directoryNotAccessible': '目录不可访问',
+  'cannotReadDirectory': '无法读取目录: %s',
+  'manageAllFilesPermissionDesc': '浏览文件需要"管理所有文件"权限。\n\n请点击"去设置"，然后在应用详情中开启"允许管理所有文件"。',
   'selectFolder': '选择文件夹', 'internalStorage': '内部存储', 'sdCard': 'SD 卡',
   'noFiles': '此目录为空', 'noFilesDesc': '没有找到文件或文件夹',
   'folders': '文件夹', 'files': '文件', 'selectFiles': '选择文件',
@@ -316,11 +406,14 @@ const Map<String, String> _enStrings = {
   'success': 'Success', 'unknown': 'Unknown', 'selectAll': 'Select All',
   'deselectAll': 'Deselect All', 'selected': 'Selected',
   'tabAllMedia': 'All Media', 'tabAlbums': 'Albums', 'tabTags': 'Tags',
-  'tabNotes': 'Notes', 'tabMedia': 'Media',
+  'tabNotes': 'Notes', 'tabMedia': 'All Media',
   'importMedia': 'Import Media', 'importFromDevice': 'Import from Device',
+  'importFromDirectory': 'Import from Folder',
   'noMedia': 'No media files yet', 'noMediaDesc': 'Tap below to import your first photo or video',
   'image': 'Image', 'video': 'Video', 'audio': 'Audio', 'document': 'Document',
-  'filterAll': 'All', 'filterWithTags': 'With Tags', 'filterWithoutTags': 'Without Tags',
+  'filterAll': 'All', 'filterImages': 'Images', 'filterVideos': 'Videos',
+  'filterAudios': 'Audios', 'filterDocuments': 'Documents',
+  'filterWithTags': 'With Tags', 'filterWithoutTags': 'Without Tags',
   'filterWithAlbums': 'In Albums', 'filterWithoutAlbums': 'Not in Albums',
   'album': 'Album', 'albums': 'Albums', 'createAlbum': 'Create Album',
   'editAlbum': 'Edit Album', 'deleteAlbum': 'Delete Album', 'albumName': 'Album Name',
@@ -332,12 +425,27 @@ const Map<String, String> _enStrings = {
   'noTagsDesc': 'Tap below to create your first tag', 'addTag': 'Add Tag',
   'removeTag': 'Remove Tag', 'confirmDeleteTag': 'Delete this tag?',
   'selectTagColor': 'Select Tag Color',
+  'tagParent': 'Parent Tag', 'none': 'None',
   'note': 'Note', 'notes': 'Notes', 'createNote': 'Create Note', 'editNote': 'Edit Note',
   'deleteNote': 'Delete Note', 'noteTitle': 'Note Title', 'noteContent': 'Note Content',
   'noNotes': 'No notes yet', 'noNotesDesc': 'Tap below to create your first note',
   'noteTitleHint': 'Enter title (optional)', 'noteContentHint': 'Enter note content...',
   'saveNote': 'Save Note', 'discardChanges': 'Discard Changes',
   'unsavedChanges': 'Unsaved Changes', 'unsavedChangesDesc': 'You have unsaved changes. Leave?',
+  'confirmDeleteNote': 'Delete this note?',
+  'linkedMedia': 'Linked Media',
+  'emptyTitle': '(Untitled)',
+  'noteEmpty': '(Empty note)',
+  'leaveEditor': 'Leave',
+  'continueEditing': 'Continue Editing',
+  'noteLinkToMedia': 'Link to Media',
+  'noteUnlinkFromMedia': 'Unlink Media',
+  'noteCreatedAt': 'Created at',
+  'noteUpdatedAt': 'Updated at',
+  'allNotes': 'All Notes',
+  'mediaNotes': 'Media Notes',
+  'saveFailed': 'Save failed',
+  'loadFailed': 'Load failed',
   'search': 'Search', 'searchHint': 'Search media and notes...',
   'searchMedia': 'Search Media', 'searchNotes': 'Search Notes',
   'noResults': 'No Results Found', 'noResultsDesc': 'Try different keywords',
@@ -359,6 +467,24 @@ const Map<String, String> _enStrings = {
   'confirmClearData': 'Clear all data? This cannot be undone!',
   'storageManagement': 'Storage Management', 'storageManagementDesc': 'Manage thumbnail cache and unreferenced files',
   'languageChangeRestart': 'Language change takes effect after restart', 'version': 'Version',
+  'detailMode': 'Detail Mode', 'copyPath': 'Copy Path',
+  'operationFailed': 'Operation failed', 'typeLabel': 'Type',
+  'fileManager': 'File Manager', 'sortByName': 'Name',
+  'sortByType': 'Type', 'importSelected': 'Import%s',
+  'backToHome': 'Back to Home', 'selectThisFolder': 'Select This Folder',
+  'noSubfolders': 'No subfolders in this directory',
+  'needStoragePermission': 'Storage Permission Required',
+  'gotoSettings': 'Go to Settings',
+  'advSearch': 'Advanced Search', 'reset': 'Reset', 'keyword': 'Keyword',
+  'searchFileName': 'Search file name...', 'mediaType': 'Media Type',
+  'dateRange': 'Date Range', 'selectDateRange': 'Select date range',
+  'tagFilter': 'Tag Filter', 'matchMode': 'Match Mode',
+  'matchAnyTag': 'Any Tag', 'matchAllTags': 'All Tags',
+  'albumFilter': 'Album Filter', 'selectAlbum': 'Select Album',
+  'searchMediaHint': 'Search media...',
+  'directoryNotAccessible': 'Directory not accessible',
+  'cannotReadDirectory': 'Cannot read directory: %s',
+  'manageAllFilesPermissionDesc': 'Browsing files requires "All files access" permission.\n\nPlease tap "Go to Settings" and enable "Allow access to manage all files" in the app details.',
   'selectFolder': 'Select Folder', 'internalStorage': 'Internal Storage', 'sdCard': 'SD Card',
   'noFiles': 'This directory is empty', 'noFilesDesc': 'No files or folders found',
   'folders': 'Folders', 'files': 'Files', 'selectFiles': 'Select Files',

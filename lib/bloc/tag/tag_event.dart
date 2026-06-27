@@ -65,6 +65,28 @@ class TagRenameEvent extends TagEvent {
   List<Object?> get props => [tagId, newName];
 }
 
+/// 更新标签颜色
+class TagUpdateColorEvent extends TagEvent {
+  final String tagId;
+  final String color;
+
+  const TagUpdateColorEvent(this.tagId, this.color);
+
+  @override
+  List<Object?> get props => [tagId, color];
+}
+
+/// 更新标签父标签（`parentId` 为 null 表示设为根标签）
+class TagUpdateParentEvent extends TagEvent {
+  final String tagId;
+  final String? parentId;
+
+  const TagUpdateParentEvent(this.tagId, this.parentId);
+
+  @override
+  List<Object?> get props => [tagId, parentId];
+}
+
 /// 添加标签到媒体
 class TagAddToMediaEvent extends TagEvent {
   final String mediaId;

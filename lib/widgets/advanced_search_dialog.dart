@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/bloc.dart';
+import '../core/i18n/app_localizations.dart';
 import '../src/rust/api/search.dart';
 import '../src/rust/api/tag.dart' as tag_api;
 import '../src/rust/api/album.dart' as album_api;
@@ -84,6 +85,7 @@ class _AdvancedSearchDialogState extends State<AdvancedSearchDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Dialog(
       insetPadding: const EdgeInsets.all(16),
       child: ConstrainedBox(
@@ -98,15 +100,15 @@ class _AdvancedSearchDialogState extends State<AdvancedSearchDialog> {
                 children: [
                   const Icon(Icons.tune, size: 20),
                   const SizedBox(width: 8),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      '高级搜索',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      loc.advSearch,
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ),
                   TextButton(
                     onPressed: _clearAll,
-                    child: const Text('重置'),
+                    child: Text(AppLocalizations.of(context).reset),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close),
@@ -128,13 +130,13 @@ class _AdvancedSearchDialogState extends State<AdvancedSearchDialog> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // 关键词
-                          _buildSectionTitle('关键词'),
+                          _buildSectionTitle(loc.keyword),
                           TextField(
                             controller: _keywordController,
-                            decoration: const InputDecoration(
-                              hintText: '搜索文件名...',
-                              prefixIcon: Icon(Icons.search, size: 20),
-                              border: OutlineInputBorder(),
+                            decoration: InputDecoration(
+                              hintText: loc.searchFileName,
+                              prefixIcon: const Icon(Icons.search, size: 20),
+                              border: const OutlineInputBorder(),
                               isDense: true,
                             ),
                             onChanged: (_) => setState(() {}),
@@ -142,23 +144,23 @@ class _AdvancedSearchDialogState extends State<AdvancedSearchDialog> {
                           const SizedBox(height: 16),
 
                           // 媒体类型
-                          _buildSectionTitle('媒体类型'),
+                          _buildSectionTitle(loc.mediaType),
                           const SizedBox(height: 8),
                           Wrap(
                             spacing: 8,
                             runSpacing: 4,
                             children: [
-                              _buildTypeChip('全部', null),
-                              _buildTypeChip('图片', 'image'),
-                              _buildTypeChip('视频', 'video'),
-                              _buildTypeChip('音频', 'audio'),
-                              _buildTypeChip('文档', 'document'),
+                              _buildTypeChip(AppLocalizations.of(context).filterAll, null),
+                              _buildTypeChip(AppLocalizations.of(context).image, 'image'),
+                              _buildTypeChip(AppLocalizations.of(context).video, 'video'),
+                              _buildTypeChip(AppLocalizations.of(context).audio, 'audio'),
+                              _buildTypeChip(AppLocalizations.of(context).document, 'document'),
                             ],
                           ),
                           const SizedBox(height: 16),
 
                           // 日期范围
-                          _buildSectionTitle('日期范围'),
+                          _buildSectionTitle(loc.dateRange),
                           const SizedBox(height: 8),
                           InkWell(
                             onTap: _pickDateRange,
@@ -175,7 +177,7 @@ class _AdvancedSearchDialogState extends State<AdvancedSearchDialog> {
                                   const SizedBox(width: 8),
                                   Text(
                                     _dateRange == null
-                                        ? '选择日期范围'
+                                        ? AppLocalizations.of(context).selectDateRange
                                         : '${_formatDate(_dateRange!.start)} ~ ${_formatDate(_dateRange!.end)}',
                                     style: const TextStyle(fontSize: 14),
                                   ),
@@ -194,26 +196,26 @@ class _AdvancedSearchDialogState extends State<AdvancedSearchDialog> {
                           const SizedBox(height: 16),
 
                           // 标签
-                          _buildSectionTitle('标签筛选'),
+                          _buildSectionTitle(loc.tagFilter),
                           const SizedBox(height: 4),
                           if (_allTags.isEmpty)
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 8),
-                              child: Text('暂无标签', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Text(loc.noTags, style: const TextStyle(color: Colors.grey, fontSize: 13)),
                             )
                           else ...[
                             Row(
                               children: [
-                                const Text('匹配模式: ', style: TextStyle(fontSize: 13)),
+                                Text(AppLocalizations.of(context).matchMode, style: TextStyle(fontSize: 13)),
                                   ChoiceChip(
-                                    label: const Text('任一标签', style: TextStyle(fontSize: 12)),
+                                    label: Text(AppLocalizations.of(context).matchAnyTag, style: TextStyle(fontSize: 12)),
                                     selected: !_matchAllTags,
                                     onSelected: (_) => setState(() => _matchAllTags = false),
                                     visualDensity: VisualDensity.compact,
                                   ),
                                 const SizedBox(width: 8),
                                   ChoiceChip(
-                                    label: const Text('所有标签', style: TextStyle(fontSize: 12)),
+                                    label: Text(AppLocalizations.of(context).matchAllTags, style: TextStyle(fontSize: 12)),
                                     selected: _matchAllTags,
                                     onSelected: (_) => setState(() => _matchAllTags = true),
                                     visualDensity: VisualDensity.compact,
@@ -249,25 +251,25 @@ class _AdvancedSearchDialogState extends State<AdvancedSearchDialog> {
                           const SizedBox(height: 16),
 
                           // 相册
-                          _buildSectionTitle('相册筛选'),
+                          _buildSectionTitle(loc.albumFilter),
                           const SizedBox(height: 8),
                           if (_allAlbums.isEmpty)
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 8),
-                              child: Text('暂无相册', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Text(loc.noAlbums, style: const TextStyle(color: Colors.grey, fontSize: 13)),
                             )
                           else
                             DropdownButtonFormField<album_api.AlbumWithInfo>(
                               value: _selectedAlbum,
-                              decoration: const InputDecoration(
-                                hintText: '选择相册',
-                                border: OutlineInputBorder(),
+                              decoration: InputDecoration(
+                                hintText: loc.selectAlbum,
+                                border: const OutlineInputBorder(),
                                 isDense: true,
                               ),
                               items: [
-                                const DropdownMenuItem<album_api.AlbumWithInfo>(
+                                DropdownMenuItem<album_api.AlbumWithInfo>(
                                   value: null,
-                                  child: Text('全部', style: TextStyle(fontSize: 14)),
+                                  child: Text(loc.filterAll, style: const TextStyle(fontSize: 14)),
                                 ),
                                 ..._allAlbums.map((a) => DropdownMenuItem<album_api.AlbumWithInfo>(
                                       value: a,
@@ -289,12 +291,12 @@ class _AdvancedSearchDialogState extends State<AdvancedSearchDialog> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('取消'),
+                    child: Text(AppLocalizations.of(context).cancel),
                   ),
                   const Spacer(),
                   FilledButton.icon(
                     icon: const Icon(Icons.search, size: 18),
-                    label: const Text('搜索'),
+                    label: Text(AppLocalizations.of(context).search),
                     onPressed: _search,
                   ),
                 ],

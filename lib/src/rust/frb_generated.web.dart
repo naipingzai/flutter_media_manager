@@ -1174,6 +1174,14 @@ class RustLibWire implements BaseWire {
   void wire__crate__api__note__update_note(
           NativePortType port_, String id, String? title, String? content) =>
       wasmModule.wire__crate__api__note__update_note(port_, id, title, content);
+
+  void wire__crate__api__tag__update_tag_color(
+          NativePortType port_, String id, String color) =>
+      wasmModule.wire__crate__api__tag__update_tag_color(port_, id, color);
+
+  void wire__crate__api__tag__update_tag_parent(
+          NativePortType port_, String id, String? parent_id) =>
+      wasmModule.wire__crate__api__tag__update_tag_parent(port_, id, parent_id);
 }
 
 @JS('wasm_bindgen')
@@ -1406,4 +1414,10 @@ extension type RustLibWasmModule._(JSObject _) implements JSObject {
 
   external void wire__crate__api__note__update_note(
       NativePortType port_, String id, String? title, String? content);
+
+  external void wire__crate__api__tag__update_tag_color(
+      NativePortType port_, String id, String color);
+
+  external void wire__crate__api__tag__update_tag_parent(
+      NativePortType port_, String id, String? parent_id);
 }

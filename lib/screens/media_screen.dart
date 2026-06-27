@@ -93,7 +93,7 @@ class _MediaScreenState extends State<MediaScreen> {
         builder: (context, state) {
           if (state.isSelectionMode) return const SizedBox.shrink();
           return FloatingActionButton(
-            onPressed: () => _openFileBrowser(context),
+            onPressed: () => _showImportMenu(context),
             tooltip: AppLocalizations.of(context).importMedia,
             child: const Icon(Icons.add_photo_alternate),
           );
@@ -103,6 +103,10 @@ class _MediaScreenState extends State<MediaScreen> {
   }
 
   /// 过滤器 Chip 行
+  ///
+  /// 规范 Skill-10 §2.2：提供两组过滤
+  /// 1. 媒体类型：全部/图片/视频/音频/文档（多选互斥）
+  /// 2. 关联状态：有标签/无标签/有相册/无相册（多选互斥）
   Widget _buildFilterChips(BuildContext context, MediaState state) {
     final loc = AppLocalizations.of(context);
     return SingleChildScrollView(
@@ -110,14 +114,26 @@ class _MediaScreenState extends State<MediaScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
-          _buildFilterChip(loc.filterAll, null),
-          const SizedBox(width: 8),
+          // ── 媒体类型过滤 ──
+          _buildTypeChip(context, loc.filterAll, null),
+          const SizedBox(width: 6),
+          _buildTypeChip(context, loc.filterImages, MediaType.image),
+          const SizedBox(width: 6),
+          _buildTypeChip(context, loc.filterVideos, MediaType.video),
+          const SizedBox(width: 6),
+          _buildTypeChip(context, loc.filterAudios, MediaType.audio),
+          const SizedBox(width: 6),
+          _buildTypeChip(context, loc.filterDocuments, MediaType.document),
+          const SizedBox(width: 16),
+          const VerticalDivider(width: 1, thickness: 1),
+          const SizedBox(width: 16),
+          // ── 关联状态过滤 ──
           _buildFilterChip(loc.filterWithTags, FilterMode.withTags),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           _buildFilterChip(loc.filterWithoutTags, FilterMode.withoutTags),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           _buildFilterChip(loc.filterWithAlbums, FilterMode.withAlbums),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           _buildFilterChip(loc.filterWithoutAlbums, FilterMode.withoutAlbums),
         ],
       ),
@@ -131,6 +147,36 @@ class _MediaScreenState extends State<MediaScreen> {
       selected: selected,
       onSelected: (_) => _toggleFilter(mode),
     );
+  }
+
+  Widget _buildTypeChip(BuildContext context, String label, MediaType? type) {
+    return BlocBuilder<MediaBloc, MediaState>(
+      buildWhen: (prev, curr) => prev.currentFilter != curr.currentFilter,
+      builder: (ctx, state) {
+        final selected = state.currentFilter == type;
+        return FilterChip(
+          label: Text(label),
+          selected: selected,
+          avatar: type != null ? Icon(_iconForType(type), size: 16) : null,
+          onSelected: (_) => _toggleTypeFilter(type),
+        );
+      },
+    );
+  }
+
+  IconData _iconForType(MediaType type) {
+    switch (type) {
+      case MediaType.image:
+        return Icons.image;
+      case MediaType.video:
+        return Icons.videocam;
+      case MediaType.audio:
+        return Icons.audiotrack;
+      case MediaType.document:
+        return Icons.description;
+      default:
+        return Icons.insert_drive_file;
+    }
   }
 
   void _toggleFilter(FilterMode? mode) {
@@ -147,6 +193,30 @@ class _MediaScreenState extends State<MediaScreen> {
       context.read<MediaBloc>().add(const MediaLoadAllEvent());
     }
     context.read<MediaBloc>().add(const MediaClearSelectionEvent());
+  }
+
+  void _toggleTypeFilter(MediaType? type) {
+    if (type == null) {
+      // 「全部」— 清空类型过滤
+      context.read<MediaBloc>().add(const MediaLoadAllEvent());
+    } else {
+      // 在「全部 ↔ 类型」之间互斥切换
+      final bloc = context.read<MediaBloc>();
+      if (bloc.state.currentFilter == type) {
+        bloc.add(const MediaLoadAllEvent());
+      } else {
+        bloc.add(MediaFilterByTypeEvent(type));
+      }
+    }
+    context.read<MediaBloc>().add(const MediaClearSelectionEvent());
+  }
+
+  /// 判断当前过滤结果是否已全部选中
+  bool _isAllSelected(MediaState state) {
+    if (state.filteredList.isEmpty) return false;
+    return state.selectedMediaIds.containsAll(
+      state.filteredList.map((m) => m.id),
+    );
   }
 
   Widget _buildBody(BuildContext context, MediaState state) {
@@ -239,6 +309,19 @@ class _MediaScreenState extends State<MediaScreen> {
             ),
             const Spacer(),
             IconButton(
+              icon: Icon(_isAllSelected(state)
+                  ? Icons.deselect
+                  : Icons.select_all),
+              tooltip: _isAllSelected(state)
+                  ? AppLocalizations.of(context).deselectAll
+                  : AppLocalizations.of(context).selectAll,
+              onPressed: state.filteredList.isEmpty
+                  ? null
+                  : () => context
+                      .read<MediaBloc>()
+                      .add(const MediaToggleSelectAllEvent()),
+            ),
+            IconButton(
               icon: const Icon(Icons.delete_outline, color: Colors.red),
               tooltip: AppLocalizations.of(context).delete,
               onPressed: selectedCount > 0 ? () => _batchDelete(context, state.selectedMediaIds) : null,
@@ -256,6 +339,150 @@ class _MediaScreenState extends State<MediaScreen> {
           ],
         ),
       ),
+      ),
+    );
+  }
+
+  /// 显示导入方式选择底部菜单（Skill-10 §3.1）
+  ///
+  /// 提供两个选项：
+  /// 1. 从设备选择文件 - 打开 [openFileBrowser] 多选文件
+  /// 2. 从文件夹导入 - 打开 [openDirectoryBrowser] 选择整个目录批量导入
+  void _showImportMenu(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Row(
+                children: [
+                  Icon(Icons.file_download, color: Theme.of(ctx).colorScheme.primary),
+                  const SizedBox(width: 12),
+                  Text(loc.importMedia, style: Theme.of(ctx).textTheme.titleMedium),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: Text(loc.importFromDevice),
+              subtitle: const Text('逐个选择要导入的文件'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _openFileBrowser(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.folder_open),
+              title: Text(loc.importFromDirectory),
+              subtitle: const Text('批量导入整个文件夹中的媒体文件'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _openDirectoryBrowser(context);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 打开目录浏览器并递归导入所有媒体
+  Future<void> _openDirectoryBrowser(BuildContext context) async {
+    final dirPath = await openDirectoryBrowser(context);
+    if (dirPath == null || dirPath.isEmpty) return;
+    if (!context.mounted) return;
+
+    final dir = Directory(dirPath);
+    if (!await dir.exists()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).error)),
+      );
+      return;
+    }
+
+    // 递归扫描目录中的媒体文件
+    final mediaFiles = <File>[];
+    final mediaExtensions = {
+      'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic', 'heif',
+      'mp4', 'mkv', 'avi', 'mov', 'webm', 'flv',
+      'mp3', 'wav', 'flac', 'aac', 'ogg',
+      'pdf', 'doc', 'docx', 'txt', 'md', 'epub',
+    };
+
+    try {
+      await for (final entity in dir.list(recursive: true).where((e) => e is File)) {
+        final ext = entity.path.split('.').last.toLowerCase();
+        if (mediaExtensions.contains(ext)) {
+          mediaFiles.add(entity as File);
+        }
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${AppLocalizations.of(context).error}: $e')),
+      );
+      return;
+    }
+
+    if (mediaFiles.isEmpty) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('此文件夹中未找到支持的媒体文件')),
+      );
+      return;
+    }
+
+    if (!context.mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _ImportProgressDialog(totalCount: mediaFiles.length),
+    );
+
+    int successCount = 0;
+    int failCount = 0;
+    for (final file in mediaFiles) {
+      try {
+        if (!await file.exists()) {
+          failCount++;
+          continue;
+        }
+        await importSingleFile(filePath: file.path);
+        successCount++;
+      } catch (_) {
+        failCount++;
+      }
+    }
+
+    if (!context.mounted) return;
+    try { Navigator.pop(context); } catch (_) {}
+
+    context.read<MediaBloc>().add(const MediaLoadAllEvent());
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(AppLocalizations.of(context).importComplete),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('✅ ${AppLocalizations.of(context).success}: $successCount'),
+            if (failCount > 0) Text('❌ ${AppLocalizations.of(context).importFailed}: $failCount', style: const TextStyle(color: Colors.red)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(AppLocalizations.of(context).confirm),
+          ),
+        ],
       ),
     );
   }

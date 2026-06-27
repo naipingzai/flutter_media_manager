@@ -38,7 +38,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueNom,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.12.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1179246925;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 1895112508;
 
 // Section: executor
 
@@ -1906,6 +1906,60 @@ fn wire__crate__api__note__update_note_impl(
                     (move || async move {
                         let output_ok =
                             crate::api::note::update_note(api_id, api_title, api_content).await?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__tag__update_tag_color_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    id: impl CstDecode<String>,
+    color: impl CstDecode<String>,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::DcoCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "update_tag_color",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let api_id = id.cst_decode();
+            let api_color = color.cst_decode();
+            move |context| async move {
+                transform_result_dco::<_, _, String>(
+                    (move || async move {
+                        let output_ok =
+                            crate::api::tag::update_tag_color(api_id, api_color).await?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__tag__update_tag_parent_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    id: impl CstDecode<String>,
+    parent_id: impl CstDecode<Option<String>>,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::DcoCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "update_tag_parent",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let api_id = id.cst_decode();
+            let api_parent_id = parent_id.cst_decode();
+            move |context| async move {
+                transform_result_dco::<_, _, String>(
+                    (move || async move {
+                        let output_ok =
+                            crate::api::tag::update_tag_parent(api_id, api_parent_id).await?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -4756,6 +4810,24 @@ mod io {
     }
 
     #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__tag__update_tag_color(
+        port_: i64,
+        id: *mut wire_cst_list_prim_u_8_strict,
+        color: *mut wire_cst_list_prim_u_8_strict,
+    ) {
+        wire__crate__api__tag__update_tag_color_impl(port_, id, color)
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__tag__update_tag_parent(
+        port_: i64,
+        id: *mut wire_cst_list_prim_u_8_strict,
+        parent_id: *mut wire_cst_list_prim_u_8_strict,
+    ) {
+        wire__crate__api__tag__update_tag_parent_impl(port_, id, parent_id)
+    }
+
+    #[unsafe(no_mangle)]
     pub extern "C" fn frbgen_advance_media_kb_cst_new_box_autoadd_adjacent_media(
     ) -> *mut wire_cst_adjacent_media {
         flutter_rust_bridge::for_generated::new_leak_box_ptr(
@@ -6299,6 +6371,24 @@ mod web {
         content: Option<String>,
     ) {
         wire__crate__api__note__update_note_impl(port_, id, title, content)
+    }
+
+    #[wasm_bindgen]
+    pub fn wire__crate__api__tag__update_tag_color(
+        port_: flutter_rust_bridge::for_generated::MessagePort,
+        id: String,
+        color: String,
+    ) {
+        wire__crate__api__tag__update_tag_color_impl(port_, id, color)
+    }
+
+    #[wasm_bindgen]
+    pub fn wire__crate__api__tag__update_tag_parent(
+        port_: flutter_rust_bridge::for_generated::MessagePort,
+        id: String,
+        parent_id: Option<String>,
+    ) {
+        wire__crate__api__tag__update_tag_parent_impl(port_, id, parent_id)
     }
 }
 #[cfg(target_family = "wasm")]

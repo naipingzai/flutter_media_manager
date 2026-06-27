@@ -2425,6 +2425,54 @@ class RustLibWire implements BaseWire {
               ffi.Pointer<wire_cst_list_prim_u_8_strict>,
               ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
 
+  void wire__crate__api__tag__update_tag_color(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> id,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> color,
+  ) {
+    return _wire__crate__api__tag__update_tag_color(
+      port_,
+      id,
+      color,
+    );
+  }
+
+  late final _wire__crate__api__tag__update_tag_colorPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__tag__update_tag_color');
+  late final _wire__crate__api__tag__update_tag_color =
+      _wire__crate__api__tag__update_tag_colorPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+              ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
+  void wire__crate__api__tag__update_tag_parent(
+    int port_,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> id,
+    ffi.Pointer<wire_cst_list_prim_u_8_strict> parent_id,
+  ) {
+    return _wire__crate__api__tag__update_tag_parent(
+      port_,
+      id,
+      parent_id,
+    );
+  }
+
+  late final _wire__crate__api__tag__update_tag_parentPtr = _lookup<
+          ffi.NativeFunction<
+              ffi.Void Function(
+                  ffi.Int64,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+                  ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
+      'frbgen_advance_media_kb_wire__crate__api__tag__update_tag_parent');
+  late final _wire__crate__api__tag__update_tag_parent =
+      _wire__crate__api__tag__update_tag_parentPtr.asFunction<
+          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>,
+              ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
+
   ffi.Pointer<wire_cst_adjacent_media> cst_new_box_autoadd_adjacent_media() {
     return _cst_new_box_autoadd_adjacent_media();
   }

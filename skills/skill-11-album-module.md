@@ -1,92 +1,72 @@
-# Skill-11: 相册模块规范
-
-## 前置依赖
-skill-03, skill-09
+# Skill-11 相册模块 (F3)
 
 ## 目标
-定义相册详情页、子相册、CRUD 操作的完整行为规范。
+实现第二个主页:**相册**,展示相册树(无限层级)、进入相册查看其内媒体、支持相册 CRUD、多选。
 
----
+## 设计要点
 
-## 1. 相册详情页结构
+| 项 | 设计 |
+|---|------|
+| 位置 | `feature-home/.../home/tab/AlbumPage.kt` + `feature-album/...` |
+| 数据源 | `AlbumDao.observeAll(): Flow<List<AlbumEntity>>` + 客户端构造树 |
+| 树渲染 | `AlbumTreeNode`(递归 Composable),展开 / 折叠状态用 `rememberSaveable` |
+| 顶级节点 | `parentId IS NULL` |
+| 排序 | 同级按 `sortOrder ASC`,未设置时按 `createdAtSec ASC` |
+| 进入相册 | 点击顶级 / 子相册 → 切到「相册详情」视图 |
+| 相册详情 | 显示相册封面 (`coverMediaId`) + 名称 + 媒体网格 |
+| 媒体网格 | 复用 `AllMediaPage` 的网格渲染 |
+| 长按多选 | 多选相册节点(用于批量删除 / 移动) |
+
+### 相册 CRUD
+
+- **新建**:长按空白处 → 输入名称 → 选择父相册(可空)。
+- **重命名**:长按相册 → 重命名。
+- **删除**:长按相册 → 删除;子相册升级为顶级(外键 `SET_NULL`),其内媒体 `albumId = NULL`。
+- **移动**:长按相册 → 选择新父相册;不能移动到自己 / 自己的后代(防环)。
+- **设置封面**:在「相册详情」里长按某媒体 → 「设为封面」。
+
+### 防环校验
 
 ```
-┌─────────────────────────────────────────┐
-│ ← 相册名称                    [编辑] [⋮] │  ← TopAppBar
-├─────────────────────────────────────────┤
-│ 内部存储 > 旅行 > 2024                   │  ← 面包屑
-├─────────────────────────────────────────┤
-│ 📁 风景   📁 人物   📁 美食              │  ← 子相册网格
-├─────────────────────────────────────────┤
-│ ┌───┐ ┌───┐ ┌───┐                      │
-│ │   │ │   │ │   │                       │  ← 媒体网格
-│ └───┘ └───┘ └───┘                       │
-└─────────────────────────────────────────┘
+fun canMove(albumId, newParentId): Boolean {
+  if (newParentId == null) return true
+  if (albumId == newParentId) return false
+  // 沿着 newParentId 向上找祖先,如果遇到 albumId 则成环
+  var cur = newParentId
+  while (cur != null) {
+    if (cur == albumId) return false
+    cur = albumOf(cur).parentId
+  }
+  return true
+}
 ```
 
----
+## 代码检查点
 
-## 2. 面包屑导航
+- [ ] 树渲染**不**在 SQL 里递归;一次查全集,UI 构造。
+- [ ] 展开 / 折叠状态 `rememberSaveable`(旋转屏幕保留)。
+- [ ] 删除相册走 `AlbumDao.delete()`(外键 `SET_NULL` 自动生效)。
+- [ ] 移动相册前**先** `canMove` 校验,**不**交给 DB 报错。
+- [ ] 相册名 trim 后非空才能保存。
+- [ ] 同名相册在同级下允许(`parentId` 限定)。
 
-- 显示从根到当前相册的完整路径
-- 每段可点击跳转
-- 路径过长可水平滚动
+## 验收标准
 
----
+- 树深度 10 级仍能流畅渲染。
+- 删除中间层相册,其子相册自动提升为顶级。
+- 移动相册到自己后代被阻止,有 toast 提示。
+- 相册封面在删除媒体后自动回退到「无封面」占位。
 
-## 3. 子相册区域
+## 已知问题
 
-- 2 列网格显示子相册卡片
-- 点击进入子相册详情（覆盖层叠加）
-- 空则不显示此区域
+- 大量相册(>500)平铺时滚动稍慢,后续可加虚拟滚动。
+- 封面更新走同步 DAO 调用,可能阻塞;后续可异步。
 
----
+## 相关文件
 
-## 4. 媒体网格
-
-- 与首页媒体网格相同的网格布局和行为
-- 支持多选模式（长按进入）
-- 点击打开媒体详情
-
----
-
-## 5. CRUD 操作
-
-### 5.1 创建子相册
-- 菜单中选择"新建子相册"
-- 弹出对话框输入名称
-- parentId 设为当前相册 ID
-
-### 5.2 编辑相册
-- 点击编辑按钮或长按菜单
-- 可修改名称和封面
-
-### 5.3 删除相册
-- 菜单中选择"删除"
-- 确认对话框："确定要删除相册「{name}」吗？此操作不可撤销。"
-- 确认后级联删除所有子相册和关联记录
-- 不删除媒体文件本身
-
-### 5.4 从相册移除媒体
-- 多选模式下选择"从相册移除"
-- 只移除关联关系，不删除媒体文件
-- 确认对话框："确定要将 N 个媒体从此相册移除吗？"
-
----
-
-## 6. 空状态
-
-子相册和媒体都为空时：
-- 居中图标 + "此相册为空"
-- "点击 + 按钮添加子相册或导入媒体"
-
----
-
-## 7. 验证标准
-
-- [ ] 面包屑正确显示和跳转
-- [ ] 子相册网格正确显示
-- [ ] 媒体网格与首页一致
-- [ ] 创建/编辑/删除相册正确执行
-- [ ] 移出相册正确执行（不删除媒体）
-- [ ] 空状态正确显示
+- `feature-album/src/main/java/com/advancemediakb/album/AlbumTreePage.kt`
+- `feature-album/src/main/java/com/advancemediakb/album/AlbumDetailPage.kt`
+- `feature-album/src/main/java/com/advancemediakb/album/AlbumViewModel.kt`
+- `feature-album/src/main/java/com/advancemediakb/album/AlbumTreeBuilder.kt`
+- `core-database/src/main/java/com/advancemediakb/db/AlbumDao.kt`
+- `core-model/src/main/java/com/advancemediakb/model/AlbumEntity.kt`

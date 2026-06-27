@@ -6,6 +6,9 @@ import '../src/rust/api/media.dart';
 import 'viewer/viewer_page.dart';
 
 /// 媒体网格展示组件
+///
+/// 规范要求（Skill-10 §2.4）：每个网格项在缩略图下方显示文件名（BodySmall）
+/// 和文件大小（LabelSmall）。为此将 childAspectRatio 调整为 0.78 以容纳文本。
 class MediaGrid extends StatelessWidget {
   final List<MediaItem> mediaList;
   final Set<String> selectedIds;
@@ -22,11 +25,11 @@ class MediaGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return GridView.builder(
       padding: const EdgeInsets.all(8),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
         crossAxisSpacing: 4,
         mainAxisSpacing: 4,
-        childAspectRatio: 1.0,
+        childAspectRatio: 0.78,
       ),
       itemCount: mediaList.length,
       itemBuilder: (context, index) {
@@ -71,6 +74,8 @@ class MediaGrid extends StatelessWidget {
 }
 
 /// 单个媒体网格项
+///
+/// 布局：Column(缩略图 Expanded + 文件名 + 大小) + Stack（角标/时长/选择）
 class _MediaGridItem extends StatelessWidget {
   final MediaItem media;
   final bool isSelected;
@@ -86,55 +91,89 @@ class _MediaGridItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        InkWell(
-          onTap: onTap,
-          onLongPress: onLongPress,
-          child: Container(
-            color: Colors.grey[200],
-            child: _buildThumbnail(),
-          ),
-        ),
-        if (isSelected)
-          Container(
-            color: Colors.black.withOpacity(0.4),
-            child: const Center(
-              child: Icon(
-                Icons.check_circle,
-                color: Colors.white,
-                size: 32,
+    final theme = Theme.of(context);
+    return Material(
+      color: theme.colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(6),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        onLongPress: onLongPress,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // 缩略图区域（占用大部分空间）
+            Expanded(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  _buildThumbnail(),
+                  // 选择遮罩
+                  if (isSelected)
+                    Container(
+                      color: theme.colorScheme.primary.withOpacity(0.25),
+                      child: Center(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary,
+                            shape: BoxShape.circle,
+                          ),
+                          padding: const EdgeInsets.all(4),
+                          child: Icon(
+                            Icons.check,
+                            color: theme.colorScheme.onPrimary,
+                            size: 24,
+                          ),
+                        ),
+                      ),
+                    ),
+                  // 媒体类型标识（左上角）
+                  Positioned(
+                    top: 4,
+                    left: 4,
+                    child: _buildTypeIcon(),
+                  ),
+                  // 视频时长标识（右下角）
+                  if (media.mediaType == MediaType.video &&
+                      media.duration != null)
+                    Positioned(
+                      bottom: 4,
+                      right: 4,
+                      child: _buildDurationBadge(),
+                    ),
+                ],
               ),
             ),
-          ),
-        // 媒体类型标识
-        Positioned(
-          top: 4,
-          right: 4,
-          child: _buildTypeIcon(),
-        ),
-        // 视频时长标识
-        if (media.mediaType == MediaType.video && media.duration != null)
-          Positioned(
-            bottom: 4,
-            right: 4,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.7),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                _formatDuration(media.duration!),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                ),
+            // 文件名 + 大小（缩略图下方）
+            Padding(
+              padding: const EdgeInsets.fromLTRB(6, 4, 6, 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    media.originalName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    _formatSize(media.size),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-      ],
+          ],
+        ),
+      ),
     );
   }
 
@@ -180,19 +219,19 @@ class _MediaGridItem extends StatelessWidget {
     switch (media.mediaType) {
       case MediaType.image:
         iconData = Icons.image;
-        iconColor = Colors.green;
+        iconColor = Colors.greenAccent;
         break;
       case MediaType.video:
         iconData = Icons.videocam;
-        iconColor = Colors.red;
+        iconColor = Colors.redAccent;
         break;
       case MediaType.audio:
         iconData = Icons.audiotrack;
-        iconColor = Colors.orange;
+        iconColor = Colors.orangeAccent;
         break;
       case MediaType.document:
         iconData = Icons.description;
-        iconColor = Colors.blue;
+        iconColor = Colors.lightBlueAccent;
         break;
       default:
         iconData = Icons.insert_drive_file;
@@ -201,10 +240,28 @@ class _MediaGridItem extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.6),
+        color: Colors.black.withOpacity(0.55),
         borderRadius: BorderRadius.circular(4),
       ),
-      child: Icon(iconData, size: 14, color: iconColor),
+      child: Icon(iconData, size: 12, color: iconColor),
+    );
+  }
+
+  Widget _buildDurationBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.7),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        _formatDuration(media.duration!),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
     );
   }
 
@@ -213,5 +270,14 @@ class _MediaGridItem extends StatelessWidget {
     final minutes = (seconds / 60).floor();
     final remainingSeconds = seconds % 60;
     return '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+  }
+
+  String _formatSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
   }
 }

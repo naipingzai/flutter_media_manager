@@ -5,9 +5,9 @@ import '../core/i18n/app_localizations.dart';
 import 'media_screen.dart';
 import 'album_screen.dart';
 import 'tag_screen.dart';
-import 'settings_screen.dart';
+import 'note_list_screen.dart';
 
-/// 主屏幕，包含底部导航栏（3个Tab：媒体/相册/标签）+ 设置按钮在顶部
+/// 主屏幕，包含底部导航栏（4个Tab：媒体/相册/标签/笔记）+ 设置按钮在顶部
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -24,6 +24,7 @@ class HomeScreen extends StatelessWidget {
               MediaScreen(),
               AlbumScreen(),
               TagScreen(),
+              NoteListScreen(),
             ],
           ),
           bottomNavigationBar: NavigationBar(
@@ -46,6 +47,11 @@ class HomeScreen extends StatelessWidget {
                 icon: const Icon(Icons.label_outlined),
                 selectedIcon: const Icon(Icons.label),
                 label: AppLocalizations.of(context).tabTags,
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.note_alt_outlined),
+                selectedIcon: const Icon(Icons.note_alt),
+                label: AppLocalizations.of(context).tabNotes,
               ),
             ],
           ),

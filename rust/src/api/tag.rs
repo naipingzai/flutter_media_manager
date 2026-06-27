@@ -162,6 +162,81 @@ pub async fn rename_tag(id: String, new_name: String) -> Result<(), String> {
     Ok(())
 }
 
+/// 检测 new_parent_id 是否是 tag_id 的后代（含自身）。
+/// 用于在设置父标签时防止循环引用。
+async fn is_descendant_or_self(
+    candidate_id: String,
+    ancestor_id: String,
+) -> Result<bool, String> {
+    let pool = get_pool()?;
+    let mut current_id = Some(candidate_id);
+    let mut visited = std::collections::HashSet::new();
+
+    while let Some(cid) = current_id {
+        if cid == ancestor_id {
+            return Ok(true);
+        }
+        if !visited.insert(cid.clone()) {
+            // 防御性：遇到现有循环直接跳出
+            break;
+        }
+        let row = sqlx::query("SELECT parent_id FROM tags WHERE id = ?")
+            .bind(&cid)
+            .fetch_optional(&pool)
+            .await
+            .map_err(|e| format!("查询父标签失败: {}", e))?;
+        match row {
+            Some(r) => {
+                let pid: Option<String> = r.get("parent_id");
+                current_id = pid;
+            }
+            None => break,
+        }
+    }
+    Ok(false)
+}
+
+/// 更新标签颜色
+#[frb]
+pub async fn update_tag_color(id: String, color: String) -> Result<(), String> {
+    let pool = get_pool()?;
+    sqlx::query("UPDATE tags SET color = ? WHERE id = ?")
+        .bind(&color)
+        .bind(&id)
+        .execute(&pool)
+        .await
+        .map_err(|e| format!("更新标签颜色失败: {}", e))?;
+    Ok(())
+}
+
+/// 更新标签父标签（设为 None 表示设为根标签）。
+///
+/// 包含循环引用检测：不允许将标签设置为自身父标签或自身后代的父标签。
+#[frb]
+pub async fn update_tag_parent(
+    id: String,
+    parent_id: Option<String>,
+) -> Result<(), String> {
+    // 循环引用检测
+    if let Some(ref new_parent_id) = parent_id {
+        if *new_parent_id == id {
+            return Err("不能将标签设置为自身的父标签".to_string());
+        }
+        if is_descendant_or_self(new_parent_id.clone(), id.clone()).await? {
+            return Err("不能将标签的父标签设置为其后代".to_string());
+        }
+    }
+
+    let pool = get_pool()?;
+    sqlx::query("UPDATE tags SET parent_id = ? WHERE id = ?")
+        .bind(&parent_id)
+        .bind(&id)
+        .execute(&pool)
+        .await
+        .map_err(|e| format!("更新标签父标签失败: {}", e))?;
+    Ok(())
+}
+
 /// 获取标签面包屑路径
 #[frb]
 pub async fn get_tag_breadcrumb(tag_id: String) -> Result<Vec<TagBreadcrumb>, String> {
