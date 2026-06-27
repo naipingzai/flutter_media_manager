@@ -944,15 +944,14 @@ class _SearchOverlayState extends State<_SearchOverlay> {
     }
 
     try {
-      // 同时搜索媒体和笔记
+      // Skill-14：笔记模块不含搜索功能，仅搜索媒体
       final filter = SearchFilter(query: query);
       final mediaResults = await searchMediaAdvanced(filter: filter);
-      final noteResults = await note_api.searchNotes(query: query);
 
       if (mounted) {
         setState(() {
           _results = mediaResults;
-          _noteResults = noteResults;
+          _noteResults = [];
           _isSearching = false;
         });
       }

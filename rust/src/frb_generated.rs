@@ -38,7 +38,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueNom,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.12.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 1895112508;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 685441341;
 
 // Section: executor
 
@@ -191,36 +191,6 @@ fn wire__crate__api__album__create_album_impl(
                     (move || async move {
                         let output_ok =
                             crate::api::album::create_album(api_name, api_parent_id).await?;
-                        Ok(output_ok)
-                    })()
-                    .await,
-                )
-            }
-        },
-    )
-}
-fn wire__crate__api__note__create_note_impl(
-    port_: flutter_rust_bridge::for_generated::MessagePort,
-    media_id: impl CstDecode<Option<String>>,
-    title: impl CstDecode<String>,
-    content: impl CstDecode<String>,
-) {
-    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::DcoCodec, _, _, _>(
-        flutter_rust_bridge::for_generated::TaskInfo {
-            debug_name: "create_note",
-            port: Some(port_),
-            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
-        },
-        move || {
-            let api_media_id = media_id.cst_decode();
-            let api_title = title.cst_decode();
-            let api_content = content.cst_decode();
-            move |context| async move {
-                transform_result_dco::<_, _, String>(
-                    (move || async move {
-                        let output_ok =
-                            crate::api::note::create_note(api_media_id, api_title, api_content)
-                                .await?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -1116,13 +1086,13 @@ fn wire__crate__api__note__get_note_by_id_impl(
         },
     )
 }
-fn wire__crate__api__note__get_notes_by_media_id_impl(
+fn wire__crate__api__note__get_note_by_media_id_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     media_id: impl CstDecode<String>,
 ) {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::DcoCodec, _, _, _>(
         flutter_rust_bridge::for_generated::TaskInfo {
-            debug_name: "get_notes_by_media_id",
+            debug_name: "get_note_by_media_id",
             port: Some(port_),
             mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
         },
@@ -1132,7 +1102,7 @@ fn wire__crate__api__note__get_notes_by_media_id_impl(
                 transform_result_dco::<_, _, String>(
                     (move || async move {
                         let output_ok =
-                            crate::api::note::get_notes_by_media_id(api_media_id).await?;
+                            crate::api::note::get_note_by_media_id(api_media_id).await?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -1765,30 +1735,6 @@ fn wire__crate__api__search__search_media_advanced_impl(
         },
     )
 }
-fn wire__crate__api__note__search_notes_impl(
-    port_: flutter_rust_bridge::for_generated::MessagePort,
-    query: impl CstDecode<String>,
-) {
-    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::DcoCodec, _, _, _>(
-        flutter_rust_bridge::for_generated::TaskInfo {
-            debug_name: "search_notes",
-            port: Some(port_),
-            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
-        },
-        move || {
-            let api_query = query.cst_decode();
-            move |context| async move {
-                transform_result_dco::<_, _, String>(
-                    (move || async move {
-                        let output_ok = crate::api::note::search_notes(api_query).await?;
-                        Ok(output_ok)
-                    })()
-                    .await,
-                )
-            }
-        },
-    )
-}
 fn wire__crate__api__album__set_album_cover_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     album_id: impl CstDecode<String>,
@@ -1877,35 +1823,6 @@ fn wire__crate__api__media__update_media_impl(
                 transform_result_dco::<_, _, String>(
                     (move || async move {
                         let output_ok = crate::api::media::update_media(api_media).await?;
-                        Ok(output_ok)
-                    })()
-                    .await,
-                )
-            }
-        },
-    )
-}
-fn wire__crate__api__note__update_note_impl(
-    port_: flutter_rust_bridge::for_generated::MessagePort,
-    id: impl CstDecode<String>,
-    title: impl CstDecode<Option<String>>,
-    content: impl CstDecode<Option<String>>,
-) {
-    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::DcoCodec, _, _, _>(
-        flutter_rust_bridge::for_generated::TaskInfo {
-            debug_name: "update_note",
-            port: Some(port_),
-            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
-        },
-        move || {
-            let api_id = id.cst_decode();
-            let api_title = title.cst_decode();
-            let api_content = content.cst_decode();
-            move |context| async move {
-                transform_result_dco::<_, _, String>(
-                    (move || async move {
-                        let output_ok =
-                            crate::api::note::update_note(api_id, api_title, api_content).await?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -2416,15 +2333,13 @@ impl SseDecode for crate::api::note::Note {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_id = <String>::sse_decode(deserializer);
-        let mut var_mediaId = <Option<String>>::sse_decode(deserializer);
-        let mut var_title = <String>::sse_decode(deserializer);
+        let mut var_mediaId = <String>::sse_decode(deserializer);
         let mut var_content = <String>::sse_decode(deserializer);
         let mut var_createdAt = <i64>::sse_decode(deserializer);
         let mut var_updatedAt = <i64>::sse_decode(deserializer);
         return crate::api::note::Note {
             id: var_id,
             media_id: var_mediaId,
-            title: var_title,
             content: var_content,
             created_at: var_createdAt,
             updated_at: var_updatedAt,
@@ -2954,7 +2869,6 @@ impl flutter_rust_bridge::IntoDart for crate::api::note::Note {
         [
             self.id.into_into_dart().into_dart(),
             self.media_id.into_into_dart().into_dart(),
-            self.title.into_into_dart().into_dart(),
             self.content.into_into_dart().into_dart(),
             self.created_at.into_into_dart().into_dart(),
             self.updated_at.into_into_dart().into_dart(),
@@ -3431,8 +3345,7 @@ impl SseEncode for crate::api::note::Note {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <String>::sse_encode(self.id, serializer);
-        <Option<String>>::sse_encode(self.media_id, serializer);
-        <String>::sse_encode(self.title, serializer);
+        <String>::sse_encode(self.media_id, serializer);
         <String>::sse_encode(self.content, serializer);
         <i64>::sse_encode(self.created_at, serializer);
         <i64>::sse_encode(self.updated_at, serializer);
@@ -3886,7 +3799,6 @@ mod io {
             crate::api::note::Note {
                 id: self.id.cst_decode(),
                 media_id: self.media_id.cst_decode(),
-                title: self.title.cst_decode(),
                 content: self.content.cst_decode(),
                 created_at: self.created_at.cst_decode(),
                 updated_at: self.updated_at.cst_decode(),
@@ -4098,7 +4010,6 @@ mod io {
             Self {
                 id: core::ptr::null_mut(),
                 media_id: core::ptr::null_mut(),
-                title: core::ptr::null_mut(),
                 content: core::ptr::null_mut(),
                 created_at: Default::default(),
                 updated_at: Default::default(),
@@ -4251,16 +4162,6 @@ mod io {
         parent_id: *mut wire_cst_list_prim_u_8_strict,
     ) {
         wire__crate__api__album__create_album_impl(port_, name, parent_id)
-    }
-
-    #[unsafe(no_mangle)]
-    pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__note__create_note(
-        port_: i64,
-        media_id: *mut wire_cst_list_prim_u_8_strict,
-        title: *mut wire_cst_list_prim_u_8_strict,
-        content: *mut wire_cst_list_prim_u_8_strict,
-    ) {
-        wire__crate__api__note__create_note_impl(port_, media_id, title, content)
     }
 
     #[unsafe(no_mangle)]
@@ -4549,11 +4450,11 @@ mod io {
     }
 
     #[unsafe(no_mangle)]
-    pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__note__get_notes_by_media_id(
+    pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__note__get_note_by_media_id(
         port_: i64,
         media_id: *mut wire_cst_list_prim_u_8_strict,
     ) {
-        wire__crate__api__note__get_notes_by_media_id_impl(port_, media_id)
+        wire__crate__api__note__get_note_by_media_id_impl(port_, media_id)
     }
 
     #[unsafe(no_mangle)]
@@ -4759,14 +4660,6 @@ mod io {
     }
 
     #[unsafe(no_mangle)]
-    pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__note__search_notes(
-        port_: i64,
-        query: *mut wire_cst_list_prim_u_8_strict,
-    ) {
-        wire__crate__api__note__search_notes_impl(port_, query)
-    }
-
-    #[unsafe(no_mangle)]
     pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__album__set_album_cover(
         port_: i64,
         album_id: *mut wire_cst_list_prim_u_8_strict,
@@ -4797,16 +4690,6 @@ mod io {
         media: *mut wire_cst_media_item,
     ) {
         wire__crate__api__media__update_media_impl(port_, media)
-    }
-
-    #[unsafe(no_mangle)]
-    pub extern "C" fn frbgen_advance_media_kb_wire__crate__api__note__update_note(
-        port_: i64,
-        id: *mut wire_cst_list_prim_u_8_strict,
-        title: *mut wire_cst_list_prim_u_8_strict,
-        content: *mut wire_cst_list_prim_u_8_strict,
-    ) {
-        wire__crate__api__note__update_note_impl(port_, id, title, content)
     }
 
     #[unsafe(no_mangle)]
@@ -5130,7 +5013,6 @@ mod io {
     pub struct wire_cst_note {
         id: *mut wire_cst_list_prim_u_8_strict,
         media_id: *mut wire_cst_list_prim_u_8_strict,
-        title: *mut wire_cst_list_prim_u_8_strict,
         content: *mut wire_cst_list_prim_u_8_strict,
         created_at: i64,
         updated_at: i64,
@@ -5516,17 +5398,16 @@ mod web {
                 .unwrap();
             assert_eq!(
                 self_.length(),
-                6,
-                "Expected 6 elements, got {}",
+                5,
+                "Expected 5 elements, got {}",
                 self_.length()
             );
             crate::api::note::Note {
                 id: self_.get(0).cst_decode(),
                 media_id: self_.get(1).cst_decode(),
-                title: self_.get(2).cst_decode(),
-                content: self_.get(3).cst_decode(),
-                created_at: self_.get(4).cst_decode(),
-                updated_at: self_.get(5).cst_decode(),
+                content: self_.get(2).cst_decode(),
+                created_at: self_.get(3).cst_decode(),
+                updated_at: self_.get(4).cst_decode(),
             }
         }
     }
@@ -5803,16 +5684,6 @@ mod web {
         parent_id: Option<String>,
     ) {
         wire__crate__api__album__create_album_impl(port_, name, parent_id)
-    }
-
-    #[wasm_bindgen]
-    pub fn wire__crate__api__note__create_note(
-        port_: flutter_rust_bridge::for_generated::MessagePort,
-        media_id: Option<String>,
-        title: String,
-        content: String,
-    ) {
-        wire__crate__api__note__create_note_impl(port_, media_id, title, content)
     }
 
     #[wasm_bindgen]
@@ -6107,11 +5978,11 @@ mod web {
     }
 
     #[wasm_bindgen]
-    pub fn wire__crate__api__note__get_notes_by_media_id(
+    pub fn wire__crate__api__note__get_note_by_media_id(
         port_: flutter_rust_bridge::for_generated::MessagePort,
         media_id: String,
     ) {
-        wire__crate__api__note__get_notes_by_media_id_impl(port_, media_id)
+        wire__crate__api__note__get_note_by_media_id_impl(port_, media_id)
     }
 
     #[wasm_bindgen]
@@ -6323,14 +6194,6 @@ mod web {
     }
 
     #[wasm_bindgen]
-    pub fn wire__crate__api__note__search_notes(
-        port_: flutter_rust_bridge::for_generated::MessagePort,
-        query: String,
-    ) {
-        wire__crate__api__note__search_notes_impl(port_, query)
-    }
-
-    #[wasm_bindgen]
     pub fn wire__crate__api__album__set_album_cover(
         port_: flutter_rust_bridge::for_generated::MessagePort,
         album_id: String,
@@ -6361,16 +6224,6 @@ mod web {
         media: flutter_rust_bridge::for_generated::wasm_bindgen::JsValue,
     ) {
         wire__crate__api__media__update_media_impl(port_, media)
-    }
-
-    #[wasm_bindgen]
-    pub fn wire__crate__api__note__update_note(
-        port_: flutter_rust_bridge::for_generated::MessagePort,
-        id: String,
-        title: Option<String>,
-        content: Option<String>,
-    ) {
-        wire__crate__api__note__update_note_impl(port_, id, title, content)
     }
 
     #[wasm_bindgen]

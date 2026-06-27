@@ -1,6 +1,6 @@
-// Skill-14: 笔记独立列表页（覆盖层）
-// 显示全部笔记（独立 + 关联），按 updatedAt 降序
-// 点击打开 NoteEditScreen；长按弹出删除菜单；右上角 FAB 新建笔记
+// Skill-14: 笔记列表页（覆盖层）
+// 显示全部笔记，按 updatedAt 降序
+// 点击打开 NoteEditScreen；长按弹出删除菜单
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,25 +10,17 @@ import '../core/design_system/components.dart';
 import '../core/i18n/app_localizations.dart';
 import '../core/navigation/app_router.dart';
 import '../src/rust/api/note.dart' as note_api;
-import '../src/rust/api/media.dart' as media_api;
 import 'note_edit_screen.dart';
 
-/// 笔记独立列表页（覆盖层）
+/// 笔记列表页（覆盖层）
 class NoteListScreen extends StatefulWidget {
-  /// 可选：进入时只显示指定 mediaId 关联的笔记
-  final String? mediaId;
-
-  const NoteListScreen({super.key, this.mediaId});
+  const NoteListScreen({super.key});
 
   @override
   State<NoteListScreen> createState() => _NoteListScreenState();
 }
 
 class _NoteListScreenState extends State<NoteListScreen> {
-  /// 笔记-媒体文件名映射（仅用于显示关联笔记的媒体名）
-  final Map<String, String> _mediaFileNames = {};
-  bool _loadingMediaNames = false;
-
   @override
   void initState() {
     super.initState();
@@ -38,53 +30,16 @@ class _NoteListScreenState extends State<NoteListScreen> {
   }
 
   void _loadNotes() {
-    final bloc = context.read<NoteBloc>();
-    if (widget.mediaId != null) {
-      bloc.add(NoteLoadByMediaEvent(widget.mediaId!));
-    } else {
-      bloc.add(const NoteLoadAllEvent());
-    }
-  }
-
-  /// 加载所有引用过的媒体的文件名（仅一次）
-  Future<void> _loadMediaNamesIfNeeded(List<note_api.Note> notes) async {
-    if (_loadingMediaNames) return;
-    final mediaIds = notes
-        .map((n) => n.mediaId)
-        .whereType<String>()
-        .where((id) => !_mediaFileNames.containsKey(id))
-        .toSet();
-    if (mediaIds.isEmpty) return;
-
-    setState(() => _loadingMediaNames = true);
-    try {
-      for (final id in mediaIds) {
-        try {
-          final m = await media_api.getMediaById(id: id);
-          if (m != null && mounted) {
-            setState(() {
-              _mediaFileNames[id] = m.originalName;
-            });
-          }
-        } catch (_) {
-          // 媒体可能已被删除，忽略
-        }
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _loadingMediaNames = false);
-      }
-    }
+    context.read<NoteBloc>().add(const NoteLoadAllEvent());
   }
 
   Future<void> _openEditor({note_api.Note? note}) async {
     final result = await AppRouter.pushOverlay<bool>(
       context,
-      page: NoteEditScreen(note: note, mediaId: note?.mediaId),
+      page: NoteEditScreen(note: note, mediaId: note?.mediaId ?? ''),
     );
-    if (result == true && mounted) {
-      _loadNotes();
-    }
+    if (!mounted) return;
+    if (result == true) _loadNotes();
   }
 
   Future<void> _confirmDelete(note_api.Note note) async {
@@ -111,29 +66,8 @@ class _NoteListScreenState extends State<NoteListScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(loc.notes),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            tooltip: loc.search,
-            onPressed: () {
-              // 进入搜索状态（简单实现：聚焦时键盘弹出，使用 AlertDialog 临时方案）
-              showSearch(
-                context: context,
-                delegate: _NoteSearchDelegate(onResultTap: (n) {
-                  Navigator.of(context).pop();
-                  _openEditor(note: n);
-                }),
-              );
-            },
-          ),
-        ],
       ),
-      body: BlocConsumer<NoteBloc, NoteState>(
-        listener: (context, state) {
-          if (state.notes.isNotEmpty) {
-            _loadMediaNamesIfNeeded(state.notes);
-          }
-        },
+      body: BlocBuilder<NoteBloc, NoteState>(
         builder: (context, state) {
           if (state.status == NoteStatus.loading && state.notes.isEmpty) {
             return const Center(child: CircularProgressIndicator());
@@ -155,9 +89,6 @@ class _NoteListScreenState extends State<NoteListScreen> {
                 final note = state.notes[i];
                 return _NoteListItem(
                   note: note,
-                  mediaFileName: note.mediaId == null
-                      ? null
-                      : _mediaFileNames[note.mediaId!],
                   onTap: () => _openEditor(note: note),
                   onDelete: () => _confirmDelete(note),
                 );
@@ -166,24 +97,17 @@ class _NoteListScreenState extends State<NoteListScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _openEditor(),
-        tooltip: loc.createNote,
-        child: const Icon(Icons.add),
-      ),
     );
   }
 }
 
 class _NoteListItem extends StatelessWidget {
   final note_api.Note note;
-  final String? mediaFileName;
   final VoidCallback onTap;
   final VoidCallback onDelete;
 
   const _NoteListItem({
     required this.note,
-    required this.mediaFileName,
     required this.onTap,
     required this.onDelete,
   });
@@ -192,7 +116,6 @@ class _NoteListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     final colorScheme = Theme.of(context).colorScheme;
-    final isLinked = note.mediaId != null;
 
     return InkWell(
       onTap: onTap,
@@ -228,15 +151,11 @@ class _NoteListItem extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CircleAvatar(
-              backgroundColor: isLinked
-                  ? colorScheme.primaryContainer
-                  : colorScheme.secondaryContainer,
+              backgroundColor: colorScheme.primaryContainer,
               child: Icon(
-                isLinked ? Icons.link : Icons.note_outlined,
+                Icons.note_outlined,
                 size: 20,
-                color: isLinked
-                    ? colorScheme.onPrimaryContainer
-                    : colorScheme.onSecondaryContainer,
+                color: colorScheme.onPrimaryContainer,
               ),
             ),
             const SizedBox(width: AppSpacing.md),
@@ -248,9 +167,9 @@ class _NoteListItem extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          note.title.isEmpty
-                              ? loc.notes
-                              : note.title,
+                          _stripMarkdown(note.content).isEmpty
+                              ? loc.noteEmpty
+                              : _stripMarkdown(note.content),
                           style: Theme.of(context).textTheme.titleMedium,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -270,36 +189,12 @@ class _NoteListItem extends StatelessWidget {
                   if (note.content.isNotEmpty) ...[
                     const SizedBox(height: AppSpacing.xs),
                     Text(
-                      note.content,
+                      _stripMarkdown(note.content),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: colorScheme.onSurfaceVariant,
                           ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                  if (isLinked) ...[
-                    const SizedBox(height: AppSpacing.xs),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.image_outlined,
-                          size: 14,
-                          color: colorScheme.primary,
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            mediaFileName ?? '${loc.fileName}: ${note.mediaId}',
-                            style: Theme.of(context)
-                                .textTheme
-                                .labelSmall
-                                ?.copyWith(color: colorScheme.primary),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
                     ),
                   ],
                 ],
@@ -311,6 +206,24 @@ class _NoteListItem extends StatelessWidget {
     );
   }
 
+  /// 剥离常见 Markdown 标记，用于列表纯文本预览
+  String _stripMarkdown(String src) {
+    var s = src;
+    s = s.replaceAll(RegExp(r'^#{1,6}\s*'), '');
+    s = s.replaceAll(RegExp(r'^\s*>\s*'), '');
+    s = s.replaceAll(RegExp(r'^\s*[-*+]\s+'), '');
+    s = s.replaceAll(RegExp(r'^\s*\d+\.\s+'), '');
+    s = s.replaceAll(RegExp(r'\*\*([^*]+)\*\*'), r'$1');
+    s = s.replaceAll(RegExp(r'__([^_]+)__'), r'$1');
+    s = s.replaceAll(RegExp(r'\*([^*]+)\*'), r'$1');
+    s = s.replaceAll(RegExp(r'_([^_]+)_'), r'$1');
+    s = s.replaceAll(RegExp(r'`([^`]+)`'), r'$1');
+    s = s.replaceAll(RegExp(r'!\[([^\]]*)\]\([^)]+\)'), r'$1');
+    s = s.replaceAll(RegExp(r'\[([^\]]+)\]\([^)]+\)'), r'$1');
+    s = s.replaceAll(RegExp(r'\n{2,}'), '\n');
+    return s.trim();
+  }
+
   /// 将 i64 时间戳格式化为 "YYYY-MM-DD HH:MM"（避免引入 intl）
   String _formatRelative(int timestamp) {
     final dt = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
@@ -320,77 +233,5 @@ class _NoteListItem extends StatelessWidget {
     final hh = dt.hour.toString().padLeft(2, '0');
     final mm = dt.minute.toString().padLeft(2, '0');
     return '$y-$m-$d $hh:$mm';
-  }
-}
-
-/// 笔记搜索代理
-class _NoteSearchDelegate extends SearchDelegate<note_api.Note?> {
-  final void Function(note_api.Note) onResultTap;
-
-  _NoteSearchDelegate({required this.onResultTap});
-
-  @override
-  List<Widget>? buildActions(BuildContext context) {
-    return [
-      if (query.isNotEmpty)
-        IconButton(
-          icon: const Icon(Icons.clear),
-          onPressed: () => query = '',
-        ),
-    ];
-  }
-
-  @override
-  Widget? buildLeading(BuildContext context) {
-    return IconButton(
-      icon: const Icon(Icons.arrow_back),
-      onPressed: () => close(context, null),
-    );
-  }
-
-  @override
-  Widget buildResults(BuildContext context) => _buildSearchList(context);
-
-  @override
-  Widget buildSuggestions(BuildContext context) => _buildSearchList(context);
-
-  Widget _buildSearchList(BuildContext context) {
-    final loc = AppLocalizations.of(context);
-    if (query.trim().isEmpty) {
-      return Center(child: Text(loc.searchHint));
-    }
-    return FutureBuilder<List<note_api.Note>>(
-      future: note_api.searchNotes(query: query),
-      builder: (context, snap) {
-        if (snap.connectionState != ConnectionState.done) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (!snap.hasData || snap.data!.isEmpty) {
-          return EmptyState(
-            icon: Icons.search_off,
-            title: loc.noResults,
-            subtitle: loc.noResultsDesc,
-          );
-        }
-        final results = snap.data!;
-        return ListView.separated(
-          itemCount: results.length,
-          separatorBuilder: (_, __) => const Divider(height: 1),
-          itemBuilder: (context, i) {
-            final n = results[i];
-            return ListTile(
-              leading: const Icon(Icons.note),
-              title: Text(n.title.isEmpty ? loc.notes : n.title),
-              subtitle: Text(
-                n.content,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              onTap: () => onResultTap(n),
-            );
-          },
-        );
-      },
-    );
   }
 }

@@ -57,13 +57,11 @@ pub fn row_to_tag(row: &sqlx::sqlite::SqliteRow) -> Tag {
     }
 }
 
-/// 从数据库行转换为 Note
-/// 注意：media_id 现在可为 null（支持独立笔记），新增 title 字段
+/// 从数据库行转换为 Note（Skill-14）
 pub fn row_to_note(row: &sqlx::sqlite::SqliteRow) -> Note {
     Note {
         id: row.get("id"),
-        media_id: row.get::<Option<String>, _>("media_id"),
-        title: row.get("title"),
+        media_id: row.get("media_id"),
         content: row.get("content"),
         created_at: row.get::<i64, _>("created_at"),
         updated_at: row.get::<i64, _>("updated_at"),

@@ -31,6 +31,8 @@ class AppLocalizations {
   String get save => _get('save');
   String get delete => _get('delete');
   String get edit => _get('edit');
+  String get preview => _get('preview');
+  String get markdownSupported => _get('markdownSupported');
   String get back => _get('back');
   String get close => _get('close');
   String get done => _get('done');
@@ -102,34 +104,22 @@ class AppLocalizations {
   String get tagParent => _get('tagParent');
   String get none => _get('none');
 
-  // ─── 笔记 ───
+  // ─── 笔记（Skill-14） ───
   String get note => _get('note');
   String get notes => _get('notes');
   String get createNote => _get('createNote');
   String get editNote => _get('editNote');
   String get deleteNote => _get('deleteNote');
-  String get noteTitle => _get('noteTitle');
   String get noteContent => _get('noteContent');
   String get noNotes => _get('noNotes');
   String get noNotesDesc => _get('noNotesDesc');
-  String get noteTitleHint => _get('noteTitleHint');
   String get noteContentHint => _get('noteContentHint');
-  String get saveNote => _get('saveNote');
-  String get discardChanges => _get('discardChanges');
   String get unsavedChanges => _get('unsavedChanges');
   String get unsavedChangesDesc => _get('unsavedChangesDesc');
   String get confirmDeleteNote => _get('confirmDeleteNote');
-  String get linkedMedia => _get('linkedMedia');
-  String get emptyTitle => _get('emptyTitle');
   String get noteEmpty => _get('noteEmpty');
   String get leaveEditor => _get('leaveEditor');
   String get continueEditing => _get('continueEditing');
-  String get noteLinkToMedia => _get('noteLinkToMedia');
-  String get noteUnlinkFromMedia => _get('noteUnlinkFromMedia');
-  String get noteCreatedAt => _get('noteCreatedAt');
-  String get noteUpdatedAt => _get('noteUpdatedAt');
-  String get allNotes => _get('allNotes');
-  String get mediaNotes => _get('mediaNotes');
   String get saveFailed => _get('saveFailed');
   String get loadFailed => _get('loadFailed');
 
@@ -290,7 +280,8 @@ class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> 
 const Map<String, String> _zhStrings = {
   'appName': '媒体知识库',
   'confirm': '确定', 'cancel': '取消', 'save': '保存', 'delete': '删除',
-  'edit': '编辑', 'back': '返回', 'close': '关闭', 'done': '完成',
+  'edit': '编辑', 'preview': '预览', 'markdownSupported': '支持 Markdown 语法',
+  'back': '返回', 'close': '关闭', 'done': '完成',
   'retry': '重试', 'ok': '好', 'loading': '加载中...', 'error': '错误',
   'success': '成功', 'unknown': '未知', 'selectAll': '全选',
   'deselectAll': '取消全选', 'selected': '已选中',
@@ -401,7 +392,8 @@ const Map<String, String> _zhStrings = {
 const Map<String, String> _enStrings = {
   'appName': 'Media KB',
   'confirm': 'OK', 'cancel': 'Cancel', 'save': 'Save', 'delete': 'Delete',
-  'edit': 'Edit', 'back': 'Back', 'close': 'Close', 'done': 'Done',
+  'edit': 'Edit', 'preview': 'Preview', 'markdownSupported': 'Markdown supported',
+  'back': 'Back', 'close': 'Close', 'done': 'Done',
   'retry': 'Retry', 'ok': 'OK', 'loading': 'Loading...', 'error': 'Error',
   'success': 'Success', 'unknown': 'Unknown', 'selectAll': 'Select All',
   'deselectAll': 'Deselect All', 'selected': 'Selected',

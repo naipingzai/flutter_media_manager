@@ -8,32 +8,24 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `fmt`
 
-/// 获取指定媒体的笔记（可能有多篇）
-Future<List<Note>> getNotesByMediaId({required String mediaId}) =>
-    RustLib.instance.api.crateApiNoteGetNotesByMediaId(mediaId: mediaId);
+/// 获取指定媒体的笔记（一对一，LIMIT 1）
+Future<Note?> getNoteByMediaId({required String mediaId}) =>
+    RustLib.instance.api.crateApiNoteGetNoteByMediaId(mediaId: mediaId);
 
 /// 获取单条笔记
 Future<Note?> getNoteById({required String id}) =>
     RustLib.instance.api.crateApiNoteGetNoteById(id: id);
 
-/// 观察全部笔记（包括独立笔记和关联笔记）
+/// 获取全部笔记（按 updated_at DESC）
 Future<List<Note>> getAllNotes() =>
     RustLib.instance.api.crateApiNoteGetAllNotes();
 
-/// 创建笔记
-/// media_id 为 None 时创建独立笔记
-Future<String> createNote(
-        {String? mediaId, required String title, required String content}) =>
-    RustLib.instance.api.crateApiNoteCreateNote(
-        mediaId: mediaId, title: title, content: content);
-
-/// 更新笔记
-Future<void> updateNote({required String id, String? title, String? content}) =>
-    RustLib.instance.api
-        .crateApiNoteUpdateNote(id: id, title: title, content: content);
-
-/// 保存笔记（兼容旧接口：创建或更新）
-Future<void> saveNote({required String mediaId, required String content}) =>
+/// 创建或更新笔记（Skill-14 一对一 upsert）
+///
+/// - 若该 media_id 已有笔记则更新 content（保留 id、created_at）
+/// - 若不存在则新建
+/// - 返回笔记 id
+Future<String> saveNote({required String mediaId, required String content}) =>
     RustLib.instance.api
         .crateApiNoteSaveNote(mediaId: mediaId, content: content);
 
@@ -41,24 +33,21 @@ Future<void> saveNote({required String mediaId, required String content}) =>
 Future<void> deleteNote({required String id}) =>
     RustLib.instance.api.crateApiNoteDeleteNote(id: id);
 
-/// 搜索笔记（按标题和内容模糊匹配）
-Future<List<Note>> searchNotes({required String query}) =>
-    RustLib.instance.api.crateApiNoteSearchNotes(query: query);
-
-/// 笔记实体
-/// 按设计方案：media_id 可为 null（独立笔记），新增 title 字段
+/// 笔记实体（Skill-14）
+///
+/// - 字段：id, media_id, content, created_at, updated_at
+/// - 与媒体一对一：media_id 唯一索引 + ForeignKey.CASCADE
+/// - 渲染层按 Markdown 解析（`flutter_markdown`）
 class Note {
   final String id;
-  final String? mediaId;
-  final String title;
+  final String mediaId;
   final String content;
   final PlatformInt64 createdAt;
   final PlatformInt64 updatedAt;
 
   const Note({
     required this.id,
-    this.mediaId,
-    required this.title,
+    required this.mediaId,
     required this.content,
     required this.createdAt,
     required this.updatedAt,
@@ -68,7 +57,6 @@ class Note {
   int get hashCode =>
       id.hashCode ^
       mediaId.hashCode ^
-      title.hashCode ^
       content.hashCode ^
       createdAt.hashCode ^
       updatedAt.hashCode;
@@ -80,7 +68,6 @@ class Note {
           runtimeType == other.runtimeType &&
           id == other.id &&
           mediaId == other.mediaId &&
-          title == other.title &&
           content == other.content &&
           createdAt == other.createdAt &&
           updatedAt == other.updatedAt;

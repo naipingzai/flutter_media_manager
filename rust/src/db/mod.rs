@@ -134,23 +134,30 @@ async fn create_tables(pool: &Pool<Sqlite>) -> Result<(), sqlx::Error> {
     .execute(pool)
     .await?;
 
-    // 4.3 NoteEntity（笔记表）
-    // - media_id 可为 null：支持独立笔记（不关联任何媒体）
-    // - CASCADE 删除：媒体删除时自动清理关联笔记
-    // - title: 笔记标题
-    // - content: 笔记内容
+    // 4.3 NoteEntity（笔记表）—— Skill-14 一对一关系
+    // - 一对一：每个媒体最多 1 条笔记（由 UNIQUE 索引保证）
+    // - CASCADE 删除：媒体删除时自动清理关联笔记（ForeignKey.CASCADE）
+    // - 字段：id, media_id, content, created_at, updated_at（无 title）
+    // - content: 笔记正文（纯文本存储，渲染时按 Markdown 解析）
     sqlx::query(
         r#"
         CREATE TABLE IF NOT EXISTS notes (
             id TEXT PRIMARY KEY,
-            media_id TEXT,
-            title TEXT NOT NULL DEFAULT '',
+            media_id TEXT NOT NULL,
             content TEXT NOT NULL DEFAULT '',
             created_at INTEGER NOT NULL,
             updated_at INTEGER NOT NULL,
             FOREIGN KEY (media_id) REFERENCES media_items(id) ON DELETE CASCADE
         )
         "#,
+    )
+    .execute(pool)
+    .await?;
+
+    // Skill-14 一对一：media_id 唯一（每个媒体最多 1 条笔记）
+    sqlx::query(
+        r#"CREATE UNIQUE INDEX IF NOT EXISTS idx_notes_media_id_unique
+           ON notes(media_id)"#,
     )
     .execute(pool)
     .await?;

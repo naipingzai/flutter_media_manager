@@ -660,8 +660,7 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void cst_api_fill_to_wire_note(Note apiObj, wire_cst_note wireObj) {
     wireObj.id = cst_encode_String(apiObj.id);
-    wireObj.media_id = cst_encode_opt_String(apiObj.mediaId);
-    wireObj.title = cst_encode_String(apiObj.title);
+    wireObj.media_id = cst_encode_String(apiObj.mediaId);
     wireObj.content = cst_encode_String(apiObj.content);
     wireObj.created_at = cst_encode_i_64(apiObj.createdAt);
     wireObj.updated_at = cst_encode_i_64(apiObj.updatedAt);
@@ -1085,36 +1084,6 @@ class RustLibWire implements BaseWire {
   late final _wire__crate__api__album__create_album =
       _wire__crate__api__album__create_albumPtr.asFunction<
           void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>,
-              ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
-
-  void wire__crate__api__note__create_note(
-    int port_,
-    ffi.Pointer<wire_cst_list_prim_u_8_strict> media_id,
-    ffi.Pointer<wire_cst_list_prim_u_8_strict> title,
-    ffi.Pointer<wire_cst_list_prim_u_8_strict> content,
-  ) {
-    return _wire__crate__api__note__create_note(
-      port_,
-      media_id,
-      title,
-      content,
-    );
-  }
-
-  late final _wire__crate__api__note__create_notePtr = _lookup<
-          ffi.NativeFunction<
-              ffi.Void Function(
-                  ffi.Int64,
-                  ffi.Pointer<wire_cst_list_prim_u_8_strict>,
-                  ffi.Pointer<wire_cst_list_prim_u_8_strict>,
-                  ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
-      'frbgen_advance_media_kb_wire__crate__api__note__create_note');
-  late final _wire__crate__api__note__create_note =
-      _wire__crate__api__note__create_notePtr.asFunction<
-          void Function(
-              int,
-              ffi.Pointer<wire_cst_list_prim_u_8_strict>,
-              ffi.Pointer<wire_cst_list_prim_u_8_strict>,
               ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
 
   void wire__crate__api__tag__create_tag(
@@ -1790,23 +1759,23 @@ class RustLibWire implements BaseWire {
       _wire__crate__api__note__get_note_by_idPtr.asFunction<
           void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
 
-  void wire__crate__api__note__get_notes_by_media_id(
+  void wire__crate__api__note__get_note_by_media_id(
     int port_,
     ffi.Pointer<wire_cst_list_prim_u_8_strict> media_id,
   ) {
-    return _wire__crate__api__note__get_notes_by_media_id(
+    return _wire__crate__api__note__get_note_by_media_id(
       port_,
       media_id,
     );
   }
 
-  late final _wire__crate__api__note__get_notes_by_media_idPtr = _lookup<
+  late final _wire__crate__api__note__get_note_by_media_idPtr = _lookup<
           ffi.NativeFunction<
               ffi.Void Function(
                   ffi.Int64, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
-      'frbgen_advance_media_kb_wire__crate__api__note__get_notes_by_media_id');
-  late final _wire__crate__api__note__get_notes_by_media_id =
-      _wire__crate__api__note__get_notes_by_media_idPtr.asFunction<
+      'frbgen_advance_media_kb_wire__crate__api__note__get_note_by_media_id');
+  late final _wire__crate__api__note__get_note_by_media_id =
+      _wire__crate__api__note__get_note_by_media_idPtr.asFunction<
           void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
 
   void wire__crate__api__album__get_root_albums(
@@ -2298,25 +2267,6 @@ class RustLibWire implements BaseWire {
       _wire__crate__api__search__search_media_advancedPtr.asFunction<
           void Function(int, ffi.Pointer<wire_cst_search_filter>)>();
 
-  void wire__crate__api__note__search_notes(
-    int port_,
-    ffi.Pointer<wire_cst_list_prim_u_8_strict> query,
-  ) {
-    return _wire__crate__api__note__search_notes(
-      port_,
-      query,
-    );
-  }
-
-  late final _wire__crate__api__note__search_notesPtr = _lookup<
-          ffi.NativeFunction<
-              ffi.Void Function(
-                  ffi.Int64, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
-      'frbgen_advance_media_kb_wire__crate__api__note__search_notes');
-  late final _wire__crate__api__note__search_notes =
-      _wire__crate__api__note__search_notesPtr.asFunction<
-          void Function(int, ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
-
   void wire__crate__api__album__set_album_cover(
     int port_,
     ffi.Pointer<wire_cst_list_prim_u_8_strict> album_id,
@@ -2394,36 +2344,6 @@ class RustLibWire implements BaseWire {
   late final _wire__crate__api__media__update_media =
       _wire__crate__api__media__update_mediaPtr
           .asFunction<void Function(int, ffi.Pointer<wire_cst_media_item>)>();
-
-  void wire__crate__api__note__update_note(
-    int port_,
-    ffi.Pointer<wire_cst_list_prim_u_8_strict> id,
-    ffi.Pointer<wire_cst_list_prim_u_8_strict> title,
-    ffi.Pointer<wire_cst_list_prim_u_8_strict> content,
-  ) {
-    return _wire__crate__api__note__update_note(
-      port_,
-      id,
-      title,
-      content,
-    );
-  }
-
-  late final _wire__crate__api__note__update_notePtr = _lookup<
-          ffi.NativeFunction<
-              ffi.Void Function(
-                  ffi.Int64,
-                  ffi.Pointer<wire_cst_list_prim_u_8_strict>,
-                  ffi.Pointer<wire_cst_list_prim_u_8_strict>,
-                  ffi.Pointer<wire_cst_list_prim_u_8_strict>)>>(
-      'frbgen_advance_media_kb_wire__crate__api__note__update_note');
-  late final _wire__crate__api__note__update_note =
-      _wire__crate__api__note__update_notePtr.asFunction<
-          void Function(
-              int,
-              ffi.Pointer<wire_cst_list_prim_u_8_strict>,
-              ffi.Pointer<wire_cst_list_prim_u_8_strict>,
-              ffi.Pointer<wire_cst_list_prim_u_8_strict>)>();
 
   void wire__crate__api__tag__update_tag_color(
     int port_,
@@ -2808,8 +2728,6 @@ final class wire_cst_note extends ffi.Struct {
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> id;
 
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> media_id;
-
-  external ffi.Pointer<wire_cst_list_prim_u_8_strict> title;
 
   external ffi.Pointer<wire_cst_list_prim_u_8_strict> content;
 

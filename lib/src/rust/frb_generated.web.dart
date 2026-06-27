@@ -545,8 +545,7 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
     // Codec=Cst (C-struct based), see doc to use other codecs
     return [
       cst_encode_String(raw.id),
-      cst_encode_opt_String(raw.mediaId),
-      cst_encode_String(raw.title),
+      cst_encode_String(raw.mediaId),
       cst_encode_String(raw.content),
       cst_encode_i_64(raw.createdAt),
       cst_encode_i_64(raw.updatedAt)
@@ -893,11 +892,6 @@ class RustLibWire implements BaseWire {
           NativePortType port_, String name, String? parent_id) =>
       wasmModule.wire__crate__api__album__create_album(port_, name, parent_id);
 
-  void wire__crate__api__note__create_note(NativePortType port_,
-          String? media_id, String title, String content) =>
-      wasmModule.wire__crate__api__note__create_note(
-          port_, media_id, title, content);
-
   void wire__crate__api__tag__create_tag(NativePortType port_, String name,
           String? color, String? parent_id) =>
       wasmModule.wire__crate__api__tag__create_tag(
@@ -1042,9 +1036,9 @@ class RustLibWire implements BaseWire {
           NativePortType port_, String id) =>
       wasmModule.wire__crate__api__note__get_note_by_id(port_, id);
 
-  void wire__crate__api__note__get_notes_by_media_id(
+  void wire__crate__api__note__get_note_by_media_id(
           NativePortType port_, String media_id) =>
-      wasmModule.wire__crate__api__note__get_notes_by_media_id(port_, media_id);
+      wasmModule.wire__crate__api__note__get_note_by_media_id(port_, media_id);
 
   void wire__crate__api__album__get_root_albums(NativePortType port_) =>
       wasmModule.wire__crate__api__album__get_root_albums(port_);
@@ -1149,10 +1143,6 @@ class RustLibWire implements BaseWire {
           NativePortType port_, JSAny filter) =>
       wasmModule.wire__crate__api__search__search_media_advanced(port_, filter);
 
-  void wire__crate__api__note__search_notes(
-          NativePortType port_, String query) =>
-      wasmModule.wire__crate__api__note__search_notes(port_, query);
-
   void wire__crate__api__album__set_album_cover(
           NativePortType port_, String album_id, String media_id) =>
       wasmModule.wire__crate__api__album__set_album_cover(
@@ -1170,10 +1160,6 @@ class RustLibWire implements BaseWire {
   void wire__crate__api__media__update_media(
           NativePortType port_, JSAny media) =>
       wasmModule.wire__crate__api__media__update_media(port_, media);
-
-  void wire__crate__api__note__update_note(
-          NativePortType port_, String id, String? title, String? content) =>
-      wasmModule.wire__crate__api__note__update_note(port_, id, title, content);
 
   void wire__crate__api__tag__update_tag_color(
           NativePortType port_, String id, String color) =>
@@ -1207,9 +1193,6 @@ extension type RustLibWasmModule._(JSObject _) implements JSObject {
 
   external void wire__crate__api__album__create_album(
       NativePortType port_, String name, String? parent_id);
-
-  external void wire__crate__api__note__create_note(
-      NativePortType port_, String? media_id, String title, String content);
 
   external void wire__crate__api__tag__create_tag(
       NativePortType port_, String name, String? color, String? parent_id);
@@ -1319,7 +1302,7 @@ extension type RustLibWasmModule._(JSObject _) implements JSObject {
   external void wire__crate__api__note__get_note_by_id(
       NativePortType port_, String id);
 
-  external void wire__crate__api__note__get_notes_by_media_id(
+  external void wire__crate__api__note__get_note_by_media_id(
       NativePortType port_, String media_id);
 
   external void wire__crate__api__album__get_root_albums(NativePortType port_);
@@ -1397,9 +1380,6 @@ extension type RustLibWasmModule._(JSObject _) implements JSObject {
   external void wire__crate__api__search__search_media_advanced(
       NativePortType port_, JSAny filter);
 
-  external void wire__crate__api__note__search_notes(
-      NativePortType port_, String query);
-
   external void wire__crate__api__album__set_album_cover(
       NativePortType port_, String album_id, String media_id);
 
@@ -1411,9 +1391,6 @@ extension type RustLibWasmModule._(JSObject _) implements JSObject {
 
   external void wire__crate__api__media__update_media(
       NativePortType port_, JSAny media);
-
-  external void wire__crate__api__note__update_note(
-      NativePortType port_, String id, String? title, String? content);
 
   external void wire__crate__api__tag__update_tag_color(
       NativePortType port_, String id, String color);

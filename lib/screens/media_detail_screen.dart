@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import '../bloc/bloc.dart';
 import '../src/rust/api/media.dart';
 import '../src/rust/api/note.dart' as note_api;
@@ -82,10 +83,10 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   }
 
   void _loadMediaData() async {
-    final notes = await note_api.getNotesByMediaId(mediaId: _currentMedia.id);
+    final note = await note_api.getNoteByMediaId(mediaId: _currentMedia.id);
     if (mounted) {
       setState(() {
-        _noteContent = notes.isNotEmpty ? notes.first.content : null;
+        _noteContent = note?.content;
       });
     }
     final tags = await tag_api.getMediaTags(mediaId: _currentMedia.id);
@@ -612,7 +613,17 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                 const Divider(),
                 Text('${loc.notePanel}:', style: const TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
-                Text(_noteContent!),
+                MarkdownBody(
+                  data: _noteContent!,
+                  styleSheet: MarkdownStyleSheet(
+                    p: const TextStyle(fontSize: 13),
+                    code: TextStyle(
+                      backgroundColor: Colors.grey.shade200,
+                      fontFamily: 'monospace',
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
               ],
               if (_mediaTags.isNotEmpty) ...[
                 const Divider(),
@@ -781,33 +792,42 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     );
   }
 
+  /// 笔记编辑器（Skill-14：Markdown 编辑 / 预览切换）
+  /// 一对一语义：saveNote 内部为 upsert，每个媒体最多 1 条笔记
   void _showNoteDialog(BuildContext context) {
     final loc = AppLocalizations.of(context);
     final controller = TextEditingController(text: _noteContent ?? '');
-    showDialog(
+
+    showModalBottomSheet(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(loc.editNote),
-          content: TextField(
-            controller: controller,
-            decoration: InputDecoration(labelText: loc.noteContent, hintText: loc.noteContentHint),
-            maxLines: 5,
-            autofocus: true,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetCtx) {
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            16, 12, 16,
+            MediaQuery.of(sheetCtx).viewInsets.bottom + 16,
           ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: Text(loc.cancel)),
-            TextButton(
-              onPressed: () async {
-                await note_api.saveNote(mediaId: _currentMedia.id, content: controller.text);
-                if (context.mounted) {
+          child: SizedBox(
+            height: MediaQuery.of(sheetCtx).size.height * 0.6,
+            child: _MarkdownNoteEditor(
+              controller: controller,
+              title: loc.editNote,
+              hint: loc.noteContentHint,
+              onSave: () async {
+                await note_api.saveNote(
+                  mediaId: _currentMedia.id,
+                  content: controller.text,
+                );
+                if (mounted) {
                   setState(() => _noteContent = controller.text);
-                  Navigator.pop(context);
                 }
               },
-              child: Text(loc.save),
             ),
-          ],
+          ),
         );
       },
     );
@@ -897,6 +917,159 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
       }
     } catch (_) {}
     return null;
+  }
+}
+
+/// Markdown 笔记编辑器（编辑 / 预览 双 Tab）
+class _MarkdownNoteEditor extends StatefulWidget {
+  final TextEditingController controller;
+  final String title;
+  final String hint;
+  final Future<void> Function() onSave;
+
+  const _MarkdownNoteEditor({
+    required this.controller,
+    required this.title,
+    required this.hint,
+    required this.onSave,
+  });
+
+  @override
+  State<_MarkdownNoteEditor> createState() => _MarkdownNoteEditorState();
+}
+
+class _MarkdownNoteEditorState extends State<_MarkdownNoteEditor>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleSave() async {
+    setState(() => _saving = true);
+    try {
+      await widget.onSave();
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('保存失败: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    return Column(
+      children: [
+        // 标题 + 关闭
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                widget.title,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+        // 编辑 / 预览 Tab
+        TabBar(
+          controller: _tabController,
+          tabs: [
+            Tab(icon: const Icon(Icons.edit, size: 18), text: loc.edit),
+            Tab(icon: const Icon(Icons.visibility, size: 18), text: loc.preview),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              // 编辑模式
+              TextField(
+                controller: widget.controller,
+                maxLines: null,
+                expands: true,
+                autofocus: true,
+                textAlignVertical: TextAlignVertical.top,
+                decoration: InputDecoration(
+                  alignLabelWithHint: true,
+                  hintText: widget.hint,
+                  border: const OutlineInputBorder(),
+                  contentPadding: const EdgeInsets.all(12),
+                ),
+              ),
+              // 预览模式（Markdown 渲染）
+              widget.controller.text.isEmpty
+                  ? Center(
+                      child: Text(
+                        loc.noteContentHint,
+                        style: TextStyle(color: Colors.grey[500]),
+                      ),
+                    )
+                  : SingleChildScrollView(
+                      child: MarkdownBody(
+                        data: widget.controller.text,
+                        styleSheet: MarkdownStyleSheet(
+                          p: const TextStyle(fontSize: 14, height: 1.5),
+                          code: TextStyle(
+                            backgroundColor: Colors.grey.shade200,
+                            fontFamily: 'monospace',
+                            fontSize: 13,
+                          ),
+                          codeblockDecoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
+                      ),
+                    ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        // 保存 / 取消
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(loc.cancel),
+            ),
+            const SizedBox(width: 8),
+            FilledButton.icon(
+              onPressed: _saving ? null : _handleSave,
+              icon: _saving
+                  ? const SizedBox(
+                      width: 16, height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.save, size: 18),
+              label: Text(loc.save),
+            ),
+          ],
+        ),
+      ],
+    );
   }
 }
 

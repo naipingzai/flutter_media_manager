@@ -1,44 +1,36 @@
 part of 'note_bloc.dart';
 
+/// 笔记加载状态
 enum NoteStatus { initial, loading, loaded, error }
 
 class NoteState extends Equatable {
-  final NoteStatus status;
+  /// 当前加载的笔记列表（按 updatedAt DESC）
   final List<Note> notes;
-  final Note? currentNote;
-  final List<Note> searchResults;
+
+  /// 加载状态
+  final NoteStatus status;
+
+  /// 错误信息
   final String? errorMessage;
 
   const NoteState({
-    this.status = NoteStatus.initial,
     this.notes = const [],
-    this.currentNote,
-    this.searchResults = const [],
+    this.status = NoteStatus.initial,
     this.errorMessage,
   });
 
   NoteState copyWith({
-    NoteStatus? status,
     List<Note>? notes,
-    Note? currentNote,
-    List<Note>? searchResults,
+    NoteStatus? status,
     String? errorMessage,
   }) {
     return NoteState(
-      status: status ?? this.status,
       notes: notes ?? this.notes,
-      currentNote: currentNote ?? this.currentNote,
-      searchResults: searchResults ?? this.searchResults,
+      status: status ?? this.status,
       errorMessage: errorMessage,
     );
   }
 
   @override
-  List<Object?> get props => [
-        status,
-        notes,
-        currentNote,
-        searchResults,
-        errorMessage,
-      ];
+  List<Object?> get props => [notes, status, errorMessage];
 }

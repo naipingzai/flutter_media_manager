@@ -43,7 +43,7 @@ class _ViewerPageState extends State<ViewerPage> {
   bool _showBars = true;
   bool _detailMode = false;
   Timer? _hideTimer;
-  List<note_api.Note> _mediaNotes = [];
+  note_api.Note? _mediaNote;
   List<tag_api.Tag> _mediaTags = [];
 
   media_api.MediaItem get _currentMedia => widget.mediaList[_currentIndex];
@@ -90,7 +90,7 @@ class _ViewerPageState extends State<ViewerPage> {
   }
 
   void _loadMediaData() {
-    _mediaNotes = [];
+    _mediaNote = null;
     _mediaTags = [];
     _loadNotes();
     _loadTags();
@@ -98,9 +98,9 @@ class _ViewerPageState extends State<ViewerPage> {
 
   Future<void> _loadNotes() async {
     try {
-      final notes = await note_api.getNotesByMediaId(mediaId: _currentMedia.id);
+      final note = await note_api.getNoteByMediaId(mediaId: _currentMedia.id);
       if (mounted) {
-        setState(() => _mediaNotes = notes);
+        setState(() => _mediaNote = note);
       }
     } catch (_) {}
   }
@@ -241,8 +241,8 @@ class _ViewerPageState extends State<ViewerPage> {
 
   void _showNoteDialog() {
     final loc = AppLocalizations.of(context);
-    // 把已有笔记内容预填（取最新一条）
-    final initialContent = _mediaNotes.isNotEmpty ? _mediaNotes.first.content : '';
+    // 把已有笔记内容预填
+    final initialContent = _mediaNote?.content ?? '';
     final controller = TextEditingController(text: initialContent);
     showDialog(
       context: context,
@@ -582,20 +582,20 @@ class _ViewerPageState extends State<ViewerPage> {
                     _buildInfoRow(Icons.timer, loc.duration, '${_currentMedia.duration! ~/ 1000} s'),
                   const SizedBox(height: 16),
                   // ── 笔记面板 ──
-                  _buildSectionHeader('${loc.notePanel} (${_mediaNotes.length})'),
-                  if (_mediaNotes.isEmpty)
+                  _buildSectionHeader('${loc.notePanel} (${_mediaNote == null ? 0 : 1})'),
+                  if (_mediaNote == null)
                     Text(loc.noNotes, style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 13))
                   else
-                    ..._mediaNotes.map((n) => Container(
-                          width: double.infinity,
-                          margin: const EdgeInsets.only(bottom: 6),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(n.content, style: const TextStyle(color: Colors.white, fontSize: 14)),
-                        )),
+                    Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(bottom: 6),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(_mediaNote!.content, style: const TextStyle(color: Colors.white, fontSize: 14)),
+                    ),
                   const SizedBox(height: 16),
                   // ── 标签面板 ──
                   _buildSectionHeader(loc.tagPanel),

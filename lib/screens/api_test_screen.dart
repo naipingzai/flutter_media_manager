@@ -155,8 +155,8 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
   Future<ApiTestResult> _testNote() async {
     return _runTest('Note - GetNoteByMediaId', () async {
       // 使用一个不存在的 mediaId 测试空结果
-      final notes = await note_api.getNotesByMediaId(mediaId: 'nonexistent');
-      return 'notes=${notes.length}';
+      final note = await note_api.getNoteByMediaId(mediaId: 'nonexistent');
+      return 'note=${note == null ? "null" : "exists"}';
     });
   }
 
