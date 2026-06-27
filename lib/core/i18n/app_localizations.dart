@@ -230,6 +230,7 @@ class AppLocalizations {
   // ─── 权限 ───
   String get permissionRequired => _get('permissionRequired');
   String get permissionDesc => _get('permissionDesc');
+  String get permissionGranted => _get('permissionGranted');
   String get permissionDenied => _get('permissionDenied');
   String get permissionPermanentlyDenied => _get('permissionPermanentlyDenied');
   String get openSettings => _get('openSettings');
@@ -371,7 +372,7 @@ const Map<String, String> _zhStrings = {
   'importSkipped': '跳过 %d 个重复文件', 'importFailed': '导入失败',
   'importCancelled': '导入已取消', 'duplicateFile': '重复文件',
   'permissionRequired': '需要存储权限', 'permissionDesc': '应用需要存储权限来访问您的媒体文件',
-  'permissionDenied': '权限被拒绝',
+  'permissionGranted': '权限已授予', 'permissionDenied': '权限被拒绝',
   'permissionPermanentlyDenied': '权限已被永久拒绝，请在设置中手动开启',
   'openSettings': '打开设置', 'grantPermission': '授予权限',
   'viewer': '查看', 'share': '分享', 'deleteMedia': '删除媒体',
@@ -484,7 +485,7 @@ const Map<String, String> _enStrings = {
   'importSkipped': 'Skipped %d duplicates', 'importFailed': 'Import failed',
   'importCancelled': 'Import cancelled', 'duplicateFile': 'Duplicate File',
   'permissionRequired': 'Storage Permission Required', 'permissionDesc': 'App needs storage permission to access media files',
-  'permissionDenied': 'Permission Denied',
+  'permissionGranted': 'Permission granted', 'permissionDenied': 'Permission Denied',
   'permissionPermanentlyDenied': 'Permission permanently denied. Enable in Settings.',
   'openSettings': 'Open Settings', 'grantPermission': 'Grant Permission',
   'viewer': 'Viewer', 'share': 'Share', 'deleteMedia': 'Delete Media',
