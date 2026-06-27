@@ -385,7 +385,8 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
       cst_encode_i_32(raw.showContentPreviews),
       cst_encode_i_32(raw.thumbnailQuality),
       cst_encode_String(raw.language),
-      cst_encode_i_32(raw.dynamicColor)
+      cst_encode_i_32(raw.dynamicColor),
+      cst_encode_String(raw.lastScanPath)
     ].jsify()!;
   }
 

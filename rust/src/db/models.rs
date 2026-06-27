@@ -83,5 +83,6 @@ pub fn row_to_settings(row: &sqlx::sqlite::SqliteRow) -> AppSettings {
         thumbnail_quality: row.get::<i32, _>("thumbnail_quality"),
         language: row.get("language"),
         dynamic_color: row.try_get::<i32, _>("dynamic_color").unwrap_or(1),
+        last_scan_path: row.try_get::<String, _>("last_scan_path").unwrap_or_default(),
     }
 }

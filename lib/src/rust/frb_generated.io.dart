@@ -581,6 +581,7 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
     wireObj.thumbnail_quality = cst_encode_i_32(apiObj.thumbnailQuality);
     wireObj.language = cst_encode_String(apiObj.language);
     wireObj.dynamic_color = cst_encode_i_32(apiObj.dynamicColor);
+    wireObj.last_scan_path = cst_encode_String(apiObj.lastScanPath);
   }
 
   @protected
@@ -2664,6 +2665,8 @@ final class wire_cst_app_settings extends ffi.Struct {
 
   @ffi.Int32()
   external int dynamic_color;
+
+  external ffi.Pointer<wire_cst_list_prim_u_8_strict> last_scan_path;
 }
 
 final class wire_cst_search_filter extends ffi.Struct {

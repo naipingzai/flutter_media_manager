@@ -78,6 +78,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     thumbnailQuality: settings.thumbnailQuality,
                     language: settings.language,
                     dynamicColor: val ? 1 : 0,
+                    lastScanPath: settings.lastScanPath,
                   );
                   context.read<AppBloc>().add(AppSettingsUpdatedEvent(updated));
                 },
@@ -117,6 +118,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     thumbnailQuality: settings.thumbnailQuality,
                     language: settings.language,
                     dynamicColor: settings.dynamicColor,
+                    lastScanPath: settings.lastScanPath,
                   );
                   context.read<AppBloc>().add(
                         AppSettingsUpdatedEvent(updated),
@@ -302,6 +304,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       thumbnailQuality: settings.thumbnailQuality,
                       language: value,
                       dynamicColor: settings.dynamicColor,
+                      lastScanPath: settings.lastScanPath,
                     );
                     context
                         .read<AppBloc>()
@@ -324,6 +327,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       thumbnailQuality: settings.thumbnailQuality,
                       language: value,
                       dynamicColor: settings.dynamicColor,
+                      lastScanPath: settings.lastScanPath,
                     );
                     context
                         .read<AppBloc>()
@@ -346,6 +350,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       thumbnailQuality: settings.thumbnailQuality,
                       language: value,
                       dynamicColor: settings.dynamicColor,
+                      lastScanPath: settings.lastScanPath,
                     );
                     context
                         .read<AppBloc>()
@@ -442,6 +447,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       thumbnailQuality: settings.thumbnailQuality,
                       language: settings.language,
                       dynamicColor: settings.dynamicColor,
+                      lastScanPath: settings.lastScanPath,
                     );
                     context
                         .read<AppBloc>()
@@ -482,6 +488,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       thumbnailQuality: settings.thumbnailQuality,
                       language: settings.language,
                       dynamicColor: settings.dynamicColor,
+                      lastScanPath: settings.lastScanPath,
                     );
                     context
                         .read<AppBloc>()
@@ -522,6 +529,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       thumbnailQuality: value,
                       language: settings.language,
                       dynamicColor: settings.dynamicColor,
+                      lastScanPath: settings.lastScanPath,
                     );
                     context
                         .read<AppBloc>()

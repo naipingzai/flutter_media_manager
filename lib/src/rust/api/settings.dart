@@ -52,7 +52,7 @@ Future<int> deleteUnreferencedFiles() =>
 Future<void> initApp({required String appDir}) =>
     RustLib.instance.api.crateApiSettingsInitApp(appDir: appDir);
 
-/// 应用设置 - Skill-08 §1 (6 个设置项)
+/// 应用设置 - Skill-08 §1 (8 个设置项)
 class AppSettings {
   /// 主题模式 (system/light/dark) - 默认: system
   final ThemeMode themeMode;
@@ -75,6 +75,9 @@ class AppSettings {
   /// 动态颜色 (Android 12+) - 默认: true
   final int dynamicColor;
 
+  /// 上次扫描路径 - 默认: 空
+  final String lastScanPath;
+
   const AppSettings({
     required this.themeMode,
     required this.gridColumns,
@@ -83,6 +86,7 @@ class AppSettings {
     required this.thumbnailQuality,
     required this.language,
     required this.dynamicColor,
+    required this.lastScanPath,
   });
 
   @override
@@ -93,7 +97,8 @@ class AppSettings {
       showContentPreviews.hashCode ^
       thumbnailQuality.hashCode ^
       language.hashCode ^
-      dynamicColor.hashCode;
+      dynamicColor.hashCode ^
+      lastScanPath.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -106,7 +111,8 @@ class AppSettings {
           showContentPreviews == other.showContentPreviews &&
           thumbnailQuality == other.thumbnailQuality &&
           language == other.language &&
-          dynamicColor == other.dynamicColor;
+          dynamicColor == other.dynamicColor &&
+          lastScanPath == other.lastScanPath;
 }
 
 /// 存储统计

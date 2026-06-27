@@ -114,16 +114,12 @@ class _MediaScreenState extends State<MediaScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
-          // ── 媒体类型过滤 ──
+          // ── 媒体类型过滤（Skill-10 §2.2：3 个 chip） ──
           _buildTypeChip(context, loc.filterAll, null),
           const SizedBox(width: 6),
           _buildTypeChip(context, loc.filterImages, MediaType.image),
           const SizedBox(width: 6),
           _buildTypeChip(context, loc.filterVideos, MediaType.video),
-          const SizedBox(width: 6),
-          _buildTypeChip(context, loc.filterAudios, MediaType.audio),
-          const SizedBox(width: 6),
-          _buildTypeChip(context, loc.filterDocuments, MediaType.document),
           const SizedBox(width: 16),
           const VerticalDivider(width: 1, thickness: 1),
           const SizedBox(width: 16),
@@ -915,7 +911,8 @@ class _SearchOverlayState extends State<_SearchOverlay> {
 
   void _onSearch(String query) {
     _debounceTimer?.cancel();
-    if (query.length < 2) {
+    // Skill-15 §1：最小长度 1
+    if (query.length < 1) {
       setState(() {
         _results = [];
         _noteResults = [];
@@ -930,7 +927,7 @@ class _SearchOverlayState extends State<_SearchOverlay> {
   }
 
   Future<void> _executeSearch(String query) async {
-    if (query.length < 2) return;
+    if (query.length < 1) return;
 
     setState(() {
       _isSearching = true;

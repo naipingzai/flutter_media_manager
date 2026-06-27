@@ -2050,6 +2050,7 @@ impl SseDecode for crate::api::settings::AppSettings {
         let mut var_thumbnailQuality = <i32>::sse_decode(deserializer);
         let mut var_language = <String>::sse_decode(deserializer);
         let mut var_dynamicColor = <i32>::sse_decode(deserializer);
+        let mut var_lastScanPath = <String>::sse_decode(deserializer);
         return crate::api::settings::AppSettings {
             theme_mode: var_themeMode,
             grid_columns: var_gridColumns,
@@ -2058,6 +2059,7 @@ impl SseDecode for crate::api::settings::AppSettings {
             thumbnail_quality: var_thumbnailQuality,
             language: var_language,
             dynamic_color: var_dynamicColor,
+            last_scan_path: var_lastScanPath,
         };
     }
 }
@@ -2665,6 +2667,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::settings::AppSettings {
             self.thumbnail_quality.into_into_dart().into_dart(),
             self.language.into_into_dart().into_dart(),
             self.dynamic_color.into_into_dart().into_dart(),
+            self.last_scan_path.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -3107,6 +3110,7 @@ impl SseEncode for crate::api::settings::AppSettings {
         <i32>::sse_encode(self.thumbnail_quality, serializer);
         <String>::sse_encode(self.language, serializer);
         <i32>::sse_encode(self.dynamic_color, serializer);
+        <String>::sse_encode(self.last_scan_path, serializer);
     }
 }
 
@@ -3602,6 +3606,7 @@ mod io {
                 thumbnail_quality: self.thumbnail_quality.cst_decode(),
                 language: self.language.cst_decode(),
                 dynamic_color: self.dynamic_color.cst_decode(),
+                last_scan_path: self.last_scan_path.cst_decode(),
             }
         }
     }
@@ -3929,6 +3934,7 @@ mod io {
                 thumbnail_quality: Default::default(),
                 language: core::ptr::null_mut(),
                 dynamic_color: Default::default(),
+                last_scan_path: core::ptr::null_mut(),
             }
         }
     }
@@ -4913,6 +4919,7 @@ mod io {
         thumbnail_quality: i32,
         language: *mut wire_cst_list_prim_u_8_strict,
         dynamic_color: i32,
+        last_scan_path: *mut wire_cst_list_prim_u_8_strict,
     }
     #[repr(C)]
     #[derive(Clone, Copy)]
@@ -5177,8 +5184,8 @@ mod web {
                 .unwrap();
             assert_eq!(
                 self_.length(),
-                7,
-                "Expected 7 elements, got {}",
+                8,
+                "Expected 8 elements, got {}",
                 self_.length()
             );
             crate::api::settings::AppSettings {
@@ -5189,6 +5196,7 @@ mod web {
                 thumbnail_quality: self_.get(4).cst_decode(),
                 language: self_.get(5).cst_decode(),
                 dynamic_color: self_.get(6).cst_decode(),
+                last_scan_path: self_.get(7).cst_decode(),
             }
         }
     }

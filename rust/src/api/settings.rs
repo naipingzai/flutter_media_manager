@@ -12,7 +12,7 @@ pub enum ThemeMode {
     Dark,
 }
 
-/// 应用设置 - Skill-08 §1 (6 个设置项)
+/// 应用设置 - Skill-08 §1 (8 个设置项)
 #[frb]
 #[derive(Debug, Clone)]
 pub struct AppSettings {
@@ -30,6 +30,8 @@ pub struct AppSettings {
     pub language: String,
     /// 动态颜色 (Android 12+) - 默认: true
     pub dynamic_color: i32,
+    /// 上次扫描路径 - 默认: 空
+    pub last_scan_path: String,
 }
 
 /// 存储统计
@@ -63,6 +65,7 @@ pub async fn get_settings() -> Result<AppSettings, String> {
                 thumbnail_quality: 85,
                 language: "system".to_string(),
                 dynamic_color: 1,
+                last_scan_path: String::new(),
             })
         }
     }
@@ -79,8 +82,8 @@ pub async fn save_settings(settings: AppSettings) -> Result<(), String> {
     };
 
     sqlx::query(
-        "INSERT INTO app_settings (id, theme_mode, grid_columns, album_grid_columns, show_content_previews, thumbnail_quality, language, dynamic_color)
-         VALUES (1, ?, ?, ?, ?, ?, ?, ?)
+        "INSERT INTO app_settings (id, theme_mode, grid_columns, album_grid_columns, show_content_previews, thumbnail_quality, language, dynamic_color, last_scan_path)
+         VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(id) DO UPDATE SET
             theme_mode = excluded.theme_mode,
             grid_columns = excluded.grid_columns,
@@ -88,7 +91,8 @@ pub async fn save_settings(settings: AppSettings) -> Result<(), String> {
             show_content_previews = excluded.show_content_previews,
             thumbnail_quality = excluded.thumbnail_quality,
             language = excluded.language,
-            dynamic_color = excluded.dynamic_color"
+            dynamic_color = excluded.dynamic_color,
+            last_scan_path = excluded.last_scan_path"
     )
     .bind(theme_int)
     .bind(settings.grid_columns)
@@ -97,6 +101,7 @@ pub async fn save_settings(settings: AppSettings) -> Result<(), String> {
     .bind(settings.thumbnail_quality)
     .bind(&settings.language)
     .bind(settings.dynamic_color)
+    .bind(&settings.last_scan_path)
     .execute(&pool)
     .await
     .map_err(|e| format!("保存设置失败: {}", e))?;
@@ -245,7 +250,7 @@ pub async fn delete_all_data() -> Result<(), String> {
     // 重置设置
     sqlx::query(
         "UPDATE app_settings SET theme_mode = 0, grid_columns = 3, album_grid_columns = 2,
-         show_content_previews = 1, thumbnail_quality = 85, language = 'zh_CN' WHERE id = 1"
+         show_content_previews = 1, thumbnail_quality = 85, language = 'system', last_scan_path = '' WHERE id = 1"
     ).execute(&mut *tx).await.map_err(|e| format!("重置设置失败: {}", e))?;
 
     tx.commit().await.map_err(|e| format!("提交事务失败: {}", e))?;

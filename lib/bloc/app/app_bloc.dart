@@ -56,6 +56,7 @@ class AppBloc extends Bloc<AppEvent, AppState> {
       thumbnailQuality: state.settings!.thumbnailQuality,
       language: state.settings!.language,
       dynamicColor: state.settings!.dynamicColor,
+      lastScanPath: state.settings!.lastScanPath,
     );
     try {
       await RustLib.instance.api.crateApiSettingsSaveSettings(settings: newSettings);
@@ -93,6 +94,7 @@ class AppBloc extends Bloc<AppEvent, AppState> {
       thumbnailQuality: state.settings!.thumbnailQuality,
       language: event.language,
       dynamicColor: state.settings!.dynamicColor,
+      lastScanPath: state.settings!.lastScanPath,
     );
     try {
       await RustLib.instance.api.crateApiSettingsSaveSettings(settings: newSettings);

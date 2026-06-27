@@ -2102,8 +2102,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   AppSettings dco_decode_app_settings(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 7)
-      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
+    if (arr.length != 8)
+      throw Exception('unexpected arr length: expect 8 but see ${arr.length}');
     return AppSettings(
       themeMode: dco_decode_theme_mode(arr[0]),
       gridColumns: dco_decode_i_32(arr[1]),
@@ -2112,6 +2112,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       thumbnailQuality: dco_decode_i_32(arr[4]),
       language: dco_decode_String(arr[5]),
       dynamicColor: dco_decode_i_32(arr[6]),
+      lastScanPath: dco_decode_String(arr[7]),
     );
   }
 
@@ -2543,6 +2544,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_thumbnailQuality = sse_decode_i_32(deserializer);
     var var_language = sse_decode_String(deserializer);
     var var_dynamicColor = sse_decode_i_32(deserializer);
+    var var_lastScanPath = sse_decode_String(deserializer);
     return AppSettings(
         themeMode: var_themeMode,
         gridColumns: var_gridColumns,
@@ -2550,7 +2552,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         showContentPreviews: var_showContentPreviews,
         thumbnailQuality: var_thumbnailQuality,
         language: var_language,
-        dynamicColor: var_dynamicColor);
+        dynamicColor: var_dynamicColor,
+        lastScanPath: var_lastScanPath);
   }
 
   @protected
@@ -3132,6 +3135,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_i_32(self.thumbnailQuality, serializer);
     sse_encode_String(self.language, serializer);
     sse_encode_i_32(self.dynamicColor, serializer);
+    sse_encode_String(self.lastScanPath, serializer);
   }
 
   @protected

@@ -228,16 +228,19 @@ async fn create_tables(pool: &Pool<Sqlite>) -> Result<(), sqlx::Error> {
             album_grid_columns INTEGER NOT NULL DEFAULT 2,
             show_content_previews INTEGER NOT NULL DEFAULT 1,
             thumbnail_quality INTEGER NOT NULL DEFAULT 85,
-            language TEXT NOT NULL DEFAULT 'zh',
-            dynamic_color INTEGER NOT NULL DEFAULT 1
+            language TEXT NOT NULL DEFAULT 'system',
+            dynamic_color INTEGER NOT NULL DEFAULT 1,
+            last_scan_path TEXT NOT NULL DEFAULT ''
         )
         "#,
     )
     .execute(pool)
     .await?;
 
-    // 动态添加 dynamic_color 列（已有数据库的兼容）
+    // 动态添加新列（已有数据库的兼容）
     let _ = sqlx::query("ALTER TABLE app_settings ADD COLUMN dynamic_color INTEGER NOT NULL DEFAULT 1")
+        .execute(pool).await;
+    let _ = sqlx::query("ALTER TABLE app_settings ADD COLUMN last_scan_path TEXT NOT NULL DEFAULT ''")
         .execute(pool).await;
 
     // ========== 索引 ==========
