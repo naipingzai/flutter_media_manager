@@ -1075,7 +1075,7 @@ class _TagFilterDialogState extends State<_TagFilterDialog> {
           children: [
             // AND/OR 模式切换
             SegmentedButton<TagFilterMode>(
-              segments: const [
+              segments: [
                 ButtonSegment(
                   value: TagFilterMode.or,
                   label: Text(loc.filterOr),
