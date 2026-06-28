@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:advance_media_kb/core/design_system/app_theme.dart';
 import 'package:advance_media_kb/screens/home_screen.dart';
-import 'package:advance_media_kb/screens/note_list_screen.dart';
-import 'package:advance_media_kb/screens/note_edit_screen.dart';
 import 'package:advance_media_kb/screens/settings_screen.dart';
 import 'package:advance_media_kb/widgets/viewer/viewer_page.dart';
 import 'package:advance_media_kb/src/rust/api/media.dart' as media_api;
@@ -112,8 +110,6 @@ class AppRoutes {
 /// - '/'              → HomeScreen
 /// - '/search'        → SearchOverlay
 /// - '/settings'      → SettingsScreen
-/// - '/note_list'     → NoteListScreen
-/// - '/note_edit'     → NoteEditScreen（需 arguments: mediaId, [note]）
 /// - '/media_viewer'  → ViewerPage（需 arguments: media + mediaList）
 Route<dynamic>? generateRoute(RouteSettings settings) {
   switch (settings.name) {
@@ -123,16 +119,6 @@ Route<dynamic>? generateRoute(RouteSettings settings) {
       return _buildOverlayRoute(const SearchScreen());
     case AppRoutes.settings:
       return _buildOverlayRoute(const SettingsScreen());
-    case AppRoutes.noteList:
-      return _buildOverlayRoute(const NoteListScreen());
-    case AppRoutes.noteEdit:
-      final args = settings.arguments as Map<String, dynamic>?;
-      return _buildOverlayRoute(
-        NoteEditScreen(
-          mediaId: args?['mediaId'] as String? ?? '',
-          note: args?['note'] as dynamic,
-        ),
-      );
     case AppRoutes.mediaViewer:
       final args = settings.arguments as Map<String, dynamic>?;
       return _buildOverlayRoute(

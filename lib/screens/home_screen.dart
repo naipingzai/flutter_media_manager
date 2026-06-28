@@ -5,9 +5,9 @@ import '../core/i18n/app_localizations.dart';
 import 'media_screen.dart';
 import 'album_screen.dart';
 import 'tag_screen.dart';
-import 'note_list_screen.dart';
 
-/// 主屏幕，包含底部导航栏（4个Tab：媒体/相册/标签/笔记）+ 设置按钮在顶部
+/// 主屏幕，包含底部导航栏（3 个 Tab：所有媒体/相册/标签）
+/// Skill-09 §1：只有 3 个主页 Tab，笔记通过详情页 Tab 使用（Skill-14）
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -24,7 +24,6 @@ class HomeScreen extends StatelessWidget {
               MediaScreen(),
               AlbumScreen(),
               TagScreen(),
-              NoteListScreen(),
             ],
           ),
           bottomNavigationBar: NavigationBar(
@@ -36,22 +35,17 @@ class HomeScreen extends StatelessWidget {
               NavigationDestination(
                 icon: const Icon(Icons.photo_library_outlined),
                 selectedIcon: const Icon(Icons.photo_library),
-                label: AppLocalizations.of(context).tabMedia,
+                label: AppLocalizations.of(context).tabAllMedia,
               ),
               NavigationDestination(
-                icon: const Icon(Icons.folder_outlined),
-                selectedIcon: const Icon(Icons.folder),
+                icon: const Icon(Icons.photo_album_outlined),
+                selectedIcon: const Icon(Icons.photo_album),
                 label: AppLocalizations.of(context).tabAlbums,
               ),
               NavigationDestination(
                 icon: const Icon(Icons.label_outlined),
                 selectedIcon: const Icon(Icons.label),
                 label: AppLocalizations.of(context).tabTags,
-              ),
-              NavigationDestination(
-                icon: const Icon(Icons.note_alt_outlined),
-                selectedIcon: const Icon(Icons.note_alt),
-                label: AppLocalizations.of(context).tabNotes,
               ),
             ],
           ),
