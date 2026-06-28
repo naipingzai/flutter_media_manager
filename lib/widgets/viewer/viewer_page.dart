@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -163,18 +164,6 @@ class _ViewerPageState extends State<ViewerPage> {
               onTap: () {
                 Navigator.pop(ctx);
                 _showTagManagerDialog();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.info_outline, color: Colors.white),
-              title: Text(loc.detailMode, style: const TextStyle(color: Colors.white)),
-              trailing: Icon(
-                _detailMode ? Icons.toggle_on : Icons.toggle_off_outlined,
-                color: Colors.white,
-              ),
-              onTap: () {
-                Navigator.pop(ctx);
-                _toggleDetailMode();
               },
             ),
             ListTile(
@@ -406,6 +395,22 @@ class _ViewerPageState extends State<ViewerPage> {
   Widget _buildMediaContent(media_api.MediaItem media) {
     switch (media.mediaType) {
       case media_api.MediaType.image:
+        if (_detailMode) {
+          return Center(
+            child: Transform(
+              alignment: Alignment.center,
+              transform: Matrix4.identity()
+                ..translate(_offsetX, _offsetY)
+                ..rotateZ(_rotation * 3.14159 / 180)
+                ..scale(_scale),
+              child: Image.file(
+                File(media.filePath),
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 64, color: Colors.white54),
+              ),
+            ),
+          );
+        }
         return ImageViewer(filePath: media.filePath);
       case media_api.MediaType.video:
         return VideoPlayerWidget(filePath: media.filePath);
@@ -479,11 +484,6 @@ class _ViewerPageState extends State<ViewerPage> {
                 ),
                 const SizedBox(width: 8),
                 IconButton(
-                  tooltip: loc.detailMode,
-                  icon: Icon(Icons.info_outline, color: _detailMode ? Colors.blue : Colors.white),
-                  onPressed: _toggleDetailMode),
-                IconButton(
-                  tooltip: loc.edit,
                   icon: const Icon(Icons.more_vert, color: Colors.white),
                   onPressed: _showMoreOptions),
               ],
@@ -513,14 +513,11 @@ class _ViewerPageState extends State<ViewerPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildBottomAction(Icons.tune, loc.detailMode, () {
-                  _hideTimer?.cancel();
-                  _toggleDetailMode();
-                }),
-                _buildBottomAction(Icons.label_outline, loc.tag, () {
-                  _hideTimer?.cancel();
-                  _showTagManagerDialog();
-                }),
+                if (_currentMedia.mediaType == media_api.MediaType.image)
+                  _buildBottomAction(Icons.tune, loc.detailMode, () {
+                    _hideTimer?.cancel();
+                    _toggleDetailMode();
+                  }),
                 _buildBottomAction(Icons.share_outlined, loc.share, () {
                   _hideTimer?.cancel();
                   _shareMedia();
