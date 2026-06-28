@@ -133,61 +133,6 @@ class _ViewerPageState extends State<ViewerPage> {
     setState(() {});
   }
 
-  void _showMoreOptions() {
-    final loc = AppLocalizations.of(context);
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.grey[900],
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.edit, color: Colors.white),
-              title: Text(loc.rename, style: const TextStyle(color: Colors.white)),
-              onTap: () {
-                Navigator.pop(ctx);
-                _showRenameDialog();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.note_add, color: Colors.white),
-              title: Text(loc.editNote, style: const TextStyle(color: Colors.white)),
-              onTap: () {
-                Navigator.pop(ctx);
-                _showNoteDialog();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.label, color: Colors.white),
-              title: Text(loc.manageTags, style: const TextStyle(color: Colors.white)),
-              onTap: () {
-                Navigator.pop(ctx);
-                _showTagManagerDialog();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.share, color: Colors.white),
-              title: Text(loc.share, style: const TextStyle(color: Colors.white)),
-              onTap: () {
-                Navigator.pop(ctx);
-                _shareMedia();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete, color: Colors.red),
-              title: Text(loc.delete, style: const TextStyle(color: Colors.red)),
-              onTap: () {
-                Navigator.pop(ctx);
-                _showDeleteConfirm();
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   void _showRenameDialog() {
     final loc = AppLocalizations.of(context);
     final controller = TextEditingController(text: _currentMedia.originalName);
@@ -492,9 +437,7 @@ class _ViewerPageState extends State<ViewerPage> {
                       style: const TextStyle(color: Colors.white, fontSize: 12)),
                 ),
                 const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.more_vert, color: Colors.white),
-                  onPressed: _showMoreOptions),
+
               ],
             ),
           ),
