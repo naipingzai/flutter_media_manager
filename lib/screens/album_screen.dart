@@ -1,7 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:advance_media_kb/bloc/album/album_bloc.dart';
+// album_bloc imported via bloc.dart
+// bloc imports via specific files
+import '../bloc/app/app_bloc.dart';
+import '../bloc/album/album_bloc.dart';
 import 'package:advance_media_kb/src/rust/api/album.dart';
 import 'package:advance_media_kb/src/rust/api/media.dart';
 import 'package:advance_media_kb/src/rust/frb_generated.dart';
@@ -19,7 +22,10 @@ class AlbumScreen extends StatefulWidget {
 }
 
 class _AlbumScreenState extends State<AlbumScreen> {
-  int _albumColumns = 3;
+  int get _albumColumns {
+    final settings = context.read<AppBloc>().state.settings;
+    return settings?.albumGridColumns ?? 3;
+  }
 
   @override
   void initState() {
@@ -38,20 +44,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
           appBar: AppBar(
             title: Text(AppLocalizations.of(context).tabAlbums),
             actions: [
-              PopupMenuButton<int>(
-                icon: const Icon(Icons.grid_view),
-                tooltip: AppLocalizations.of(context).gridColumns,
-                onSelected: (cols) {
-                  setState(() => _albumColumns = cols);
-                },
-                itemBuilder: (_) => [2, 3, 4, 5].map((cols) {
-                  return CheckedPopupMenuItem<int>(
-                    value: cols,
-                    checked: _albumColumns == cols,
-                    child: Text('$cols ${AppLocalizations.of(context).columns}'),
-                  );
-                }).toList(),
-              ),
+
             ],
           ),
           body: Column(
