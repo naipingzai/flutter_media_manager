@@ -283,87 +283,69 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _showLanguageDialog(
       BuildContext context, rust_settings.AppSettings settings) {
+    final loc = AppLocalizations.of(context);
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogCtx) {
         return AlertDialog(
-          title: const Text('选择语言'),
+          title: Text(loc.selectLanguage),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               RadioListTile<String>(
-                title: const Text('跟随系统'),
+                title: Text(loc.languageSystem),
                 value: 'system',
                 groupValue: settings.language,
-                onChanged: (value) {
-                  if (value != null) {
-                    final newSettings = rust_settings.AppSettings(
-                      themeMode: settings.themeMode,
-                      gridColumns: settings.gridColumns,
-                      albumGridColumns: settings.albumGridColumns,
-                      showContentPreviews: settings.showContentPreviews,
-                      thumbnailQuality: settings.thumbnailQuality,
-                      language: value,
-                      dynamicColor: settings.dynamicColor,
-                      lastScanPath: settings.lastScanPath,
-                    );
-                    context
-                        .read<AppBloc>()
-                        .add(AppSettingsUpdatedEvent(newSettings));
-                    Navigator.pop(context);
-                  }
-                },
+                onChanged: (value) => _changeLanguage(context, dialogCtx, settings, value),
               ),
               RadioListTile<String>(
-                title: const Text('中文'),
+                title: Text(loc.languageZh),
                 value: 'zh',
                 groupValue: settings.language,
-                onChanged: (value) {
-                  if (value != null) {
-                    final newSettings = rust_settings.AppSettings(
-                      themeMode: settings.themeMode,
-                      gridColumns: settings.gridColumns,
-                      albumGridColumns: settings.albumGridColumns,
-                      showContentPreviews: settings.showContentPreviews,
-                      thumbnailQuality: settings.thumbnailQuality,
-                      language: value,
-                      dynamicColor: settings.dynamicColor,
-                      lastScanPath: settings.lastScanPath,
-                    );
-                    context
-                        .read<AppBloc>()
-                        .add(AppSettingsUpdatedEvent(newSettings));
-                    Navigator.pop(context);
-                  }
-                },
+                onChanged: (value) => _changeLanguage(context, dialogCtx, settings, value),
               ),
               RadioListTile<String>(
-                title: const Text('English'),
+                title: Text(loc.languageEn),
                 value: 'en',
                 groupValue: settings.language,
-                onChanged: (value) {
-                  if (value != null) {
-                    final newSettings = rust_settings.AppSettings(
-                      themeMode: settings.themeMode,
-                      gridColumns: settings.gridColumns,
-                      albumGridColumns: settings.albumGridColumns,
-                      showContentPreviews: settings.showContentPreviews,
-                      thumbnailQuality: settings.thumbnailQuality,
-                      language: value,
-                      dynamicColor: settings.dynamicColor,
-                      lastScanPath: settings.lastScanPath,
-                    );
-                    context
-                        .read<AppBloc>()
-                        .add(AppSettingsUpdatedEvent(newSettings));
-                    Navigator.pop(context);
-                  }
-                },
+                onChanged: (value) => _changeLanguage(context, dialogCtx, settings, value),
               ),
             ],
           ),
         );
       },
+    );
+  }
+
+  /// Skill-16：语言切换 + 重启提示
+  void _changeLanguage(
+    BuildContext outerCtx,
+    BuildContext dialogCtx,
+    rust_settings.AppSettings settings,
+    String? value,
+  ) {
+    if (value == null || value == settings.language) {
+      Navigator.pop(dialogCtx);
+      return;
+    }
+    final newSettings = rust_settings.AppSettings(
+      themeMode: settings.themeMode,
+      gridColumns: settings.gridColumns,
+      albumGridColumns: settings.albumGridColumns,
+      showContentPreviews: settings.showContentPreviews,
+      thumbnailQuality: settings.thumbnailQuality,
+      language: value,
+      dynamicColor: settings.dynamicColor,
+      lastScanPath: settings.lastScanPath,
+    );
+    outerCtx.read<AppBloc>().add(AppSettingsUpdatedEvent(newSettings));
+    Navigator.pop(dialogCtx);
+    // Skill-16 §3：语言切换后提示重启
+    ScaffoldMessenger.of(outerCtx).showSnackBar(
+      SnackBar(
+        content: Text(AppLocalizations.of(outerCtx).languageChangeRestart),
+        duration: const Duration(seconds: 3),
+      ),
     );
   }
 
@@ -1033,3 +1015,4 @@ class _SectionHeader extends StatelessWidget {
     );
   }
 }
+
