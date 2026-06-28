@@ -454,10 +454,12 @@ class _AlbumCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onLongPress;
 
+  final bool showContentPreview;
   const _AlbumCard({
     required this.album,
     required this.onTap,
     required this.onLongPress,
+    this.showContentPreview = false,
   });
 
   @override
