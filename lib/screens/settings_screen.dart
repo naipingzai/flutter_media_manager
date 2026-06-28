@@ -50,6 +50,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: BlocBuilder<AppBloc, AppState>(
         builder: (context, state) {
           final settings = state.settings;
+          final loc = AppLocalizations.of(context);
           if (settings == null) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -106,8 +107,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _SectionHeader(title: AppLocalizations.of(context).display),
               SwitchListTile(
                 secondary: const Icon(Icons.preview),
-                title: const Text('内容预览'),
-                subtitle: const Text('在网格中显示文件预览信息'),
+                title: Text(loc.contentPreview),
+                subtitle: Text(loc.contentPreviewDesc),
                 value: settings.showContentPreviews != 0,
                 onChanged: (val) {
                   final updated = rust_settings.AppSettings(
@@ -127,12 +128,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               ListTile(
                 leading: const Icon(Icons.photo_size_select_small),
-                title: const Text('缩略图质量'),
+                title: Text(loc.thumbnailQualityLabel),
                 subtitle: Text('${settings.thumbnailQuality}%'),
                 onTap: () => _showThumbnailQualityDialog(context, settings),
               ),
               const Divider(),
-              const _SectionHeader(title: '存储'),
+              _SectionHeader(title: loc.storageSection),
               if (_loadingStats)
                 const Padding(
                   padding: EdgeInsets.all(16),
@@ -141,63 +142,63 @@ class _SettingsScreenState extends State<SettingsScreen> {
               else ...[
                 ListTile(
                   leading: const Icon(Icons.storage),
-                  title: const Text('存储统计'),
+                  title: Text(loc.storageStats),
                   subtitle: Text(_buildStatsText()),
                 ),
                 ListTile(
                   leading: const Icon(Icons.cleaning_services),
-                  title: const Text('清理缩略图缓存'),
+                  title: Text(loc.clearThumbnailCache),
                   subtitle: Text(_stats != null
                       ? _formatSize(_stats!.thumbnailCacheSize)
-                      : '点击清理未引用的缩略图'),
+                      : loc.clickToClearUnreferenced),
                   onTap: () => _clearThumbnailCache(context),
                 ),
               ],
               const Divider(),
-              const _SectionHeader(title: '数据'),
+              _SectionHeader(title: loc.dataSection),
               ListTile(
                 leading: const Icon(Icons.import_export),
-                title: const Text('导入数据库 (.db)'),
-                subtitle: const Text('替换当前数据库'),
+                title: Text(loc.importDb),
+                subtitle: Text(loc.importDbDesc),
                 onTap: () => _showImportDialog(context),
               ),
               ListTile(
                 leading: const Icon(Icons.folder_zip),
-                title: const Text('导入 ZIP 包'),
-                subtitle: const Text('导入数据库+媒体文件'),
+                title: Text(loc.importZip),
+                subtitle: Text(loc.importZipDesc),
                 onTap: () => _showImportZipDialog(context),
               ),
               ListTile(
                 leading: const Icon(Icons.backup),
-                title: const Text('导出数据库 (.db)'),
+                title: Text(loc.exportDb),
                 onTap: () => _showExportDialog(context),
               ),
               ListTile(
                 leading: const Icon(Icons.archive),
-                title: const Text('导出 ZIP 包'),
-                subtitle: const Text('导出数据库+媒体文件'),
+                title: Text(loc.exportZip),
+                subtitle: Text(loc.exportZipDesc),
                 onTap: () => _showExportZipDialog(context),
               ),
               ListTile(
                 leading: const Icon(Icons.find_in_page),
-                title: const Text('查找未引用文件'),
-                subtitle: const Text('查找磁盘上存在但数据库未记录的文件'),
+                title: Text(loc.findUnreferenced),
+                subtitle: Text(loc.findUnreferencedDesc),
                 onTap: () => _showFindUnreferencedDialog(context),
               ),
               ListTile(
                 leading: const Icon(Icons.delete_forever, color: Colors.red),
-                title: const Text(
-                  '清除所有数据',
-                  style: TextStyle(color: Colors.red),
+                title: Text(
+                  loc.clearAllData,
+                  style: const TextStyle(color: Colors.red),
                 ),
                 onTap: () => _showClearDataConfirmDialog(context),
               ),
               const Divider(),
-              const _SectionHeader(title: '开发'),
+              _SectionHeader(title: loc.devSection),
               ListTile(
                 leading: const Icon(Icons.bug_report),
-                title: const Text('API 接口测试'),
-                subtitle: const Text('测试所有 Rust FFI 接口'),
+                title: Text(loc.apiTest),
+                subtitle: Text(loc.apiTestDesc),
                 onTap: () {
                   Navigator.push(
                     context,
@@ -208,16 +209,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 },
               ),
               const Divider(),
-              const _SectionHeader(title: '关于'),
-              const ListTile(
-                leading: Icon(Icons.info),
-                title: Text('版本'),
-                subtitle: Text('1.0.0'),
+              _SectionHeader(title: loc.aboutSection),
+              ListTile(
+                leading: const Icon(Icons.info),
+                title: Text(loc.versionLabel),
+                subtitle: const Text('1.0.0'),
               ),
-              const ListTile(
-                leading: Icon(Icons.code),
-                title: Text('技术栈'),
-                subtitle: Text('Flutter + Rust (flutter_rust_bridge)'),
+              ListTile(
+                leading: const Icon(Icons.code),
+                title: Text(loc.techStack),
+                subtitle: Text(loc.techStackValue),
               ),
             ],
           );

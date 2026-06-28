@@ -261,6 +261,34 @@ class AppLocalizations {
   String get exportFailed => _get('exportFailed');
   String get noTagsCreateFirst => _get('noTagsCreateFirst');
   String get confirmDeleteMediaMsg => _get('confirmDeleteMediaMsg');
+  String get contentPreview => _get('contentPreview');
+  String get contentPreviewDesc => _get('contentPreviewDesc');
+  String get thumbnailQualityLabel => _get('thumbnailQualityLabel');
+  String get storageSection => _get('storageSection');
+  String get storageStats => _get('storageStats');
+  String get clearThumbnailCache => _get('clearThumbnailCache');
+  String get clickToClearUnreferenced => _get('clickToClearUnreferenced');
+  String get dataSection => _get('dataSection');
+  String get importDb => _get('importDb');
+  String get importDbDesc => _get('importDbDesc');
+  String get importZip => _get('importZip');
+  String get importZipDesc => _get('importZipDesc');
+  String get exportDb => _get('exportDb');
+  String get exportZip => _get('exportZip');
+  String get exportZipDesc => _get('exportZipDesc');
+  String get findUnreferenced => _get('findUnreferenced');
+  String get findUnreferencedDesc => _get('findUnreferencedDesc');
+  String get clearAllData => _get('clearAllData');
+  String get devSection => _get('devSection');
+  String get apiTest => _get('apiTest');
+  String get apiTestDesc => _get('apiTestDesc');
+  String get aboutSection => _get('aboutSection');
+  String get versionLabel => _get('versionLabel');
+  String get techStack => _get('techStack');
+  String get techStackValue => _get('techStackValue');
+  String get clearedThumbnailCount => _get('clearedThumbnailCount');
+  String get cleanFailed => _get('cleanFailed');
+  String get selectLanguage => _get('selectLanguage');
   String get moveLeft => _get('moveLeft');
   String get moveRight => _get('moveRight');
 }
@@ -388,7 +416,23 @@ const Map<String, String> _zhStrings = {
   'noTagsCreateFirst': '暂无标签，请先在标签页面创建',
   'confirmDeleteMediaMsg': '确定要删除此媒体吗？',
   'moveLeft': '左移', 'moveRight': '右移',
+  'contentPreview': '内容预览', 'contentPreviewDesc': '在网格中显示文件预览信息',
+  'thumbnailQualityLabel': '缩略图质量', 'storageSection': '存储',
+  'storageStats': '存储统计', 'clearThumbnailCache': '清理缩略图缓存',
+  'clickToClearUnreferenced': '点击清理未引用的缩略图',
+  'dataSection': '数据', 'importDb': '导入数据库 (.db)', 'importDbDesc': '替换当前数据库',
+  'importZip': '导入 ZIP 包', 'importZipDesc': '导入数据库+媒体文件',
+  'exportDb': '导出数据库 (.db)', 'exportZip': '导出 ZIP 包',
+  'exportZipDesc': '导出数据库+媒体文件',
+  'findUnreferenced': '查找未引用文件', 'findUnreferencedDesc': '查找磁盘上存在但数据库未记录的文件',
+  'clearAllData': '清除所有数据', 'devSection': '开发',
+  'apiTest': 'API 接口测试', 'apiTestDesc': '测试所有 Rust FFI 接口',
+  'aboutSection': '关于', 'versionLabel': '版本', 'techStack': '技术栈',
+  'techStackValue': 'Flutter + Rust (flutter_rust_bridge)',
+  'clearedThumbnailCount': '已清理 %d 个缩略图文件', 'cleanFailed': '清理失败: %s',
+  'selectLanguage': '选择语言',
 };
+
 
 const Map<String, String> _enStrings = {
   'appName': 'Media KB',
@@ -501,4 +545,20 @@ const Map<String, String> _enStrings = {
   'noTagsCreateFirst': 'No tags yet. Create tags first in the Tags tab.',
   'confirmDeleteMediaMsg': 'Delete this media?',
   'moveLeft': 'Move Left', 'moveRight': 'Move Right',
+  'contentPreview': 'Content Preview', 'contentPreviewDesc': 'Show file preview in grid',
+  'thumbnailQualityLabel': 'Thumbnail Quality', 'storageSection': 'Storage',
+  'storageStats': 'Storage Statistics', 'clearThumbnailCache': 'Clear Thumbnail Cache',
+  'clickToClearUnreferenced': 'Tap to clear unreferenced thumbnails',
+  'dataSection': 'Data', 'importDb': 'Import Database (.db)', 'importDbDesc': 'Replace current database',
+  'importZip': 'Import ZIP', 'importZipDesc': 'Import database + media files',
+  'exportDb': 'Export Database (.db)', 'exportZip': 'Export ZIP',
+  'exportZipDesc': 'Export database + media files',
+  'findUnreferenced': 'Find Unreferenced Files', 'findUnreferencedDesc': 'Find files on disk not in database',
+  'clearAllData': 'Clear All Data', 'devSection': 'Development',
+  'apiTest': 'API Test', 'apiTestDesc': 'Test all Rust FFI interfaces',
+  'aboutSection': 'About', 'versionLabel': 'Version', 'techStack': 'Tech Stack',
+  'techStackValue': 'Flutter + Rust (flutter_rust_bridge)',
+  'clearedThumbnailCount': 'Cleared %d thumbnail files', 'cleanFailed': 'Clean failed: %s',
+  'selectLanguage': 'Select Language',
 };
+
