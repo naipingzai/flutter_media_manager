@@ -42,6 +42,10 @@ class _ViewerPageState extends State<ViewerPage> {
   int _currentIndex = 0;
   bool _showBars = true;
   bool _detailMode = false;
+  double _scale = 1.0;
+  double _rotation = 0.0;
+  double _offsetX = 0.0;
+  double _offsetY = 0.0;
   Timer? _hideTimer;
   note_api.Note? _mediaNote;
   List<tag_api.Tag> _mediaTags = [];
@@ -85,8 +89,16 @@ class _ViewerPageState extends State<ViewerPage> {
     setState(() {
       _detailMode = !_detailMode;
       _showBars = true;
+      _resetTransform();
     });
     _hideTimer?.cancel();
+  }
+
+  void _resetTransform() {
+    _scale = 1.0;
+    _rotation = 0.0;
+    _offsetX = 0.0;
+    _offsetY = 0.0;
   }
 
   void _loadMediaData() {
@@ -501,9 +513,9 @@ class _ViewerPageState extends State<ViewerPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildBottomAction(Icons.note_add_outlined, loc.note, () {
+                _buildBottomAction(Icons.tune, loc.detailMode, () {
                   _hideTimer?.cancel();
-                  _showNoteDialog();
+                  _toggleDetailMode();
                 }),
                 _buildBottomAction(Icons.label_outline, loc.tag, () {
                   _hideTimer?.cancel();
@@ -543,79 +555,69 @@ class _ViewerPageState extends State<ViewerPage> {
     );
   }
 
-  /// 详情模式面板：信息 / 笔记 / 标签 三段式
+  /// Skill-17：详情模式面板 - 图片变换控制（缩放/平移/旋转/恢复）
   Widget _buildDetailPanel() {
-    final loc = AppLocalizations.of(context);
     return Positioned(
       bottom: 0, left: 0, right: 0,
       child: GestureDetector(
         onTap: () {},
         child: Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.bottomCenter,
-              end: Alignment.topCenter,
-              colors: [Colors.black.withOpacity(0.95), Colors.black.withOpacity(0.7), Colors.transparent],
-            ),
+            color: Colors.black.withOpacity(0.85),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
           ),
-          padding: const EdgeInsets.fromLTRB(16, 48, 16, 16),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
           child: SafeArea(
             top: false,
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(_currentMedia.originalName, style: const TextStyle(
-                      color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
-                  // ── 信息面板 ──
-                  _buildSectionHeader(loc.infoPanel),
-                  _buildInfoRow(Icons.insert_drive_file, loc.typeLabel, _currentMedia.mimeType),
-                  _buildInfoRow(Icons.storage, loc.fileSize, _formatFileSize(_currentMedia.size)),
-                  _buildInfoRow(Icons.folder, loc.fullPath, _currentMedia.filePath),
-                  _buildInfoRow(Icons.calendar_today, loc.createdAt, _formatDate(_currentMedia.createdAt)),
-                  if (_currentMedia.width != null && _currentMedia.height != null)
-                    _buildInfoRow(Icons.aspect_ratio, loc.resolution,
-                        '${_currentMedia.width} x ${_currentMedia.height}'),
-                  if (_currentMedia.duration != null && _currentMedia.duration! > 0)
-                    _buildInfoRow(Icons.timer, loc.duration, '${_currentMedia.duration! ~/ 1000} s'),
-                  const SizedBox(height: 16),
-                  // ── 笔记面板 ──
-                  _buildSectionHeader('${loc.notePanel} (${_mediaNote == null ? 0 : 1})'),
-                  if (_mediaNote == null)
-                    Text(loc.noNotes, style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 13))
-                  else
-                    Container(
-                      width: double.infinity,
-                      margin: const EdgeInsets.only(bottom: 6),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(_mediaNote!.content, style: const TextStyle(color: Colors.white, fontSize: 14)),
-                    ),
-                  const SizedBox(height: 16),
-                  // ── 标签面板 ──
-                  _buildSectionHeader(loc.tagPanel),
-                  if (_mediaTags.isEmpty)
-                    Text(loc.noTags, style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 13))
-                  else
-                    Wrap(
-                      spacing: 8, runSpacing: 4,
-                      children: _mediaTags.map((tag) {
-                        return Chip(
-                          label: Text(tag.name, style: const TextStyle(color: Colors.white, fontSize: 12)),
-                          backgroundColor: _parseColor(tag.color) ?? Colors.grey[700],
-                          padding: EdgeInsets.zero,
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        );
-                      }).toList(),
-                    ),
-                ],
-              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '缩放: \${(_scale * 100).toStringAsFixed(0)}%  旋转: \${_rotation.toStringAsFixed(0)}°',
+                  style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildTransformButton(Icons.arrow_upward, '↑', () => setState(() => _offsetY -= 20)),
+                    _buildTransformButton(Icons.rotate_left, '⟲', () => setState(() => _rotation = (_rotation - 90) % 360)),
+                    _buildTransformButton(Icons.remove, '−', () => setState(() => _scale = (_scale - 0.25).clamp(0.25, 4.0))),
+                    _buildTransformButton(Icons.refresh, '↺', () => setState(() => _resetTransform())),
+                    _buildTransformButton(Icons.add, '+', () => setState(() => _scale = (_scale + 0.25).clamp(0.25, 4.0))),
+                    _buildTransformButton(Icons.rotate_right, '⟳', () => setState(() => _rotation = (_rotation + 90) % 360)),
+                    _buildTransformButton(Icons.arrow_downward, '↓', () => setState(() => _offsetY += 20)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildTransformButton(Icons.arrow_back, '←', () => setState(() => _offsetX -= 20)),
+                    const SizedBox(width: 16),
+                    _buildTransformButton(Icons.arrow_forward, '→', () => setState(() => _offsetX += 20)),
+                  ],
+                ),
+              ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTransformButton(IconData icon, String tooltip, VoidCallback onPressed) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Icon(icon, color: Colors.white, size: 22),
           ),
         ),
       ),
