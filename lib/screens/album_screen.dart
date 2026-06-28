@@ -25,7 +25,7 @@ class AlbumScreen extends StatefulWidget {
 class _AlbumScreenState extends State<AlbumScreen> {
   int get _albumColumns {
     final settings = context.read<AppBloc>().state.settings;
-    return settings?.albumGridColumns ?? 3;
+    return settings?.gridColumns ?? 3;
   }
 
   @override
@@ -66,7 +66,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
                       );
                       ctx.read<AppBloc>().add(AppSettingsUpdatedEvent(updated));
                     },
-                    itemBuilder: (_) => [2, 3, 4, 5].map((c) {
+                    itemBuilder: (_) => List.generate(10, (i) => i + 1).map((c) {
                       return CheckedPopupMenuItem<int>(
                         value: c,
                         checked: cols == c,

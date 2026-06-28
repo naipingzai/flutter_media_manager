@@ -180,6 +180,13 @@ class AppLocalizations {
   String get typeLabel => _get('typeLabel');
   String get fileManager => _get('fileManager');
   String get sortByName => _get('sortByName');
+  String get sort => _get('sort');
+  String get sortNewestFirst => _get('sortNewestFirst');
+  String get sortOldestFirst => _get('sortOldestFirst');
+  String get sortNameAsc => _get('sortNameAsc');
+  String get sortNameDesc => _get('sortNameDesc');
+  String get sortSizeDesc => _get('sortSizeDesc');
+  String get sortSizeAsc => _get('sortSizeAsc');
   String get sortByType => _get('sortByType');
   String get importSelected => _get('importSelected');
   String get backToHome => _get('backToHome');
@@ -378,7 +385,7 @@ const Map<String, String> _zhStrings = {
   'languageChangeRestart': '语言设置将在应用重启后生效', 'version': '版本',
   'detailMode': '详情模式', 'copyPath': '复制路径',
   'operationFailed': '操作失败', 'typeLabel': '类型',
-  'fileManager': '文件管理器', 'sortByName': '按名称',
+  'fileManager': '文件管理器', 'sortByName': '按名称', 'sort': '排序', 'sortNewestFirst': '最新优先', 'sortOldestFirst': '最旧优先', 'sortNameAsc': '名称 A-Z', 'sortNameDesc': '名称 Z-A', 'sortSizeDesc': '最大优先', 'sortSizeAsc': '最小优先',
   'sortByType': '按类型', 'importSelected': '导入%s',
   'backToHome': '返回首页', 'selectThisFolder': '选择此文件夹',
   'noSubfolders': '此目录无子文件夹',
@@ -506,7 +513,7 @@ const Map<String, String> _enStrings = {
   'languageChangeRestart': 'Language change takes effect after restart', 'version': 'Version',
   'detailMode': 'Detail Mode', 'copyPath': 'Copy Path',
   'operationFailed': 'Operation failed', 'typeLabel': 'Type',
-  'fileManager': 'File Manager', 'sortByName': 'Name',
+  'fileManager': 'File Manager', 'sortByName': 'Name', 'sort': 'Sort', 'sortNewestFirst': 'Newest First', 'sortOldestFirst': 'Oldest First', 'sortNameAsc': 'Name A-Z', 'sortNameDesc': 'Name Z-A', 'sortSizeDesc': 'Largest First', 'sortSizeAsc': 'Smallest First',
   'sortByType': 'Type', 'importSelected': 'Import%s',
   'backToHome': 'Back to Home', 'selectThisFolder': 'Select This Folder',
   'noSubfolders': 'No subfolders in this directory',

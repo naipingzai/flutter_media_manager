@@ -504,21 +504,41 @@ class _ViewerPageState extends State<ViewerPage> {
     );
   }
 
-  /// Skill-17：详情模式退出按钮（滑动由 GestureDetector 控制）
+  /// Skill-17：详情模式控制面板（退出 + 旋转）
   Widget _buildDetailPanel() {
     return Positioned(
-      bottom: 24, left: 0, right: 0,
-      child: Center(
-        child: ElevatedButton.icon(
-          onPressed: () => setState(() => _toggleDetailMode()),
-          icon: const Icon(Icons.close_fullscreen, color: Colors.white),
-          label: const Text('退出详情', style: TextStyle(color: Colors.white)),
-          style: ElevatedButton.styleFrom(
+      bottom: 24, right: 16,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton.small(
+            heroTag: 'rotateLeft',
+            onPressed: () => setState(() => _rotation = (_rotation - 90) % 360),
             backgroundColor: Colors.black54,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            child: const Icon(Icons.rotate_left, color: Colors.white, size: 18),
           ),
-        ),
+          const SizedBox(height: 8),
+          FloatingActionButton.small(
+            heroTag: 'rotateRight',
+            onPressed: () => setState(() => _rotation = (_rotation + 90) % 360),
+            backgroundColor: Colors.black54,
+            child: const Icon(Icons.rotate_right, color: Colors.white, size: 18),
+          ),
+          const SizedBox(height: 8),
+          FloatingActionButton.small(
+            heroTag: 'reset',
+            onPressed: () => setState(() => _resetTransform()),
+            backgroundColor: Colors.black54,
+            child: const Icon(Icons.refresh, color: Colors.white, size: 18),
+          ),
+          const SizedBox(height: 8),
+          FloatingActionButton.small(
+            heroTag: 'exitDetail',
+            onPressed: () => setState(() => _toggleDetailMode()),
+            backgroundColor: Colors.black54,
+            child: const Icon(Icons.close_fullscreen, color: Colors.white, size: 18),
+          ),
+        ],
       ),
     );
   }

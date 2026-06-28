@@ -9,6 +9,13 @@ import 'viewer/viewer_page.dart';
 ///
 /// 规范要求（Skill-10 §2.4）：每个网格项在缩略图下方显示文件名（BodySmall）
 /// 和文件大小（LabelSmall）。为此将 childAspectRatio 调整为 0.78 以容纳文本。
+
+String _formatSize(int bytes) {
+  if (bytes < 1024) return '\$bytes B';
+  if (bytes < 1024 * 1024) return '\${(bytes / 1024).toStringAsFixed(1)} KB';
+  if (bytes < 1024 * 1024 * 1024) return '\${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  return '\${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+}
 class MediaGrid extends StatelessWidget {
   final List<MediaItem> mediaList;
   final Set<String> selectedIds;
@@ -23,6 +30,23 @@ class MediaGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 1列时使用列表视图（文件管理器风格：左侧缩略图+右侧文件信息）
+    if (crossAxisCount == 1) {
+      return ListView.builder(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        itemCount: mediaList.length,
+        itemBuilder: (context, index) {
+          final media = mediaList[index];
+          final isSelected = selectedIds.contains(media.id);
+          return _MediaListTile(
+            media: media,
+            isSelected: isSelected,
+            onTap: () => _onMediaTap(context, media),
+            onLongPress: () => _onMediaLongPress(context, media),
+          );
+        },
+      );
+    }
     return GridView.builder(
       padding: const EdgeInsets.all(8),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -35,7 +59,6 @@ class MediaGrid extends StatelessWidget {
       itemBuilder: (context, index) {
         final media = mediaList[index];
         final isSelected = selectedIds.contains(media.id);
-
         return _MediaGridItem(
           media: media,
           isSelected: isSelected,
@@ -283,5 +306,68 @@ class _MediaGridItem extends StatelessWidget {
       return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
     }
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
+  }
+}
+
+/// 列表视图项（1列时使用，文件管理器风格：左侧缩略图 + 右侧信息）
+class _MediaListTile extends StatelessWidget {
+  final MediaItem media;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
+
+  const _MediaListTile({
+    required this.media,
+    required this.isSelected,
+    required this.onTap,
+    required this.onLongPress,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return ListTile(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      leading: Stack(
+        children: [
+          Container(
+            width: 48, height: 48,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(4),
+              color: theme.colorScheme.surfaceContainerHighest,
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: media.thumbnailPath.isNotEmpty
+                ? Image.file(File(media.thumbnailPath), fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Icon(_getMediaIcon(media.mediaType), size: 24))
+                : Icon(_getMediaIcon(media.mediaType), size: 24),
+          ),
+          if (isSelected)
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withOpacity(0.4),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Icon(Icons.check, color: theme.colorScheme.onPrimary, size: 20),
+              ),
+            ),
+        ],
+      ),
+      title: Text(media.originalName, maxLines: 1, overflow: TextOverflow.ellipsis),
+      subtitle: Text(_formatSize(media.size), style: theme.textTheme.bodySmall),
+      trailing: Icon(_getMediaIcon(media.mediaType), size: 16, color: theme.colorScheme.onSurfaceVariant),
+    );
+  }
+
+  IconData _getMediaIcon(MediaType type) {
+    switch (type) {
+      case MediaType.image: return Icons.image;
+      case MediaType.video: return Icons.videocam;
+      case MediaType.audio: return Icons.audiotrack;
+      case MediaType.document: return Icons.description;
+      default: return Icons.insert_drive_file;
+    }
   }
 }

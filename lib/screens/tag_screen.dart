@@ -23,7 +23,7 @@ class _TagScreenState extends State<TagScreen> {
   TagFilterMode _filterMode = TagFilterMode.or;
   final Set<String> _selectedTagIds = {};
   List<MediaItem>? _filteredMedia;
-  int _tagColumns = 3;
+  int get _tagColumns => context.read<AppBloc>().state.settings?.gridColumns ?? 3;
 
   @override
   void initState() {
@@ -73,7 +73,20 @@ class _TagScreenState extends State<TagScreen> {
             icon: const Icon(Icons.grid_view),
             tooltip: loc.gridColumns,
             onSelected: (cols) {
-              setState(() => _tagColumns = cols);
+              final s = context.read<AppBloc>().state.settings;
+              if (s != null) {
+                final updated = rust_settings.AppSettings(
+                  themeMode: s.themeMode,
+                  gridColumns: cols,
+                  albumGridColumns: cols,
+                  showContentPreviews: s.showContentPreviews,
+                  thumbnailQuality: s.thumbnailQuality,
+                  language: s.language,
+                  dynamicColor: s.dynamicColor,
+                  lastScanPath: s.lastScanPath,
+                );
+                context.read<AppBloc>().add(AppSettingsUpdatedEvent(updated));
+              }
             },
             itemBuilder: (_) => [2, 3, 4, 5].map((cols) {
               return CheckedPopupMenuItem<int>(

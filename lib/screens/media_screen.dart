@@ -49,7 +49,7 @@ class _MediaScreenState extends State<MediaScreen> {
                 onSelected: (cols) {
                   context.read<MediaBloc>().add(MediaSetGridColumnsEvent(cols));
                 },
-                itemBuilder: (_) => [2, 3, 4, 5].map((cols) {
+                itemBuilder: (_) => List.generate(10, (i) => i + 1).map((cols) {
                   return CheckedPopupMenuItem<int>(
                     value: cols,
                     checked: state.gridColumns == cols,
@@ -57,6 +57,28 @@ class _MediaScreenState extends State<MediaScreen> {
                   );
                 }).toList(),
               );
+            },
+          ),
+          // 排序按钮
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.sort),
+            tooltip: AppLocalizations.of(context).sort,
+            onSelected: (val) {
+              final parts = val.split(':');
+              final field = SortField.values.firstWhere((f) => f.name == parts[0]);
+              final order = SortOrder.values.firstWhere((o) => o.name == parts[1]);
+              context.read<MediaBloc>().add(MediaSortEvent(field, order));
+            },
+            itemBuilder: (_) {
+              final loc = AppLocalizations.of(context);
+              return [
+                PopupMenuItem(value: 'date:descending', child: Text(loc.sortNewestFirst)),
+                PopupMenuItem(value: 'date:ascending', child: Text(loc.sortOldestFirst)),
+                PopupMenuItem(value: 'name:ascending', child: Text(loc.sortNameAsc)),
+                PopupMenuItem(value: 'name:descending', child: Text(loc.sortNameDesc)),
+                PopupMenuItem(value: 'size:descending', child: Text(loc.sortSizeDesc)),
+                PopupMenuItem(value: 'size:ascending', child: Text(loc.sortSizeAsc)),
+              ];
             },
           ),
           IconButton(
