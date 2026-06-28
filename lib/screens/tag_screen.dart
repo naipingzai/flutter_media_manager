@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/bloc.dart';
 import '../core/i18n/app_localizations.dart';
+import '../src/rust/api/settings.dart' as rust_settings;
 import '../src/rust/api/tag.dart' as tag_api;
 import '../src/rust/api/media.dart';
 import 'media_detail_screen.dart';

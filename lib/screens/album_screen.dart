@@ -10,6 +10,7 @@ import 'package:advance_media_kb/src/rust/api/media.dart';
 import 'package:advance_media_kb/src/rust/frb_generated.dart';
 import 'package:logger/logger.dart';
 import '../core/i18n/app_localizations.dart';
+import '../src/rust/api/settings.dart' as rust_settings;
 
 final _logger = Logger();
 
@@ -44,7 +45,37 @@ class _AlbumScreenState extends State<AlbumScreen> {
           appBar: AppBar(
             title: Text(AppLocalizations.of(context).tabAlbums),
             actions: [
-
+              BlocBuilder<AppBloc, AppState>(
+                buildWhen: (prev, curr) => prev.settings?.gridColumns != curr.settings?.gridColumns,
+                builder: (ctx, st) {
+                  final cols = st.settings?.gridColumns ?? 3;
+                  return PopupMenuButton<int>(
+                    icon: const Icon(Icons.grid_view),
+                    tooltip: AppLocalizations.of(context).gridColumns,
+                    onSelected: (c) {
+                      final s = st.settings!;
+                      final updated = rust_settings.AppSettings(
+                        themeMode: s.themeMode,
+                        gridColumns: c,
+                        albumGridColumns: c,
+                        showContentPreviews: s.showContentPreviews,
+                        thumbnailQuality: s.thumbnailQuality,
+                        language: s.language,
+                        dynamicColor: s.dynamicColor,
+                        lastScanPath: s.lastScanPath,
+                      );
+                      ctx.read<AppBloc>().add(AppSettingsUpdatedEvent(updated));
+                    },
+                    itemBuilder: (_) => [2, 3, 4, 5].map((c) {
+                      return CheckedPopupMenuItem<int>(
+                        value: c,
+                        checked: cols == c,
+                        child: Text('$c ${AppLocalizations.of(context).columns}'),
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
             ],
           ),
           body: Column(
