@@ -64,38 +64,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 subtitle: Text(_themeModeLabel(settings.themeMode)),
                 onTap: () => _showThemeModeDialog(context, settings),
               ),
-              // 动态颜色 (Android 12+)
-              SwitchListTile(
-                secondary: const Icon(Icons.color_lens_outlined),
-                title: Text(AppLocalizations.of(context).dynamicColor),
-                subtitle: Text(AppLocalizations.of(context).dynamicColorDesc),
-                value: settings.dynamicColor != 0,
-                onChanged: (val) {
-                  final updated = rust_settings.AppSettings(
-                    themeMode: settings.themeMode,
-                    gridColumns: settings.gridColumns,
-                    albumGridColumns: settings.albumGridColumns,
-                    showContentPreviews: settings.showContentPreviews,
-                    thumbnailQuality: settings.thumbnailQuality,
-                    language: settings.language,
-                    dynamicColor: val ? 1 : 0,
-                    lastScanPath: settings.lastScanPath,
-                  );
-                  context.read<AppBloc>().add(AppSettingsUpdatedEvent(updated));
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.grid_on),
-                title: Text(AppLocalizations.of(context).mediaGridColumns),
-                subtitle: Text('${settings.gridColumns} ${AppLocalizations.of(context).columns}'),
-                onTap: () => _showGridColumnsDialog(context, settings),
-              ),
-              ListTile(
-                leading: const Icon(Icons.grid_view),
-                title: Text(AppLocalizations.of(context).albumGridColumns),
-                subtitle: Text('${settings.albumGridColumns} ${AppLocalizations.of(context).columns}'),
-                onTap: () => _showAlbumGridColumnsDialog(context, settings),
-              ),
               // 语言设置
               ListTile(
                 leading: const Icon(Icons.language),
