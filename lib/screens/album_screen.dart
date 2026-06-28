@@ -24,7 +24,7 @@ class AlbumScreen extends StatefulWidget {
 
 class _AlbumScreenState extends State<AlbumScreen> {
   int get _albumColumns {
-    final settings = context.read<AppBloc>().state.settings;
+    final settings = context.watch<AppBloc>().state.settings;
     return settings?.gridColumns ?? 3;
   }
 

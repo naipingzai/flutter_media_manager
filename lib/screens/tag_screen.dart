@@ -23,7 +23,7 @@ class _TagScreenState extends State<TagScreen> {
   TagFilterMode _filterMode = TagFilterMode.or;
   final Set<String> _selectedTagIds = {};
   List<MediaItem>? _filteredMedia;
-  int get _tagColumns => context.read<AppBloc>().state.settings?.gridColumns ?? 3;
+  int get _tagColumns => context.watch<AppBloc>().state.settings?.gridColumns ?? 3;
 
   @override
   void initState() {
