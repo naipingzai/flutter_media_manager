@@ -86,7 +86,10 @@ pub async fn scan_directory(path: String) -> Result<ScanResult, String> {
         let ext = file_path.extension()
             .map(|s| s.to_string_lossy().to_string())
             .unwrap_or_default();
-        let storage_name = format!("{}.{}", Uuid::new_v4(), ext);
+        // 存储名 = 原名 + 时间戳
+        let ts = chrono::Utc::now().format("%Y%m%d_%H%M%S").to_string();
+        let safe_base: String = file_name.chars().take(60).collect();
+        let storage_name = format!("{}_{}.{}", safe_base, ts, ext);
         let mime = mime_guess::from_path(&file_path).first_or_octet_stream().to_string();
 
         // 获取文件大小
@@ -359,7 +362,11 @@ pub async fn import_single_file(file_path: String) -> Result<MediaItem, String> 
     let size = metadata.len() as i64;
 
     // 生成存储文件名（使用原始路径哈希确保唯一性）
-    let storage_name = format!("{}_{}.{}", Uuid::new_v4().to_string(), hash[..8].to_string(), extension);
+    // 用户要求：存储名 = 原名 + 导入时间戳
+    let ts = chrono::Utc::now().format("%Y%m%d_%H%M%S").to_string();
+    let base_name = file_path_buf.file_stem().and_then(|s| s.to_str()).unwrap_or("media");
+    let safe_base: String = base_name.chars().take(60).collect();
+    let storage_name = format!("{}_{}.{}", safe_base, ts, extension);
     let dest_path = PathBuf::from(&app_dir).join(&storage_name);
 
     // 复制文件到应用目录
