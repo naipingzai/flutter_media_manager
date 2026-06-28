@@ -165,78 +165,23 @@ class _AlbumScreenState extends State<AlbumScreen> {
       );
     }
 
-    // 子目录：子相册 + 媒体混合展示
-    if (hasChildren && hasMedia) {
-      return Column(
-        children: [
-          // 子相册区域
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(AppLocalizations.of(context).albums, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-            ),
-          ),
-          SizedBox(
-            height: 120,
-            child: _AlbumGrid(
-              albums: state.albums,
-              columns: _albumColumns,
-              onAlbumClick: (album) {
-                context.read<AlbumBloc>().add(AlbumNavigateToEvent(album.album.id));
-              },
-              onAlbumLongPress: (album) => _showDeleteDialog(context, album),
-              scrollDirection: Axis.horizontal,
-            ),
-          ),
-          // 媒体区域
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(AppLocalizations.of(context).tabMedia, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-            ),
-          ),
-          Expanded(
-            child: _AlbumMediaGrid(
-              mediaList: state.albumMedia,
-              selectedIds: state.selectedMediaIds,
-              columns: _albumColumns,
-              onTap: (media) {
-                context.read<AlbumBloc>().add(AlbumToggleMediaSelectionEvent(media.id));
-              },
-              onLongPress: (media) {
-                context.read<AlbumBloc>().add(AlbumToggleMediaSelectionEvent(media.id));
-              },
-            ),
-          ),
-        ],
-      );
-    }
-
-    // 只有子相册
-    if (hasChildren) {
-      return _AlbumGrid(
-        albums: state.albums,
-        columns: _albumColumns,
-        onAlbumClick: (album) {
-          context.read<AlbumBloc>().add(AlbumNavigateToEvent(album.album.id));
-        },
-        onAlbumLongPress: (album) => _showDeleteDialog(context, album),
-      );
-    }
-
-    // 只有媒体
+    // 子目录：子相册和媒体统一网格显示（Skill-11 要求统一展示）
     return _AlbumMediaGrid(
       mediaList: state.albumMedia,
       selectedIds: state.selectedMediaIds,
       columns: _albumColumns,
+      albums: hasChildren ? state.albums : null,
+      showContentPreview: context.read<AppBloc>().state.settings?.showContentPreviews != 0,
       onTap: (media) {
         context.read<AlbumBloc>().add(AlbumToggleMediaSelectionEvent(media.id));
       },
       onLongPress: (media) {
         context.read<AlbumBloc>().add(AlbumToggleMediaSelectionEvent(media.id));
       },
+      onAlbumClick: (album) {
+        context.read<AlbumBloc>().add(AlbumNavigateToEvent(album.album.id));
+      },
+      onAlbumLongPress: (album) => _showDeleteDialog(context, album),
     );
   }
 
@@ -642,6 +587,10 @@ class _AlbumMediaGrid extends StatelessWidget {
   final Function(MediaItem) onTap;
   final Function(MediaItem) onLongPress;
   final int columns;
+  final List<AlbumWithInfo>? albums;
+  final void Function(AlbumWithInfo)? onAlbumClick;
+  final void Function(AlbumWithInfo)? onAlbumLongPress;
+  final bool showContentPreview;
 
   const _AlbumMediaGrid({
     required this.mediaList,
@@ -649,6 +598,10 @@ class _AlbumMediaGrid extends StatelessWidget {
     required this.onTap,
     required this.onLongPress,
     this.columns = 3,
+    this.albums,
+    this.onAlbumClick,
+    this.onAlbumLongPress,
+    this.showContentPreview = false,
   });
 
   @override
@@ -661,9 +614,18 @@ class _AlbumMediaGrid extends StatelessWidget {
         mainAxisSpacing: 4,
         childAspectRatio: 1.0,
       ),
-      itemCount: mediaList.length,
+      itemCount: (albums?.length ?? 0) + mediaList.length,
       itemBuilder: (context, index) {
-        final media = mediaList[index];
+        final albumCount = albums?.length ?? 0;
+        if (index < albumCount) {
+          final album = albums![index];
+          return _AlbumCard(
+            album: album,
+            onTap: () => onAlbumClick?.call(album),
+            onLongPress: () => onAlbumLongPress?.call(album),
+          );
+        }
+        final media = mediaList[index - albumCount];
         final isSelected = selectedIds.contains(media.id);
         final isSelectionMode = selectedIds.isNotEmpty;
 
