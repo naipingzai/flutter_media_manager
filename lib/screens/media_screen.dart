@@ -49,7 +49,7 @@ class _MediaScreenState extends State<MediaScreen> {
                 onSelected: (cols) {
                   context.read<MediaBloc>().add(MediaSetGridColumnsEvent(cols));
                 },
-                itemBuilder: (_) => List.generate(10, (i) => i + 1).map((cols) {
+                itemBuilder: (_) => [3, 4, 5, 6].map((cols) {
                   return CheckedPopupMenuItem<int>(
                     value: cols,
                     checked: state.gridColumns == cols,

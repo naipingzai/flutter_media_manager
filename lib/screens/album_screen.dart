@@ -66,7 +66,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
                       );
                       ctx.read<AppBloc>().add(AppSettingsUpdatedEvent(updated));
                     },
-                    itemBuilder: (_) => List.generate(10, (i) => i + 1).map((c) {
+                    itemBuilder: (_) => [3, 4, 5, 6].map((c) {
                       return CheckedPopupMenuItem<int>(
                         value: c,
                         checked: cols == c,
