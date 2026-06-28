@@ -333,7 +333,7 @@ class _TagScreenState extends State<TagScreen> {
           Icon(Icons.filter_list, size: 16, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 8),
           Text(
-            '${_filterMode == TagFilterMode.and ? "AND" : "OR"} · ${_selectedTagIds.length} ${loc.tags} · ${_filteredMedia!.length}',
+            '${_filterMode == TagFilterMode.and ? loc.filterAnd : loc.filterOr} · ${_selectedTagIds.length} ${loc.tags} · ${_filteredMedia!.length}',
             style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ],
@@ -1078,11 +1078,11 @@ class _TagFilterDialogState extends State<_TagFilterDialog> {
               segments: const [
                 ButtonSegment(
                   value: TagFilterMode.or,
-                  label: Text('OR'),
+                  label: Text(loc.filterOr),
                 ),
                 ButtonSegment(
                   value: TagFilterMode.and,
-                  label: Text('AND'),
+                  label: Text(loc.filterAnd),
                 ),
               ],
               selected: {_mode},
