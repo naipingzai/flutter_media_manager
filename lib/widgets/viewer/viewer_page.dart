@@ -396,17 +396,26 @@ class _ViewerPageState extends State<ViewerPage> {
     switch (media.mediaType) {
       case media_api.MediaType.image:
         if (_detailMode) {
-          return Center(
-            child: Transform(
-              alignment: Alignment.center,
-              transform: Matrix4.identity()
-                ..translate(_offsetX, _offsetY)
-                ..rotateZ(_rotation * 3.14159 / 180)
-                ..scale(_scale),
-              child: Image.file(
-                File(media.filePath),
-                fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 64, color: Colors.white54),
+          return GestureDetector(
+            onPanUpdate: (details) {
+              setState(() {
+                _offsetX += details.delta.dx;
+                _offsetY += details.delta.dy;
+              });
+            },
+            onDoubleTap: () => setState(() => _resetTransform()),
+            child: Center(
+              child: Transform(
+                alignment: Alignment.center,
+                transform: Matrix4.identity()
+                  ..translate(_offsetX, _offsetY)
+                  ..rotateZ(_rotation * 3.14159 / 180)
+                  ..scale(_scale),
+                child: Image.file(
+                  File(media.filePath),
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 64, color: Colors.white54),
+                ),
               ),
             ),
           );
@@ -569,11 +578,6 @@ class _ViewerPageState extends State<ViewerPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  '缩放: \${(_scale * 100).toStringAsFixed(0)}%  旋转: \${_rotation.toStringAsFixed(0)}°',
-                  style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12),
-                ),
-                const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [

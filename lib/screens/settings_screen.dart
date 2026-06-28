@@ -111,7 +111,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ListTile(
                   leading: const Icon(Icons.storage),
                   title: Text(loc.storageStats),
-                  subtitle: Text(_buildStatsText()),
+                  subtitle: Text(_buildStatsText(context)),
                 ),
                 ListTile(
                   leading: const Icon(Icons.cleaning_services),
@@ -195,10 +195,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  String _buildStatsText() {
-    if (_stats == null) return '点击刷新';
+  String _buildStatsText(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    if (_stats == null) return loc.storageStats;
     final s = _stats!;
-    return '${s.totalMediaCount} 个文件 · 总计 ${_formatSize(s.totalSize)} · 数据库 ${_formatSize(s.databaseSize)}';
+    return '${loc.clearedThumbnailCount.replaceAll("%d", "\${s.totalMediaCount}")} · ${_formatSize(s.totalSize)} · ${_formatSize(s.databaseSize)}';
   }
 
   String _formatSize(dynamic size) {
