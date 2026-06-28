@@ -88,7 +88,7 @@ class _TagScreenState extends State<TagScreen> {
                 context.read<AppBloc>().add(AppSettingsUpdatedEvent(updated));
               }
             },
-            itemBuilder: (_) => [2, 3, 4, 5].map((cols) {
+            itemBuilder: (_) => List.generate(10, (i) => i + 1).map((cols) {
               return CheckedPopupMenuItem<int>(
                 value: cols,
                 checked: _tagColumns == cols,

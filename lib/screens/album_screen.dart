@@ -723,8 +723,8 @@ class _AddMediaDialogContentState extends State<_AddMediaDialogContent> {
             : _allMedia.isEmpty
                 ? Center(child: Text(AppLocalizations.of(context).noMedia))
                 : GridView.builder(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: context.read<AppBloc>().state.settings?.gridColumns ?? 3,
                       crossAxisSpacing: 4,
                       mainAxisSpacing: 4,
                     ),
