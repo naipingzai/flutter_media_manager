@@ -504,69 +504,26 @@ class _ViewerPageState extends State<ViewerPage> {
     );
   }
 
-  /// Skill-17：详情模式面板 - 图片变换控制（缩放/平移/旋转/恢复）
+  /// Skill-17：详情模式退出按钮（滑动由 GestureDetector 控制）
   Widget _buildDetailPanel() {
     return Positioned(
-      bottom: 0, left: 0, right: 0,
-      child: GestureDetector(
-        onTap: () {},
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.85),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-          ),
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-          child: SafeArea(
-            top: false,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildTransformButton(Icons.arrow_upward, '↑', () => setState(() => _offsetY -= 20)),
-                    _buildTransformButton(Icons.rotate_left, '⟲', () => setState(() => _rotation = (_rotation - 90) % 360)),
-                    _buildTransformButton(Icons.remove, '−', () => setState(() => _scale = (_scale - 0.25).clamp(0.25, 4.0))),
-                    _buildTransformButton(Icons.refresh, '↺', () => setState(() => _resetTransform())),
-                    _buildTransformButton(Icons.add, '+', () => setState(() => _scale = (_scale + 0.25).clamp(0.25, 4.0))),
-                    _buildTransformButton(Icons.rotate_right, '⟳', () => setState(() => _rotation = (_rotation + 90) % 360)),
-                    _buildTransformButton(Icons.arrow_downward, '↓', () => setState(() => _offsetY += 20)),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildTransformButton(Icons.arrow_back, '←', () => setState(() => _offsetX -= 20)),
-                    const SizedBox(width: 16),
-                    _buildTransformButton(Icons.arrow_forward, '→', () => setState(() => _offsetX += 20)),
-                  ],
-                ),
-              ],
-            ),
+      bottom: 24, left: 0, right: 0,
+      child: Center(
+        child: ElevatedButton.icon(
+          onPressed: () => setState(() => _toggleDetailMode()),
+          icon: const Icon(Icons.close_fullscreen, color: Colors.white),
+          label: const Text('退出详情', style: TextStyle(color: Colors.white)),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.black54,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildTransformButton(IconData icon, String tooltip, VoidCallback onPressed) {
-    return Tooltip(
-      message: tooltip,
-      child: Material(
-        color: Colors.white.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.all(10),
-            child: Icon(icon, color: Colors.white, size: 22),
-          ),
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildSectionHeader(String label) {
     return Padding(

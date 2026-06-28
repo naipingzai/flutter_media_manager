@@ -57,7 +57,11 @@ class MediaGrid extends StatelessWidget {
   }
 
   void _onMediaLongPress(BuildContext context, MediaItem media) {
-    context.read<MediaBloc>().add(MediaSelectEvent(media.id));
+    final bloc = context.read<MediaBloc>();
+    if (!bloc.state.isSelectionMode) {
+      bloc.add(const MediaToggleSelectionModeEvent());
+    }
+    bloc.add(MediaSelectEvent(media.id));
   }
 
   void _openMediaDetail(BuildContext context, MediaItem media) {
