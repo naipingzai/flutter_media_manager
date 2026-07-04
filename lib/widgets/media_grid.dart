@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/bloc.dart';
 import '../src/rust/api/media.dart';
-import '../screens/media_edit_screen.dart';
 import 'viewer/viewer_page.dart';
 
 /// 媒体网格展示组件
@@ -11,12 +10,6 @@ import 'viewer/viewer_page.dart';
 /// 规范要求（Skill-10 §2.4）：每个网格项在缩略图下方显示文件名（BodySmall）
 /// 和文件大小（LabelSmall）。为此将 childAspectRatio 调整为 0.78 以容纳文本。
 
-String _formatSize(int bytes) {
-  if (bytes < 1024) return '$bytes B';
-  if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-  if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-  return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
-}
 class MediaGrid extends StatelessWidget {
   final List<MediaItem> mediaList;
   final Set<String> selectedIds;
@@ -67,7 +60,6 @@ class MediaGrid extends StatelessWidget {
           isSelected: isSelected,
           onTap: () => _onMediaTap(context, media),
           onLongPress: () => _onMediaLongPress(context, media),
-          onEditMode: () => _openEditMode(context, media),
         );
       },
     );
@@ -102,18 +94,6 @@ class MediaGrid extends StatelessWidget {
       ),
     );
   }
-
-  void _openEditMode(BuildContext context, MediaItem media) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => MediaEditScreen(
-          media: media,
-          mediaList: mediaList,
-        ),
-      ),
-    );
-  }
 }
 
 /// 单个媒体网格项
@@ -124,14 +104,12 @@ class _MediaGridItem extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
-  final VoidCallback onEditMode;
 
   const _MediaGridItem({
     required this.media,
     required this.isSelected,
     required this.onTap,
     required this.onLongPress,
-    required this.onEditMode,
   });
 
   @override
@@ -178,13 +156,6 @@ class _MediaGridItem extends StatelessWidget {
                     left: 4,
                     child: _buildTypeIcon(),
                   ),
-                  // 编辑模式入口（右上角）
-                  if (!isSelected)
-                    Positioned(
-                      top: 4,
-                      right: 4,
-                      child: _buildEditModeButton(context),
-                    ),
                   // 视频时长标识（右下角）
                   if (media.mediaType == MediaType.video &&
                       media.duration != null)
@@ -299,27 +270,6 @@ class _MediaGridItem extends StatelessWidget {
     );
   }
 
-  Widget _buildEditModeButton(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        // 阻止冒泡到 InkWell
-        onEditMode();
-      },
-      child: Container(
-        padding: const EdgeInsets.all(3),
-        decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.55),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: const Icon(
-          Icons.edit,
-          size: 12,
-          color: Colors.white,
-        ),
-      ),
-    );
-  }
-
   Widget _buildDurationBadge() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
@@ -378,15 +328,22 @@ class _MediaListTile extends StatelessWidget {
       leading: Stack(
         children: [
           Container(
-            width: 48, height: 48,
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(4),
               color: theme.colorScheme.surfaceContainerHighest,
             ),
             clipBehavior: Clip.antiAlias,
             child: media.thumbnailPath.isNotEmpty
-                ? Image.file(File(media.thumbnailPath), fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Icon(_getMediaIcon(media.mediaType), size: 24))
+                ? Image.file(
+                    File(media.thumbnailPath),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Icon(
+                      _getMediaIcon(media.mediaType),
+                      size: 24,
+                    ),
+                  )
                 : Icon(_getMediaIcon(media.mediaType), size: 24),
           ),
           if (isSelected)
@@ -396,24 +353,46 @@ class _MediaListTile extends StatelessWidget {
                   color: theme.colorScheme.primary.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: Icon(Icons.check, color: theme.colorScheme.onPrimary, size: 20),
+                child: Icon(
+                  Icons.check,
+                  color: theme.colorScheme.onPrimary,
+                  size: 20,
+                ),
               ),
             ),
         ],
       ),
       title: Text(media.originalName, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: Text(_formatSize(media.size), style: theme.textTheme.bodySmall),
-      trailing: Icon(_getMediaIcon(media.mediaType), size: 16, color: theme.colorScheme.onSurfaceVariant),
+      trailing: Icon(
+        _getMediaIcon(media.mediaType),
+        size: 16,
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
     );
   }
 
   IconData _getMediaIcon(MediaType type) {
     switch (type) {
-      case MediaType.image: return Icons.image;
-      case MediaType.video: return Icons.videocam;
-      case MediaType.audio: return Icons.audiotrack;
-      case MediaType.document: return Icons.description;
-      default: return Icons.insert_drive_file;
+      case MediaType.image:
+        return Icons.image;
+      case MediaType.video:
+        return Icons.videocam;
+      case MediaType.audio:
+        return Icons.audiotrack;
+      case MediaType.document:
+        return Icons.description;
+      default:
+        return Icons.insert_drive_file;
     }
+  }
+
+  String _formatSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
   }
 }

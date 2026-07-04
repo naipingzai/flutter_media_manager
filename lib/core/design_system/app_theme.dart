@@ -39,7 +39,7 @@ class AppTheme {
 
   // ─── 浅色主题 ───
   static ThemeData lightTheme() {
-    final colorScheme = ColorScheme(
+    const colorScheme = ColorScheme(
       brightness: Brightness.light,
       primary: lightPrimary,
       onPrimary: lightOnPrimary,
@@ -61,7 +61,7 @@ class AppTheme {
 
   // ─── 深色主题 ───
   static ThemeData darkTheme() {
-    final colorScheme = ColorScheme(
+    const colorScheme = ColorScheme(
       brightness: Brightness.dark,
       primary: darkPrimary,
       onPrimary: darkOnPrimary,
@@ -190,6 +190,7 @@ class AppRadius {
   static const double md = 8;
   static const double lg = 12;
   static const double xl = 28;
+  static const double xxl = 16; // 统一卡片圆角
   static const double full = 100; // 胶囊形
 }
 

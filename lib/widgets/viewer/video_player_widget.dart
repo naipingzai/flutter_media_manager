@@ -1,13 +1,23 @@
 import 'dart:io';
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 
-/// 视频播放器组件 - 支持播放/暂停、进度控制、音量/亮度控制
+/// 视频播放器组件
+///
+/// - 全屏手势：点击切换控制条显隐
+/// - 统一控制按钮：播放/暂停、进度条、全屏
+/// - [bottomPadding] 用于为外层底部操作栏留出空间
 class VideoPlayerWidget extends StatefulWidget {
   final String filePath;
+  final double bottomPadding;
 
-  const VideoPlayerWidget({super.key, required this.filePath});
+  const VideoPlayerWidget({
+    super.key,
+    required this.filePath,
+    this.bottomPadding = 0,
+  });
 
   @override
   State<VideoPlayerWidget> createState() => _VideoPlayerWidgetState();
@@ -19,8 +29,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   bool _isPlaying = false;
   bool _showControls = true;
   Timer? _hideControlsTimer;
-  double _volume = 1.0;
-  double _brightness = 0.5;
 
   @override
   void initState() {
@@ -39,8 +47,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   @override
   void dispose() {
-    _disposePlayer();
     _hideControlsTimer?.cancel();
+    _disposePlayer();
     super.dispose();
   }
 
@@ -64,9 +72,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
     await controller.initialize();
     if (mounted) {
-      setState(() {
-        _isInitialized = true;
-      });
+      setState(() => _isInitialized = true);
       _startHideTimer();
     }
   }
@@ -80,16 +86,21 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     });
   }
 
+  void _toggleControls() {
+    setState(() {
+      _showControls = !_showControls;
+      if (_showControls) _startHideTimer();
+    });
+  }
+
   void _togglePlayPause() {
     if (_controller == null || !_isInitialized) return;
-    setState(() {
-      if (_isPlaying) {
-        _controller!.pause();
-      } else {
-        _controller!.play();
-      }
-      _showControls = true;
-    });
+    if (_isPlaying) {
+      _controller!.pause();
+    } else {
+      _controller!.play();
+    }
+    setState(() {});
     _startHideTimer();
   }
 
@@ -97,13 +108,20 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     _controller?.seekTo(Duration(milliseconds: value.toInt()));
   }
 
-  void _setVolume(double value) {
-    _controller?.setVolume(value);
-    setState(() => _volume = value);
-  }
-
-  void _setBrightness(double value) {
-    setState(() => _brightness = value);
+  void _toggleFullscreen() {
+    // 简单切换屏幕方向
+    final orientation = MediaQuery.of(context).orientation;
+    if (orientation == Orientation.portrait) {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+    } else {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+      ]);
+    }
+    _startHideTimer();
   }
 
   String _formatDuration(Duration duration) {
@@ -116,23 +134,37 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
+  Widget _buildControlButton(IconData icon, VoidCallback onTap) {
+    return Material(
+      color: Colors.white.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          width: 36,
+          height: 36,
+          alignment: Alignment.center,
+          child: Icon(icon, color: Colors.white, size: 20),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (!_isInitialized) {
-      return const Center(
-        child: CircularProgressIndicator(color: Colors.white),
-      );
+    if (!_isInitialized || _controller == null) {
+      return const Center(child: CircularProgressIndicator(color: Colors.white));
     }
 
     final controller = _controller!;
     final position = controller.value.position;
     final duration = controller.value.duration;
+    final maxMs = duration.inMilliseconds.toDouble().clamp(1, double.infinity).toDouble();
+    final valueMs = position.inMilliseconds.toDouble().clamp(0, maxMs).toDouble();
 
     return GestureDetector(
-      onTap: () {
-        setState(() => _showControls = !_showControls);
-        if (_showControls) _startHideTimer();
-      },
+      onTap: _toggleControls,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -154,7 +186,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                     color: Colors.black.withValues(alpha: 0.4),
                     shape: BoxShape.circle,
                   ),
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(20),
                   child: Icon(
                     _isPlaying ? Icons.pause : Icons.play_arrow,
                     color: Colors.white,
@@ -167,7 +199,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           // 底部控制条
           if (_showControls)
             Positioned(
-              bottom: 0,
+              bottom: widget.bottomPadding,
               left: 0,
               right: 0,
               child: Container(
@@ -181,15 +213,24 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                     ],
                   ),
                 ),
-                padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  32,
+                  16,
+                  MediaQuery.of(context).padding.bottom + 16,
+                ),
                 child: SafeArea(
                   top: false,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // 进度条
                       Row(
                         children: [
+                          _buildControlButton(
+                            _isPlaying ? Icons.pause : Icons.play_arrow,
+                            _togglePlayPause,
+                          ),
+                          const SizedBox(width: 12),
                           Text(
                             _formatDuration(position),
                             style: const TextStyle(color: Colors.white, fontSize: 12),
@@ -197,16 +238,17 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                           Expanded(
                             child: SliderTheme(
                               data: SliderThemeData(
-                                trackHeight: 3,
+                                trackHeight: 4,
                                 thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
                                 overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
                                 activeTrackColor: Colors.white,
                                 inactiveTrackColor: Colors.white30,
                                 thumbColor: Colors.white,
+                                overlayColor: Colors.white24,
                               ),
                               child: Slider(
-                                value: position.inMilliseconds.toDouble().clamp(0, duration.inMilliseconds.toDouble()),
-                                max: duration.inMilliseconds.toDouble().clamp(1, double.infinity),
+                                value: valueMs,
+                                max: maxMs,
                                 onChanged: _seekTo,
                               ),
                             ),
@@ -215,51 +257,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                             _formatDuration(duration),
                             style: const TextStyle(color: Colors.white, fontSize: 12),
                           ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      // 音量 & 亮度控制
-                      Row(
-                        children: [
-                          const Icon(Icons.volume_up, color: Colors.white70, size: 16),
-                          Expanded(
-                            child: SliderTheme(
-                              data: SliderThemeData(
-                                trackHeight: 2,
-                                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
-                                overlayShape: const RoundSliderOverlayShape(overlayRadius: 10),
-                                activeTrackColor: Colors.white,
-                                inactiveTrackColor: Colors.white30,
-                                thumbColor: Colors.white,
-                              ),
-                              child: Slider(
-                                value: _volume,
-                                max: 1.0,
-                                onChanged: _setVolume,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          const Icon(Icons.brightness_6, color: Colors.white70, size: 16),
-                          Expanded(
-                            child: SliderTheme(
-                              data: SliderThemeData(
-                                trackHeight: 2,
-                                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
-                                overlayShape: const RoundSliderOverlayShape(overlayRadius: 10),
-                                activeTrackColor: Colors.white,
-                                inactiveTrackColor: Colors.white30,
-                                thumbColor: Colors.white,
-                              ),
-                              child: Slider(
-                                value: _brightness,
-                                max: 1.0,
-                                onChanged: _setBrightness,
-                              ),
-                            ),
-                          ),
+                          const SizedBox(width: 12),
+                          _buildControlButton(Icons.fullscreen, _toggleFullscreen),
                         ],
                       ),
                     ],

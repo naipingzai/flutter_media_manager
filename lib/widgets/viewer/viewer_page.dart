@@ -1,28 +1,24 @@
-import 'dart:async';
+import 'dart:io';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../bloc/bloc.dart';
+import '../../core/design_system/app_theme.dart';
 import '../../core/i18n/app_localizations.dart';
-import '../../src/rust/api/media.dart' as media_api;
-import 'image_viewer.dart';
-import 'video_player_widget.dart';
+import '../../src/rust/api/album.dart' as album_api;
+import '../../src/rust/api/import_export.dart';
+import '../../src/rust/api/media.dart';
+import '../../src/rust/api/note.dart' as note_api;
+import '../../src/rust/api/tag.dart' as tag_api;
 import 'audio_player_widget.dart';
-import '../../screens/media_edit_screen.dart';
+import 'video_player_widget.dart';
 
-/// 全屏媒体查看器
-///
-/// 功能:
-/// - HorizontalPager 翻页浏览
-/// - 自动隐藏的 TopBar 和 BottomBar
-/// - 图片双指/双击缩放
-/// - 视频播放控制
-/// - 音频播放控制
-/// - 分享/导出
-/// - 跳转到编辑页
+/// 统一媒体查看器页面
 class ViewerPage extends StatefulWidget {
-  final media_api.MediaItem initialMedia;
-  final List<media_api.MediaItem> mediaList;
+  final MediaItem initialMedia;
+  final List<MediaItem> mediaList;
 
   const ViewerPage({
     super.key,
@@ -34,185 +30,127 @@ class ViewerPage extends StatefulWidget {
   State<ViewerPage> createState() => _ViewerPageState();
 }
 
-class _ViewerPageState extends State<ViewerPage> {
-  late PageController _pageController;
+class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
+  late final PageController _pageController;
+  late MediaItem _currentMedia;
   int _currentIndex = 0;
-  bool _showBars = true;
-  Timer? _hideTimer;
 
-  media_api.MediaItem get _currentMedia => widget.mediaList[_currentIndex];
+  String? _noteContent;
+  List<tag_api.Tag> _mediaTags = [];
+  int _imageRotation = 0;
+  bool _showOverlay = true;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _currentIndex = widget.mediaList.indexWhere((m) => m.id == widget.initialMedia.id);
     if (_currentIndex < 0) _currentIndex = 0;
+    _currentMedia = widget.mediaList[_currentIndex];
     _pageController = PageController(initialPage: _currentIndex);
-    _startHideTimer();
+    _loadMediaData();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _pageController.dispose();
-    _hideTimer?.cancel();
     super.dispose();
   }
 
-  void _startHideTimer() {
-    _hideTimer?.cancel();
-    _hideTimer = Timer(const Duration(seconds: 3), () {
-      if (mounted) {
-        setState(() => _showBars = false);
-      }
-    });
-  }
-
-  void _toggleBars() {
-    setState(() {
-      _showBars = !_showBars;
-      if (_showBars) _startHideTimer();
-    });
-  }
-
-  void _onPageChanged(int index) {
-    setState(() => _currentIndex = index);
-  }
-
-  void _showDeleteConfirm() {
-    final loc = AppLocalizations.of(context);
-    final mediaBloc = context.read<MediaBloc>();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(loc.confirmDeleteMedia),
-        content: Text(loc.confirmDeleteMediaMsg),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(loc.cancel),
-          ),
-          TextButton(
-            onPressed: () => _deleteMedia(
-              dialogNavigator: Navigator.of(ctx),
-              mediaBloc: mediaBloc,
-            ),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text(loc.delete),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _deleteMedia({
-    required NavigatorState dialogNavigator,
-    required MediaBloc mediaBloc,
-  }) async {
-    await media_api.deleteMedia(id: _currentMedia.id);
-    if (mounted) {
-      dialogNavigator.pop(); // 关闭删除确认对话框
-      dialogNavigator.pop(); // 关闭 ViewerPage
-      mediaBloc.add(const MediaRefreshEvent());
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      // 页面暂停时不控制视频/音频，组件自身处理
     }
   }
 
-  void _shareMedia() {
-    final loc = AppLocalizations.of(context);
-    final media = _currentMedia;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${loc.share}: ${media.originalName}'),
-        action: SnackBarAction(
-          label: loc.copyPath,
-          onPressed: () {
-            Clipboard.setData(ClipboardData(text: media.filePath));
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(loc.filePathCopied)),
-            );
-          },
-        ),
-      ),
-    );
+  Future<void> _loadMediaData() async {
+    final note = await note_api.getNoteByMediaId(mediaId: _currentMedia.id);
+    final tags = await tag_api.getMediaTags(mediaId: _currentMedia.id);
+    if (mounted) {
+      setState(() {
+        _noteContent = note?.content;
+        _mediaTags = tags;
+      });
+    }
   }
 
-  String _formatFileSize(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+  void _switchMedia(int index) {
+    if (index < 0 || index >= widget.mediaList.length) return;
+    setState(() {
+      _currentIndex = index;
+      _currentMedia = widget.mediaList[index];
+      _imageRotation = 0;
+      _noteContent = null;
+      _mediaTags = [];
+    });
+    _loadMediaData();
   }
+
+  void _toggleOverlay() => setState(() => _showOverlay = !_showOverlay);
+
+  void _rotateImage() => setState(() => _imageRotation = (_imageRotation + 1) % 4);
 
   @override
   Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.of(context).padding.bottom + 80;
+
     return Scaffold(
       backgroundColor: Colors.black,
+      extendBodyBehindAppBar: true,
       body: Stack(
         fit: StackFit.expand,
         children: [
-          PageView.builder(
-            controller: _pageController,
-            itemCount: widget.mediaList.length,
-            onPageChanged: _onPageChanged,
-            itemBuilder: (context, index) {
-              final media = widget.mediaList[index];
-              return GestureDetector(
-                onTap: _toggleBars,
-                child: _buildMediaContent(media),
-              );
-            },
+          GestureDetector(
+            onTap: _toggleOverlay,
+            behavior: HitTestBehavior.translucent,
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: widget.mediaList.length,
+              onPageChanged: _switchMedia,
+              itemBuilder: (context, index) {
+                return _buildMediaContent(widget.mediaList[index], bottomPadding);
+              },
+            ),
           ),
-          if (_showBars) _buildTopBar(),
-          if (_showBars) _buildBottomBar(),
+          if (_showOverlay) _buildTopOverlay(),
+          if (_showOverlay) _buildBottomActionBar(),
         ],
       ),
     );
   }
 
-  Widget _buildMediaContent(media_api.MediaItem media) {
+  Widget _buildMediaContent(MediaItem media, double bottomPadding) {
     switch (media.mediaType) {
-      case media_api.MediaType.image:
-        return ImageViewer(filePath: media.filePath);
-      case media_api.MediaType.video:
-        return VideoPlayerWidget(filePath: media.filePath);
-      case media_api.MediaType.audio:
-        return AudioPlayerWidget(filePath: media.filePath, title: media.originalName);
-      case media_api.MediaType.document:
-      case media_api.MediaType.other:
-        return _buildFilePreview(media);
+      case MediaType.image:
+        return _ImageViewer(
+          media: media,
+          rotation: _imageRotation,
+        );
+      case MediaType.video:
+        return VideoPlayerWidget(
+          key: ValueKey(media.id),
+          filePath: media.filePath,
+          bottomPadding: bottomPadding,
+        );
+      case MediaType.audio:
+        return AudioPlayerWidget(
+          key: ValueKey(media.id),
+          filePath: media.filePath,
+          title: media.originalName,
+        );
+      case MediaType.document:
+      case MediaType.other:
+        return _DocumentContent(media: media);
     }
   }
 
-  Widget _buildFilePreview(media_api.MediaItem media) {
-    IconData icon;
-    switch (media.mediaType) {
-      case media_api.MediaType.document:
-        icon = Icons.description;
-        break;
-      default:
-        icon = Icons.insert_drive_file;
-    }
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 96, color: Colors.white54),
-          const SizedBox(height: 24),
-          Text(
-            media.originalName,
-            style: const TextStyle(color: Colors.white, fontSize: 18),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _formatFileSize(media.size),
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildTopOverlay() {
+    final loc = AppLocalizations.of(context);
+    final isImage = _currentMedia.mediaType == MediaType.image;
+    final hasMultiple = widget.mediaList.length > 1;
 
-  Widget _buildTopBar() {
     return Positioned(
       top: 0,
       left: 0,
@@ -222,49 +160,84 @@ class _ViewerPageState extends State<ViewerPage> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.black.withValues(alpha: 0.8), Colors.transparent],
+            colors: [
+              Colors.black.withValues(alpha: 0.7),
+              Colors.transparent,
+            ],
           ),
         ),
+        padding: EdgeInsets.only(
+          top: MediaQuery.of(context).padding.top + AppSpacing.sm,
+          left: AppSpacing.sm,
+          right: AppSpacing.sm,
+          bottom: AppSpacing.lg,
+        ),
         child: SafeArea(
-          bottom: false,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white),
-                  onPressed: () => Navigator.pop(context),
+          top: false,
+          child: Row(
+            children: [
+              _buildTopButton(Icons.arrow_back, () => Navigator.pop(context)),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _currentMedia.originalName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    if (hasMultiple)
+                      Text(
+                        '${_currentIndex + 1} / ${widget.mediaList.length}',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.7),
+                          fontSize: 12,
+                        ),
+                      ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    _currentMedia.originalName,
-                    style: const TextStyle(color: Colors.white, fontSize: 16),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '${_currentIndex + 1}/${widget.mediaList.length}',
-                    style: const TextStyle(color: Colors.white, fontSize: 12),
-                  ),
-                ),
-                const SizedBox(width: 8),
+              ),
+              if (isImage) ...[
+                _buildTopButton(Icons.rotate_right, _rotateImage, tooltip: loc.rotate),
+                const SizedBox(width: AppSpacing.sm),
               ],
-            ),
+              _buildTopButton(Icons.close, () => Navigator.pop(context)),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildBottomBar() {
+  Widget _buildTopButton(IconData icon, VoidCallback onTap, {String? tooltip}) {
+    final btn = Material(
+      color: Colors.white.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        child: Container(
+          width: 36,
+          height: 36,
+          alignment: Alignment.center,
+          child: Icon(icon, color: Colors.white, size: 20),
+        ),
+      ),
+    );
+    if (tooltip != null) return Tooltip(message: tooltip, child: btn);
+    return btn;
+  }
+
+  Widget _buildBottomActionBar() {
     final loc = AppLocalizations.of(context);
+
     return Positioned(
       bottom: 0,
       left: 0,
@@ -274,55 +247,51 @@ class _ViewerPageState extends State<ViewerPage> {
           gradient: LinearGradient(
             begin: Alignment.bottomCenter,
             end: Alignment.topCenter,
-            colors: [Colors.black.withValues(alpha: 0.7), Colors.transparent],
+            colors: [
+              Colors.black.withValues(alpha: 0.85),
+              Colors.transparent,
+            ],
           ),
+        ),
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.lg,
+          AppSpacing.lg,
+          MediaQuery.of(context).padding.bottom + AppSpacing.sm,
         ),
         child: SafeArea(
           top: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildBottomAction(Icons.edit, loc.edit, () {
-                  _hideTimer?.cancel();
-                  _openEditScreen();
-                }),
-                _buildBottomAction(Icons.share_outlined, loc.share, () {
-                  _hideTimer?.cancel();
-                  _shareMedia();
-                }),
-                _buildBottomAction(Icons.delete_outline, loc.delete, () {
-                  _hideTimer?.cancel();
-                  _showDeleteConfirm();
-                }, color: Colors.red),
-              ],
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildActionItem(Icons.photo_album, loc.album, _showAlbumPicker),
+              _buildActionItem(Icons.label_outline, loc.tags, _showTagManager),
+              _buildActionItem(Icons.delete_outline, loc.delete, _showDeleteConfirm, color: Colors.red),
+              _buildActionItem(Icons.more_horiz, loc.more, _showMorePanel),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildBottomAction(
-    IconData icon,
-    String label,
-    VoidCallback onTap, {
-    Color? color,
-  }) {
+  Widget _buildActionItem(IconData icon, String label, VoidCallback onTap, {Color? color}) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: Container(
+        width: 64,
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color ?? Colors.white, size: 28),
-            const SizedBox(height: 6),
+            Icon(icon, color: color ?? Colors.white, size: 24),
+            const SizedBox(height: AppSpacing.xs),
             Text(
               label,
-              style: TextStyle(color: color ?? Colors.white70, fontSize: 13),
+              style: TextStyle(color: color ?? Colors.white, fontSize: 11),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -330,15 +299,536 @@ class _ViewerPageState extends State<ViewerPage> {
     );
   }
 
-  void _openEditScreen() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => MediaEditScreen(
-          media: _currentMedia,
-          mediaList: widget.mediaList,
+  void _showMorePanel() {
+    final loc = AppLocalizations.of(context);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildMoreTile(Icons.edit, loc.rename, _showRenameDialog),
+            _buildMoreTile(Icons.note_add, loc.note, _showNoteEditor),
+            _buildMoreTile(Icons.download, loc.exportToDownload, _exportMedia),
+            _buildMoreTile(Icons.link, loc.copyPath, _copyPath),
+            _buildMoreTile(Icons.info_outline, loc.details, _showFileInfoDialog),
+          ],
         ),
       ),
+    );
+  }
+
+  Widget _buildMoreTile(IconData icon, String title, VoidCallback onTap) {
+    return ListTile(
+      leading: Icon(icon, color: Theme.of(context).colorScheme.onSurface),
+      title: Text(title),
+      onTap: () {
+        Navigator.pop(context);
+        onTap();
+      },
+    );
+  }
+
+  void _showRenameDialog() {
+    final loc = AppLocalizations.of(context);
+    final controller = TextEditingController(text: _currentMedia.originalName);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(loc.rename),
+        content: TextField(
+          controller: controller,
+          decoration: InputDecoration(labelText: loc.newName),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(loc.cancel)),
+          TextButton(
+            onPressed: () async {
+              final newName = controller.text.trim();
+              if (newName.isNotEmpty) {
+                final updated = MediaItem(
+                  id: _currentMedia.id,
+                  originalName: newName,
+                  storageName: _currentMedia.storageName,
+                  filePath: _currentMedia.filePath,
+                  thumbnailPath: _currentMedia.thumbnailPath,
+                  mediaType: _currentMedia.mediaType,
+                  mimeType: _currentMedia.mimeType,
+                  size: _currentMedia.size,
+                  width: _currentMedia.width,
+                  height: _currentMedia.height,
+                  duration: _currentMedia.duration,
+                  sha256Hash: _currentMedia.sha256Hash,
+                  createdAt: _currentMedia.createdAt,
+                  updatedAt: _currentMedia.updatedAt,
+                );
+                await updateMedia(media: updated);
+                if (mounted) {
+                  setState(() => _currentMedia = updated);
+                  context.read<MediaBloc>().add(const MediaLoadAllEvent());
+                }
+              }
+              if (ctx.mounted) Navigator.pop(ctx);
+            },
+            child: Text(loc.save),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showNoteEditor() {
+    final loc = AppLocalizations.of(context);
+    final controller = TextEditingController(text: _noteContent ?? '');
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
+      ),
+      builder: (sheetCtx) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.sm,
+          AppSpacing.lg,
+          MediaQuery.of(sheetCtx).viewInsets.bottom + AppSpacing.lg,
+        ),
+        child: SizedBox(
+          height: MediaQuery.of(sheetCtx).size.height * 0.55,
+          child: _MarkdownNoteEditor(
+            controller: controller,
+            title: _noteContent == null ? loc.createNote : loc.editNote,
+            hint: loc.noteContentHint,
+            onSave: () async {
+              await note_api.saveNote(
+                mediaId: _currentMedia.id,
+                content: controller.text,
+              );
+              if (mounted) setState(() => _noteContent = controller.text);
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _formatDuration(int? milliseconds) {
+    if (milliseconds == null || milliseconds <= 0) return '0:00';
+    final d = Duration(milliseconds: milliseconds);
+    final hours = d.inHours;
+    final minutes = d.inMinutes.remainder(60);
+    final seconds = d.inSeconds.remainder(60);
+    if (hours > 0) {
+      return '$hours:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    }
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _exportMedia() async {
+    final loc = AppLocalizations.of(context);
+    try {
+      final path = await exportToDownload(mediaIds: [_currentMedia.id]);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${loc.exportedTo}: $path')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${loc.exportFailed}: $e')),
+        );
+      }
+    }
+  }
+
+  void _copyPath() {
+    Clipboard.setData(ClipboardData(text: _currentMedia.filePath));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(AppLocalizations.of(context).filePathCopied)),
+    );
+  }
+
+  Future<void> _showTagManager() async {
+    final allTags = await tag_api.getAllTags();
+    if (!mounted) return;
+    await showDialog(
+      context: context,
+      builder: (ctx) => _TagManagerDialog(
+        allTags: allTags,
+        currentTags: _mediaTags,
+        mediaId: _currentMedia.id,
+        onChanged: _loadMediaData,
+      ),
+    );
+  }
+
+  Future<void> _showAlbumPicker() async {
+    final loc = AppLocalizations.of(context);
+    final albums = await album_api.getRootAlbums();
+    if (!mounted) return;
+    if (albums.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.noAlbums)),
+      );
+      return;
+    }
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(loc.addToAlbum),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: albums.length,
+            itemBuilder: (context, index) {
+              final album = albums[index];
+              return ListTile(
+                title: Text(album.album.name),
+                subtitle: Text('${album.mediaCount} ${loc.files}'),
+                onTap: () async {
+                  await album_api.addMediaToAlbum(
+                    mediaIds: [_currentMedia.id],
+                    albumId: album.album.id,
+                  );
+                  if (ctx.mounted) {
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('${loc.addToAlbum}: ${album.album.name}')),
+                    );
+                  }
+                },
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(loc.cancel)),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteConfirm() {
+    final loc = AppLocalizations.of(context);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(loc.confirmDeleteMedia),
+        content: Text('${loc.confirmDeleteMediaMsg} "${_currentMedia.originalName}"'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(loc.cancel)),
+          TextButton(
+            onPressed: () async {
+              await deleteMedia(id: _currentMedia.id);
+              if (!mounted) return;
+              Navigator.pop(context);
+              context.read<MediaBloc>().add(const MediaLoadAllEvent());
+              if (widget.mediaList.length == 1) {
+                Navigator.pop(context);
+              } else {
+                final newList = widget.mediaList.where((m) => m.id != _currentMedia.id).toList();
+                if (newList.isEmpty) {
+                  Navigator.pop(context);
+                } else {
+                  final newIndex = math.min(_currentIndex, newList.length - 1);
+                  setState(() {
+                    _currentMedia = newList[newIndex];
+                    _currentIndex = newIndex;
+                    _imageRotation = 0;
+                    _noteContent = null;
+                    _mediaTags = [];
+                  });
+                  _pageController.jumpToPage(newIndex);
+                  _loadMediaData();
+                }
+              }
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: Text(loc.delete),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFileInfoDialog() {
+    final loc = AppLocalizations.of(context);
+    final info = [
+      _infoRow(loc.fileName, _currentMedia.originalName),
+      _infoRow(loc.filePath, _currentMedia.filePath),
+      _infoRow(loc.mimeType, _currentMedia.mimeType),
+      _infoRow(loc.fileSize, _formatBytes(_currentMedia.size)),
+      if (_currentMedia.width != null && _currentMedia.height != null)
+        _infoRow(loc.resolution, '${_currentMedia.width} x ${_currentMedia.height}'),
+      if (_currentMedia.duration != null)
+        _infoRow(loc.duration, _formatDuration(_currentMedia.duration!)),
+      _infoRow(loc.hash, _currentMedia.sha256Hash),
+      _infoRow(loc.note, _noteContent?.isEmpty == false ? _noteContent! : loc.none),
+      _infoRow(loc.tags, _mediaTags.isEmpty ? loc.none : _mediaTags.map((t) => t.name).join(', ')),
+    ];
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(loc.details),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.separated(
+            shrinkWrap: true,
+            itemCount: info.length,
+            separatorBuilder: (_, __) => const Divider(height: 1),
+            itemBuilder: (_, index) => info[index],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(loc.close)),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              label,
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13),
+            ),
+          ),
+          Expanded(
+            child: SelectableText(
+              value,
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 13),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatBytes(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+  }
+}
+
+// ─── 图片查看器 ───
+class _ImageViewer extends StatelessWidget {
+  final MediaItem media;
+  final int rotation;
+
+  const _ImageViewer({required this.media, required this.rotation});
+
+  @override
+  Widget build(BuildContext context) {
+    return InteractiveViewer(
+      minScale: 0.5,
+      maxScale: 4,
+      child: RotatedBox(
+        quarterTurns: rotation,
+        child: Image.file(
+          File(media.filePath),
+          fit: BoxFit.contain,
+        ),
+      ),
+    );
+  }
+}
+
+// ─── 文档占位 ───
+class _DocumentContent extends StatelessWidget {
+  final MediaItem media;
+
+  const _DocumentContent({required this.media});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.insert_drive_file, size: 72, color: Colors.white54),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              media.originalName,
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              media.mimeType,
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 13),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── 标签管理对话框 ───
+class _TagManagerDialog extends StatefulWidget {
+  final List<tag_api.Tag> allTags;
+  final List<tag_api.Tag> currentTags;
+  final String mediaId;
+  final VoidCallback onChanged;
+
+  const _TagManagerDialog({
+    required this.allTags,
+    required this.currentTags,
+    required this.mediaId,
+    required this.onChanged,
+  });
+
+  @override
+  State<_TagManagerDialog> createState() => _TagManagerDialogState();
+}
+
+class _TagManagerDialogState extends State<_TagManagerDialog> {
+  late final Set<String> _selectedIds;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIds = widget.currentTags.map((t) => t.id).toSet();
+  }
+
+  Future<void> _toggleTag(tag_api.Tag tag) async {
+    final isSelected = _selectedIds.contains(tag.id);
+    if (isSelected) {
+      await tag_api.removeTagFromMedia(mediaId: widget.mediaId, tagId: tag.id);
+      _selectedIds.remove(tag.id);
+    } else {
+      await tag_api.addTagToMedia(mediaId: widget.mediaId, tagId: tag.id);
+      _selectedIds.add(tag.id);
+    }
+    if (mounted) {
+      setState(() {});
+      widget.onChanged();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    return AlertDialog(
+      title: Text(loc.tags),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: ListView.builder(
+          shrinkWrap: true,
+          itemCount: widget.allTags.length,
+          itemBuilder: (context, index) {
+            final tag = widget.allTags[index];
+            final selected = _selectedIds.contains(tag.id);
+            return ListTile(
+              leading: selected
+                  ? const Icon(Icons.check_circle, color: Colors.blue)
+                  : const Icon(Icons.radio_button_unchecked, color: Colors.grey),
+              title: Text(tag.name),
+              onTap: () => _toggleTag(tag),
+            );
+          },
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(loc.close)),
+      ],
+    );
+  }
+}
+
+// ─── Markdown 笔记编辑器 ───
+class _MarkdownNoteEditor extends StatefulWidget {
+  final TextEditingController controller;
+  final String title;
+  final String hint;
+  final VoidCallback? onSave;
+
+  const _MarkdownNoteEditor({
+    required this.controller,
+    required this.title,
+    required this.hint,
+    this.onSave,
+  });
+
+  @override
+  State<_MarkdownNoteEditor> createState() => _MarkdownNoteEditorState();
+}
+
+class _MarkdownNoteEditorState extends State<_MarkdownNoteEditor> {
+  bool _preview = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(child: Text(widget.title, style: Theme.of(context).textTheme.titleMedium)),
+            TextButton.icon(
+              onPressed: () => setState(() => _preview = !_preview),
+              icon: Icon(_preview ? Icons.edit : Icons.preview),
+              label: Text(_preview ? loc.edit : loc.preview),
+            ),
+            TextButton(
+              onPressed: () {
+                widget.onSave?.call();
+                Navigator.pop(context);
+              },
+              child: Text(loc.save),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        if (_preview)
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              child: Markdown(
+                data: widget.controller.text.isEmpty ? loc.noteEmpty : widget.controller.text,
+                styleSheet: MarkdownStyleSheet(
+                  p: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                ),
+              ),
+            ),
+          )
+        else
+          Expanded(
+            child: TextField(
+              controller: widget.controller,
+              maxLines: null,
+              expands: true,
+              decoration: InputDecoration(
+                hintText: widget.hint,
+                filled: true,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

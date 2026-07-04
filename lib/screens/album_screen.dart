@@ -1,4 +1,4 @@
-/// ignore_for_file: invalid_use_of_internal_member
+// ignore_for_file: invalid_use_of_internal_member
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,9 +7,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/app/app_bloc.dart';
 import '../bloc/album/album_bloc.dart';
 import 'package:advance_media_kb/src/rust/api/album.dart';
-import 'package:advance_media_kb/src/rust/api/media.dart';
 import 'package:logger/logger.dart';
 import '../core/i18n/app_localizations.dart';
+import '../core/design_system/app_theme.dart';
 import '../src/rust/api/enums.dart';
 import '../src/rust/api/media.dart';
 import '../src/rust/api/media.dart' as media_api;
@@ -497,7 +497,7 @@ class _AlbumCard extends StatelessWidget {
       child: Card(
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.xxl),
           side: BorderSide(color: cs.outlineVariant),
         ),
         clipBehavior: Clip.antiAlias,
@@ -506,28 +506,66 @@ class _AlbumCard extends StatelessWidget {
           children: [
             Expanded(
               child: Container(
-                color: cs.primaryContainer.withValues(alpha: 0.3),
+                color: cs.primaryContainer.withValues(alpha: 0.25),
                 child: Center(
-                  child: Icon(
-                    Icons.folder_rounded,
-                    size: 48,
-                    color: cs.primary,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Icon(
+                        Icons.folder_rounded,
+                        size: 56,
+                        color: cs.primary,
+                      ),
+                      Positioned(
+                        bottom: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: cs.surface,
+                            borderRadius: BorderRadius.circular(AppRadius.sm),
+                          ),
+                          child: Text(
+                            '${album.mediaCount}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: cs.primary,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
               color: cs.surface,
-              child: Text(
-                album.album.name,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: cs.onSurface,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    album.album.name,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurface,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${album.mediaCount} ${AppLocalizations.of(context).files}',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: cs.onSurfaceVariant,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
             ),
           ],

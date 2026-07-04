@@ -146,6 +146,7 @@ class AppLocalizations {
   String get mimeType => _get('mimeType');
   String get hash => _get('hash');
   String get fullPath => _get('fullPath');
+  String get filePath => _get('filePath');
   String get addToAlbum => _get('addToAlbum');
 
   // ─── 设置 ───
@@ -251,6 +252,8 @@ class AppLocalizations {
   String get share => _get('share');
   String get deleteMedia => _get('deleteMedia');
   String get confirmDeleteMedia => _get('confirmDeleteMedia');
+  String get more => _get('more');
+  String get rotate => _get('rotate');
 
   // ─── 多选 ───
   String get multiSelectMode => _get('multiSelectMode');
@@ -372,7 +375,7 @@ const Map<String, String> _zhStrings = {
   'details': '详情', 'infoPanel': '信息', 'notePanel': '笔记', 'tagPanel': '标签',
   'fileName': '文件名', 'fileSize': '文件大小', 'resolution': '分辨率',
   'duration': '时长', 'createdAt': '创建时间', 'mimeType': 'MIME 类型',
-  'hash': '哈希值', 'fullPath': '完整路径', 'addToAlbum': '添加到相册',
+  'hash': '哈希值', 'fullPath': '完整路径', 'filePath': '文件路径', 'addToAlbum': '添加到相册',
   'updatedAt': '更新时间',
   'settings': '设置', 'theme': '主题', 'themeMode': '主题模式',
   'display': '显示', 'mediaGridColumns': '媒体网格列数',
@@ -416,6 +419,7 @@ const Map<String, String> _zhStrings = {
   'openSettings': '打开设置', 'grantPermission': '授予权限',
   'viewer': '查看', 'share': '分享', 'deleteMedia': '删除媒体',
   'confirmDeleteMedia': '确定要删除此媒体吗？',
+  'more': '更多', 'rotate': '旋转',
   'multiSelectMode': '多选模式', 'batchAddToAlbum': '批量添加到相册',
   'batchAddTag': '批量打标签', 'batchDelete': '批量删除',
   'confirmBatchDelete': '确定要删除选中的媒体吗？',
@@ -501,7 +505,7 @@ const Map<String, String> _enStrings = {
   'details': 'Details', 'infoPanel': 'Info', 'notePanel': 'Notes', 'tagPanel': 'Tags',
   'fileName': 'File Name', 'fileSize': 'File Size', 'resolution': 'Resolution',
   'duration': 'Duration', 'createdAt': 'Created At', 'mimeType': 'MIME Type',
-  'hash': 'Hash', 'fullPath': 'Full Path', 'addToAlbum': 'Add to Album',
+  'hash': 'Hash', 'fullPath': 'Full Path', 'filePath': 'File Path', 'addToAlbum': 'Add to Album',
   'updatedAt': 'Updated At',
   'settings': 'Settings', 'theme': 'Theme', 'themeMode': 'Theme Mode',
   'display': 'Display', 'mediaGridColumns': 'Media Grid Columns',
@@ -545,7 +549,7 @@ const Map<String, String> _enStrings = {
   'permissionPermanentlyDenied': 'Permission permanently denied. Enable in Settings.',
   'openSettings': 'Open Settings', 'grantPermission': 'Grant Permission',
   'viewer': 'Viewer', 'share': 'Share', 'deleteMedia': 'Delete Media',
-  'confirmDeleteMedia': 'Delete this media?',
+  'confirmDeleteMedia': 'Delete this media?', 'more': 'More', 'rotate': 'Rotate',
   'multiSelectMode': 'Multi-select Mode', 'batchAddToAlbum': 'Batch Add to Album',
   'batchAddTag': 'Batch Add Tag', 'batchDelete': 'Batch Delete',
   'confirmBatchDelete': 'Delete selected media?',

@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import '../bloc/bloc.dart';
 import '../core/i18n/app_localizations.dart';
+import '../core/design_system/app_theme.dart';
 import '../src/rust/api/settings.dart' as rust_settings;
 import '../src/rust/api/import_export.dart' as rust_import_export;
 import '../src/rust/api/media.dart' as media_api;
@@ -48,7 +49,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: Text(AppLocalizations.of(context).settings),
         centerTitle: true,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(AppRadius.xxl)),
         ),
       ),
       body: BlocBuilder<AppBloc, AppState>(
@@ -60,7 +61,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           }
 
           return ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
             child: ListView(
               children: [
                 _SectionHeader(title: AppLocalizations.of(context).themeMode),
