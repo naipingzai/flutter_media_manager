@@ -2046,7 +2046,6 @@ impl SseDecode for crate::api::settings::AppSettings {
         let mut var_themeMode = <crate::api::settings::ThemeMode>::sse_decode(deserializer);
         let mut var_gridColumns = <i32>::sse_decode(deserializer);
         let mut var_albumGridColumns = <i32>::sse_decode(deserializer);
-        let mut var_showContentPreviews = <i32>::sse_decode(deserializer);
         let mut var_thumbnailQuality = <i32>::sse_decode(deserializer);
         let mut var_language = <String>::sse_decode(deserializer);
         let mut var_dynamicColor = <i32>::sse_decode(deserializer);
@@ -2055,7 +2054,6 @@ impl SseDecode for crate::api::settings::AppSettings {
             theme_mode: var_themeMode,
             grid_columns: var_gridColumns,
             album_grid_columns: var_albumGridColumns,
-            show_content_previews: var_showContentPreviews,
             thumbnail_quality: var_thumbnailQuality,
             language: var_language,
             dynamic_color: var_dynamicColor,
@@ -2663,7 +2661,6 @@ impl flutter_rust_bridge::IntoDart for crate::api::settings::AppSettings {
             self.theme_mode.into_into_dart().into_dart(),
             self.grid_columns.into_into_dart().into_dart(),
             self.album_grid_columns.into_into_dart().into_dart(),
-            self.show_content_previews.into_into_dart().into_dart(),
             self.thumbnail_quality.into_into_dart().into_dart(),
             self.language.into_into_dart().into_dart(),
             self.dynamic_color.into_into_dart().into_dart(),
@@ -3106,7 +3103,6 @@ impl SseEncode for crate::api::settings::AppSettings {
         <crate::api::settings::ThemeMode>::sse_encode(self.theme_mode, serializer);
         <i32>::sse_encode(self.grid_columns, serializer);
         <i32>::sse_encode(self.album_grid_columns, serializer);
-        <i32>::sse_encode(self.show_content_previews, serializer);
         <i32>::sse_encode(self.thumbnail_quality, serializer);
         <String>::sse_encode(self.language, serializer);
         <i32>::sse_encode(self.dynamic_color, serializer);
@@ -3602,7 +3598,6 @@ mod io {
                 theme_mode: self.theme_mode.cst_decode(),
                 grid_columns: self.grid_columns.cst_decode(),
                 album_grid_columns: self.album_grid_columns.cst_decode(),
-                show_content_previews: self.show_content_previews.cst_decode(),
                 thumbnail_quality: self.thumbnail_quality.cst_decode(),
                 language: self.language.cst_decode(),
                 dynamic_color: self.dynamic_color.cst_decode(),
@@ -3930,7 +3925,6 @@ mod io {
                 theme_mode: Default::default(),
                 grid_columns: Default::default(),
                 album_grid_columns: Default::default(),
-                show_content_previews: Default::default(),
                 thumbnail_quality: Default::default(),
                 language: core::ptr::null_mut(),
                 dynamic_color: Default::default(),
@@ -4915,7 +4909,6 @@ mod io {
         theme_mode: i32,
         grid_columns: i32,
         album_grid_columns: i32,
-        show_content_previews: i32,
         thumbnail_quality: i32,
         language: *mut wire_cst_list_prim_u_8_strict,
         dynamic_color: i32,
@@ -5184,19 +5177,18 @@ mod web {
                 .unwrap();
             assert_eq!(
                 self_.length(),
-                8,
-                "Expected 8 elements, got {}",
+                7,
+                "Expected 7 elements, got {}",
                 self_.length()
             );
             crate::api::settings::AppSettings {
                 theme_mode: self_.get(0).cst_decode(),
                 grid_columns: self_.get(1).cst_decode(),
                 album_grid_columns: self_.get(2).cst_decode(),
-                show_content_previews: self_.get(3).cst_decode(),
-                thumbnail_quality: self_.get(4).cst_decode(),
-                language: self_.get(5).cst_decode(),
-                dynamic_color: self_.get(6).cst_decode(),
-                last_scan_path: self_.get(7).cst_decode(),
+                thumbnail_quality: self_.get(3).cst_decode(),
+                language: self_.get(4).cst_decode(),
+                dynamic_color: self_.get(5).cst_decode(),
+                last_scan_path: self_.get(6).cst_decode(),
             }
         }
     }

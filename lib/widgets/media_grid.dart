@@ -11,20 +11,22 @@ import 'viewer/viewer_page.dart';
 /// 和文件大小（LabelSmall）。为此将 childAspectRatio 调整为 0.78 以容纳文本。
 
 String _formatSize(int bytes) {
-  if (bytes < 1024) return '\$bytes B';
-  if (bytes < 1024 * 1024) return '\${(bytes / 1024).toStringAsFixed(1)} KB';
-  if (bytes < 1024 * 1024 * 1024) return '\${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-  return '\${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+  if (bytes < 1024) return '$bytes B';
+  if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+  if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
 }
 class MediaGrid extends StatelessWidget {
   final List<MediaItem> mediaList;
   final Set<String> selectedIds;
+  final bool isSelectionMode;
   final int crossAxisCount;
 
   const MediaGrid({
     super.key,
     required this.mediaList,
     required this.selectedIds,
+    this.isSelectionMode = false,
     this.crossAxisCount = 3,
   });
 
@@ -70,7 +72,7 @@ class MediaGrid extends StatelessWidget {
   }
 
   void _onMediaTap(BuildContext context, MediaItem media) {
-    if (selectedIds.isNotEmpty) {
+    if (isSelectionMode) {
       // 选择模式下，点击切换选择
       context.read<MediaBloc>().add(MediaSelectEvent(media.id));
     } else {
@@ -138,7 +140,7 @@ class _MediaGridItem extends StatelessWidget {
                   // 选择遮罩
                   if (isSelected)
                     Container(
-                      color: theme.colorScheme.primary.withOpacity(0.25),
+                      color: theme.colorScheme.primary.withValues(alpha: 0.25),
                       child: Center(
                         child: Container(
                           decoration: BoxDecoration(
@@ -267,7 +269,7 @@ class _MediaGridItem extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.55),
+        color: Colors.black.withValues(alpha: 0.55),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Icon(iconData, size: 12, color: iconColor),
@@ -278,7 +280,7 @@ class _MediaGridItem extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.7),
+        color: Colors.black.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
@@ -347,7 +349,7 @@ class _MediaListTile extends StatelessWidget {
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withOpacity(0.4),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Icon(Icons.check, color: theme.colorScheme.onPrimary, size: 20),

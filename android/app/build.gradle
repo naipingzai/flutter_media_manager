@@ -7,8 +7,8 @@ plugins {
 
 android {
     namespace = "com.advancemediakb.advance_media_kb"
-    compileSdk = 35
-    ndkVersion = "26.1.10909125"
+    compileSdk = 36
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -21,7 +21,7 @@ android {
 
     defaultConfig {
         applicationId = "com.advancemediakb.advance_media_kb"
-        minSdk = 21
+        minSdkVersion = flutter.minSdkVersion
         targetSdk = 35
         versionCode = 1
         versionName = "1.0.0"

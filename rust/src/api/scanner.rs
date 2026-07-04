@@ -264,14 +264,20 @@ fn calculate_file_hash_sync(file_path: &str) -> Result<String, String> {
 }
 
 fn generate_thumbnail_path(storage_name: &str) -> String {
-    // 获取应用数据目录下的 thumbnails 目录
-    let app_dir = dirs::data_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join("AdvanceMediaKB")
-        .join("thumbnails");
+    // 获取应用数据目录下的 thumbnails 目录（使用数据库中注册的媒体目录）
+    let media_dir = crate::db::get_media_dir()
+        .unwrap_or_else(|_| {
+            dirs::data_dir()
+                .unwrap_or_else(|| PathBuf::from("."))
+                .join("AdvanceMediaKB")
+                .join("media")
+                .to_string_lossy()
+                .to_string()
+        });
+    let thumb_dir = PathBuf::from(&media_dir).join("thumbnails");
 
-    let _ = fs::create_dir_all(&app_dir);
-    app_dir.join(format!("thumb_{}", storage_name))
+    let _ = fs::create_dir_all(&thumb_dir);
+    thumb_dir.join(format!("thumb_{}", storage_name))
         .to_string_lossy()
         .to_string()
 }

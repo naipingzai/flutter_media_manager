@@ -144,7 +144,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
           // 文件名
           Text(
             widget.filePath.split('/').last,
-            style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 13),
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 13),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 32),
@@ -195,7 +195,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
               const SizedBox(width: 16),
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
                 child: IconButton(

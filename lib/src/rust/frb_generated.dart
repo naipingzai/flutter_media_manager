@@ -2102,17 +2102,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   AppSettings dco_decode_app_settings(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 8)
-      throw Exception('unexpected arr length: expect 8 but see ${arr.length}');
+    if (arr.length != 7)
+      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
     return AppSettings(
       themeMode: dco_decode_theme_mode(arr[0]),
       gridColumns: dco_decode_i_32(arr[1]),
       albumGridColumns: dco_decode_i_32(arr[2]),
-      showContentPreviews: dco_decode_i_32(arr[3]),
-      thumbnailQuality: dco_decode_i_32(arr[4]),
-      language: dco_decode_String(arr[5]),
-      dynamicColor: dco_decode_i_32(arr[6]),
-      lastScanPath: dco_decode_String(arr[7]),
+      thumbnailQuality: dco_decode_i_32(arr[3]),
+      language: dco_decode_String(arr[4]),
+      dynamicColor: dco_decode_i_32(arr[5]),
+      lastScanPath: dco_decode_String(arr[6]),
     );
   }
 
@@ -2540,7 +2539,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_themeMode = sse_decode_theme_mode(deserializer);
     var var_gridColumns = sse_decode_i_32(deserializer);
     var var_albumGridColumns = sse_decode_i_32(deserializer);
-    var var_showContentPreviews = sse_decode_i_32(deserializer);
     var var_thumbnailQuality = sse_decode_i_32(deserializer);
     var var_language = sse_decode_String(deserializer);
     var var_dynamicColor = sse_decode_i_32(deserializer);
@@ -2549,7 +2547,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         themeMode: var_themeMode,
         gridColumns: var_gridColumns,
         albumGridColumns: var_albumGridColumns,
-        showContentPreviews: var_showContentPreviews,
         thumbnailQuality: var_thumbnailQuality,
         language: var_language,
         dynamicColor: var_dynamicColor,
@@ -3131,7 +3128,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_theme_mode(self.themeMode, serializer);
     sse_encode_i_32(self.gridColumns, serializer);
     sse_encode_i_32(self.albumGridColumns, serializer);
-    sse_encode_i_32(self.showContentPreviews, serializer);
     sse_encode_i_32(self.thumbnailQuality, serializer);
     sse_encode_String(self.language, serializer);
     sse_encode_i_32(self.dynamicColor, serializer);

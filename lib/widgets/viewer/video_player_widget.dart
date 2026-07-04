@@ -151,7 +151,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                 onTap: _togglePlayPause,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.4),
+                    color: Colors.black.withValues(alpha: 0.4),
                     shape: BoxShape.circle,
                   ),
                   padding: const EdgeInsets.all(16),
@@ -176,7 +176,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
                     colors: [
-                      Colors.black.withOpacity(0.8),
+                      Colors.black.withValues(alpha: 0.8),
                       Colors.transparent,
                     ],
                   ),

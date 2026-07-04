@@ -1,13 +1,14 @@
 use sqlx::{sqlite::{SqlitePoolOptions, SqliteConnectOptions}, Pool, Sqlite};
 use std::path::PathBuf;
 use std::str::FromStr;
+use std::sync::OnceLock;
 
 pub mod models;
 
-/// 数据库连接池（全局单例）
-static mut DB_POOL: Option<Pool<Sqlite>> = None;
-/// 应用目录（全局存储）
-static mut APP_DIR: Option<String> = None;
+/// 数据库连接池（全局单例，线程安全）
+static DB_POOL: OnceLock<Pool<Sqlite>> = OnceLock::new();
+/// 应用目录（全局存储，线程安全）
+static APP_DIR: OnceLock<String> = OnceLock::new();
 
 /// 初始化数据库连接池
 pub async fn init_db(app_dir: &str) -> Result<(), sqlx::Error> {
@@ -41,45 +42,37 @@ pub async fn init_db(app_dir: &str) -> Result<(), sqlx::Error> {
     // 创建表结构
     create_tables(&pool).await?;
 
-    unsafe {
-        DB_POOL = Some(pool);
-        APP_DIR = Some(app_dir.to_string());
-    }
+    // 如果已初始化（如 Android 返回手势后重新打开），忽略
+    let _ = DB_POOL.set(pool);
+    let _ = APP_DIR.set(app_dir.to_string());
 
     Ok(())
 }
 
 /// 获取数据库连接池
 pub fn get_pool() -> Result<Pool<Sqlite>, String> {
-    unsafe {
-        DB_POOL
-            .clone()
-            .ok_or_else(|| "数据库未初始化".to_string())
-    }
+    DB_POOL
+        .get()
+        .cloned()
+        .ok_or_else(|| "数据库未初始化".to_string())
 }
 
 /// 获取数据库文件路径
 pub fn get_db_path() -> Result<String, String> {
-    unsafe {
-        let app_dir = APP_DIR.as_ref().ok_or("应用目录未初始化")?;
-        Ok(PathBuf::from(app_dir).join("advance_media_kb.db").to_string_lossy().to_string())
-    }
+    let app_dir = APP_DIR.get().ok_or("应用目录未初始化")?;
+    Ok(PathBuf::from(app_dir).join("advance_media_kb.db").to_string_lossy().to_string())
 }
 
 /// 获取媒体文件目录
 pub fn get_media_dir() -> Result<String, String> {
-    unsafe {
-        let app_dir = APP_DIR.as_ref().ok_or("应用目录未初始化")?;
-        Ok(PathBuf::from(app_dir).join("media").to_string_lossy().to_string())
-    }
+    let app_dir = APP_DIR.get().ok_or("应用目录未初始化")?;
+    Ok(PathBuf::from(app_dir).join("media").to_string_lossy().to_string())
 }
 
 /// 获取应用根目录
 pub fn get_app_dir() -> Result<String, String> {
-    unsafe {
-        let app_dir = APP_DIR.as_ref().ok_or("应用目录未初始化")?;
-        Ok(app_dir.to_string())
-    }
+    let app_dir = APP_DIR.get().ok_or("应用目录未初始化")?;
+    Ok(app_dir.to_string())
 }
 
 /// 创建数据库表结构（严格按照设计方案）
@@ -226,7 +219,6 @@ async fn create_tables(pool: &Pool<Sqlite>) -> Result<(), sqlx::Error> {
             theme_mode INTEGER NOT NULL DEFAULT 0,
             grid_columns INTEGER NOT NULL DEFAULT 3,
             album_grid_columns INTEGER NOT NULL DEFAULT 2,
-            show_content_previews INTEGER NOT NULL DEFAULT 1,
             thumbnail_quality INTEGER NOT NULL DEFAULT 85,
             language TEXT NOT NULL DEFAULT 'system',
             dynamic_color INTEGER NOT NULL DEFAULT 1,
@@ -286,8 +278,8 @@ async fn create_tables(pool: &Pool<Sqlite>) -> Result<(), sqlx::Error> {
     // 插入默认设置
     sqlx::query(
         r#"
-        INSERT OR IGNORE INTO app_settings (id, theme_mode, grid_columns, album_grid_columns, show_content_previews, thumbnail_quality, language, dynamic_color)
-        VALUES (1, 0, 3, 2, 1, 85, 'zh', 1)
+        INSERT OR IGNORE INTO app_settings (id, theme_mode, grid_columns, album_grid_columns, thumbnail_quality, language, dynamic_color)
+        VALUES (1, 0, 3, 2, 85, 'zh', 1)
         "#
     ).execute(pool).await?;
 

@@ -30,6 +30,8 @@ Future<void> exportData({required String exportPath}) =>
     RustLib.instance.api.crateApiSettingsExportData(exportPath: exportPath);
 
 /// 导入数据（从 SQLite 备份文件恢复）
+///
+/// 注意：此函数会替换数据库文件。调用后需要重启应用以重新初始化数据库连接池。
 Future<void> importData({required String importPath}) =>
     RustLib.instance.api.crateApiSettingsImportData(importPath: importPath);
 
@@ -52,7 +54,7 @@ Future<int> deleteUnreferencedFiles() =>
 Future<void> initApp({required String appDir}) =>
     RustLib.instance.api.crateApiSettingsInitApp(appDir: appDir);
 
-/// 应用设置 - Skill-08 §1 (8 个设置项)
+/// 应用设置
 class AppSettings {
   /// 主题模式 (system/light/dark) - 默认: system
   final ThemeMode themeMode;
@@ -62,9 +64,6 @@ class AppSettings {
 
   /// 相册网格列数 - 默认: 2
   final int albumGridColumns;
-
-  /// 是否显示内容预览 - 默认: true
-  final int showContentPreviews;
 
   /// 缩略图质量 1-100 - 默认: 85
   final int thumbnailQuality;
@@ -82,7 +81,6 @@ class AppSettings {
     required this.themeMode,
     required this.gridColumns,
     required this.albumGridColumns,
-    required this.showContentPreviews,
     required this.thumbnailQuality,
     required this.language,
     required this.dynamicColor,
@@ -94,7 +92,6 @@ class AppSettings {
       themeMode.hashCode ^
       gridColumns.hashCode ^
       albumGridColumns.hashCode ^
-      showContentPreviews.hashCode ^
       thumbnailQuality.hashCode ^
       language.hashCode ^
       dynamicColor.hashCode ^
@@ -108,7 +105,6 @@ class AppSettings {
           themeMode == other.themeMode &&
           gridColumns == other.gridColumns &&
           albumGridColumns == other.albumGridColumns &&
-          showContentPreviews == other.showContentPreviews &&
           thumbnailQuality == other.thumbnailQuality &&
           language == other.language &&
           dynamicColor == other.dynamicColor &&

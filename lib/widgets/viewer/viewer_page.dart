@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -43,12 +42,9 @@ class _ViewerPageState extends State<ViewerPage> {
   int _currentIndex = 0;
   bool _showBars = true;
   bool _detailMode = false;
-  double _scale = 1.0;
-  double _rotation = 0.0;
-  double _offsetX = 0.0;
-  double _offsetY = 0.0;
   Timer? _hideTimer;
-  note_api.Note? _mediaNote;
+
+  String? _noteContent;
   List<tag_api.Tag> _mediaTags = [];
 
   media_api.MediaItem get _currentMedia => widget.mediaList[_currentIndex];
@@ -59,7 +55,7 @@ class _ViewerPageState extends State<ViewerPage> {
     _currentIndex = widget.mediaList.indexWhere((m) => m.id == widget.initialMedia.id);
     if (_currentIndex < 0) _currentIndex = 0;
     _pageController = PageController(initialPage: _currentIndex);
-    _loadMediaData();
+    _loadMediaDetails();
     _startHideTimer();
   }
 
@@ -90,157 +86,40 @@ class _ViewerPageState extends State<ViewerPage> {
     setState(() {
       _detailMode = !_detailMode;
       _showBars = true;
-      _resetTransform();
     });
     _hideTimer?.cancel();
   }
 
-  void _resetTransform() {
-    _scale = 1.0;
-    _rotation = 0.0;
-    _offsetX = 0.0;
-    _offsetY = 0.0;
-  }
-
-  void _loadMediaData() {
-    _mediaNote = null;
+  void _onPageChanged(int index) {
+    _currentIndex = index;
+    _noteContent = null;
     _mediaTags = [];
-    _loadNotes();
-    _loadTags();
+    setState(() {});
+    _loadMediaDetails();
   }
 
-  Future<void> _loadNotes() async {
+  Future<void> _loadMediaDetails() async {
     try {
       final note = await note_api.getNoteByMediaId(mediaId: _currentMedia.id);
       if (mounted) {
-        setState(() => _mediaNote = note);
+        setState(() {
+          _noteContent = note?.content;
+        });
       }
-    } catch (_) {}
-  }
-
-  Future<void> _loadTags() async {
-    try {
       final tags = await tag_api.getMediaTags(mediaId: _currentMedia.id);
       if (mounted) {
-        setState(() => _mediaTags = tags);
+        setState(() {
+          _mediaTags = tags;
+        });
       }
-    } catch (_) {}
-  }
-
-  void _onPageChanged(int index) {
-    _currentIndex = index;
-    _loadMediaData();
-    setState(() {});
-  }
-
-  void _showRenameDialog() {
-    final loc = AppLocalizations.of(context);
-    final controller = TextEditingController(text: _currentMedia.originalName);
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(loc.rename),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(labelText: loc.newName),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(loc.cancel),
-          ),
-          TextButton(
-            onPressed: () async {
-              final newName = controller.text.trim();
-              if (newName.isNotEmpty) {
-                final updated = media_api.MediaItem(
-                  id: _currentMedia.id,
-                  originalName: newName,
-                  storageName: _currentMedia.storageName,
-                  filePath: _currentMedia.filePath,
-                  thumbnailPath: _currentMedia.thumbnailPath,
-                  mediaType: _currentMedia.mediaType,
-                  mimeType: _currentMedia.mimeType,
-                  size: _currentMedia.size,
-                  width: _currentMedia.width,
-                  height: _currentMedia.height,
-                  duration: _currentMedia.duration,
-                  sha256Hash: _currentMedia.sha256Hash,
-                  createdAt: _currentMedia.createdAt,
-                  updatedAt: _currentMedia.updatedAt,
-                );
-                await media_api.updateMedia(media: updated);
-                if (mounted) {
-                  setState(() {});
-                  context.read<MediaBloc>().add(const MediaRefreshEvent());
-                  Navigator.pop(ctx);
-                }
-              }
-            },
-            child: Text(loc.save),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showNoteDialog() {
-    final loc = AppLocalizations.of(context);
-    // 把已有笔记内容预填
-    final initialContent = _mediaNote?.content ?? '';
-    final controller = TextEditingController(text: initialContent);
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(loc.editNote),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            labelText: loc.noteContent,
-            hintText: loc.noteContentHint,
-          ),
-          maxLines: 5,
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(loc.cancel),
-          ),
-          TextButton(
-            onPressed: () async {
-              await note_api.saveNote(
-                mediaId: _currentMedia.id,
-                content: controller.text,
-              );
-              if (mounted) {
-                _loadNotes();
-                Navigator.pop(ctx);
-              }
-            },
-            child: Text(loc.save),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showTagManagerDialog() {
-    showDialog(
-      context: context,
-      builder: (ctx) => _TagSelectorDialog(
-        mediaId: _currentMedia.id,
-        currentTags: _mediaTags,
-        onTagsChanged: (tags) {
-          setState(() => _mediaTags = tags);
-        },
-      ),
-    );
+    } catch (e) {
+      debugPrint('加载媒体详情失败: $e');
+    }
   }
 
   void _showDeleteConfirm() {
     final loc = AppLocalizations.of(context);
+    final mediaBloc = context.read<MediaBloc>();
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -252,20 +131,28 @@ class _ViewerPageState extends State<ViewerPage> {
             child: Text(loc.cancel),
           ),
           TextButton(
-            onPressed: () async {
-              await media_api.deleteMedia(id: _currentMedia.id);
-              if (mounted) {
-                Navigator.pop(ctx);
-                Navigator.pop(context);
-                context.read<MediaBloc>().add(const MediaRefreshEvent());
-              }
-            },
+            onPressed: () => _deleteMedia(
+              dialogNavigator: Navigator.of(ctx),
+              mediaBloc: mediaBloc,
+            ),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: Text(loc.delete),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _deleteMedia({
+    required NavigatorState dialogNavigator,
+    required MediaBloc mediaBloc,
+  }) async {
+    await media_api.deleteMedia(id: _currentMedia.id);
+    if (mounted) {
+      dialogNavigator.pop(); // 关闭删除确认对话框
+      dialogNavigator.pop(); // 关闭 ViewerPage
+      mediaBloc.add(const MediaRefreshEvent());
+    }
   }
 
   void _shareMedia() {
@@ -294,45 +181,37 @@ class _ViewerPageState extends State<ViewerPage> {
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 
-  String _formatDate(int timestamp) {
-    final date = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
-        '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-  }
-
-  Color? _parseColor(String? colorStr) {
-    if (colorStr == null || colorStr.isEmpty) return null;
-    try {
-      if (colorStr.startsWith('#')) {
-        return Color(int.parse(colorStr.substring(1), radix: 16) + 0xFF000000);
-      }
-    } catch (_) {}
-    return null;
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          PageView.builder(
-            controller: _pageController,
-            itemCount: widget.mediaList.length,
-            onPageChanged: _onPageChanged,
-            itemBuilder: (context, index) {
-              final media = widget.mediaList[index];
-              return GestureDetector(
-                onTap: _toggleBars,
-                child: _buildMediaContent(media),
-              );
-            },
-          ),
-          if (_showBars) _buildTopBar(),
-          if (_showBars) _buildBottomBar(),
-          if (_detailMode) _buildDetailPanel(),
-        ],
+    return PopScope(
+      canPop: !_detailMode,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && _detailMode) {
+          _toggleDetailMode();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            PageView.builder(
+              controller: _pageController,
+              itemCount: widget.mediaList.length,
+              onPageChanged: _onPageChanged,
+              itemBuilder: (context, index) {
+                final media = widget.mediaList[index];
+                return GestureDetector(
+                  onTap: _toggleBars,
+                  child: _buildMediaContent(media),
+                );
+              },
+            ),
+            if (_showBars) _buildTopBar(),
+            if (_showBars) _buildBottomBar(),
+            if (_detailMode) _buildDetailPanel(),
+          ],
+        ),
       ),
     );
   }
@@ -340,31 +219,7 @@ class _ViewerPageState extends State<ViewerPage> {
   Widget _buildMediaContent(media_api.MediaItem media) {
     switch (media.mediaType) {
       case media_api.MediaType.image:
-        if (_detailMode) {
-          return GestureDetector(
-            onPanUpdate: (details) {
-              setState(() {
-                _offsetX += details.delta.dx;
-                _offsetY += details.delta.dy;
-              });
-            },
-            onDoubleTap: () => setState(() => _resetTransform()),
-            child: Center(
-              child: Transform(
-                alignment: Alignment.center,
-                transform: Matrix4.identity()
-                  ..translate(_offsetX, _offsetY)
-                  ..rotateZ(_rotation * 3.14159 / 180)
-                  ..scale(_scale),
-                child: Image.file(
-                  File(media.filePath),
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 64, color: Colors.white54),
-                ),
-              ),
-            ),
-          );
-        }
+        // 详情模式保持相同图片查看器，避免内容“丢失”/重载
         return ImageViewer(filePath: media.filePath);
       case media_api.MediaType.video:
         return VideoPlayerWidget(filePath: media.filePath);
@@ -395,14 +250,13 @@ class _ViewerPageState extends State<ViewerPage> {
               textAlign: TextAlign.center),
           const SizedBox(height: 8),
           Text(_formatFileSize(media.size),
-              style: TextStyle(color: Colors.white.withOpacity(0.6))),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.6))),
         ],
       ),
     );
   }
 
   Widget _buildTopBar() {
-    final loc = AppLocalizations.of(context);
     return Positioned(
       top: 0, left: 0, right: 0,
       child: Container(
@@ -410,7 +264,7 @@ class _ViewerPageState extends State<ViewerPage> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.black.withOpacity(0.8), Colors.transparent],
+            colors: [Colors.black.withValues(alpha: 0.8), Colors.transparent],
           ),
         ),
         child: SafeArea(
@@ -430,14 +284,13 @@ class _ViewerPageState extends State<ViewerPage> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text('${_currentIndex + 1}/${widget.mediaList.length}',
                       style: const TextStyle(color: Colors.white, fontSize: 12)),
                 ),
                 const SizedBox(width: 8),
-
               ],
             ),
           ),
@@ -455,7 +308,7 @@ class _ViewerPageState extends State<ViewerPage> {
           gradient: LinearGradient(
             begin: Alignment.bottomCenter,
             end: Alignment.topCenter,
-            colors: [Colors.black.withOpacity(0.7), Colors.transparent],
+            colors: [Colors.black.withValues(alpha: 0.7), Colors.transparent],
           ),
         ),
         child: SafeArea(
@@ -489,82 +342,120 @@ class _ViewerPageState extends State<ViewerPage> {
   Widget _buildBottomAction(IconData icon, String label, VoidCallback onTap, {Color? color}) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(12),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color ?? Colors.white, size: 22),
-            const SizedBox(height: 4),
-            Text(label, style: TextStyle(color: color ?? Colors.white70, fontSize: 11)),
+            Icon(icon, color: color ?? Colors.white, size: 28),
+            const SizedBox(height: 6),
+            Text(label, style: TextStyle(color: color ?? Colors.white70, fontSize: 13)),
           ],
         ),
       ),
     );
   }
 
-  /// Skill-17：详情模式控制面板（退出 + 旋转）
+  /// Skill-17：详情模式信息面板（文件信息 + 笔记 + 标签）
   Widget _buildDetailPanel() {
-    return Positioned(
-      bottom: 24, right: 16,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FloatingActionButton.small(
-            heroTag: 'rotateLeft',
-            onPressed: () => setState(() => _rotation = (_rotation - 90) % 360),
-            backgroundColor: Colors.black54,
-            child: const Icon(Icons.rotate_left, color: Colors.white, size: 18),
+    final loc = AppLocalizations.of(context);
+    final media = _currentMedia;
+    return Align(
+      alignment: Alignment.bottomRight,
+      child: SafeArea(
+        child: Container(
+          width: 260,
+          margin: const EdgeInsets.only(right: 16, bottom: 100),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.75),
+            borderRadius: BorderRadius.circular(16),
           ),
-          const SizedBox(height: 8),
-          FloatingActionButton.small(
-            heroTag: 'rotateRight',
-            onPressed: () => setState(() => _rotation = (_rotation + 90) % 360),
-            backgroundColor: Colors.black54,
-            child: const Icon(Icons.rotate_right, color: Colors.white, size: 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      loc.detailMode,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  InkWell(
+                    onTap: _toggleDetailMode,
+                    borderRadius: BorderRadius.circular(12),
+                    child: const Padding(
+                      padding: EdgeInsets.all(4),
+                      child: Icon(Icons.close_fullscreen, color: Colors.white, size: 18),
+                    ),
+                  ),
+                ],
+              ),
+              const Divider(color: Colors.white30),
+              _buildInfoRow(Icons.insert_drive_file, media.originalName),
+              _buildInfoRow(Icons.storage, _formatFileSize(media.size)),
+              _buildInfoRow(Icons.access_time, media.createdAt.toString()),
+              if (_mediaTags.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(loc.tags, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: _mediaTags.map((tag) {
+                    final color = tag.color != null
+                        ? Color(int.parse(tag.color!.replaceAll('#', '0xFF')))
+                        : Theme.of(context).colorScheme.primary;
+                    return Chip(
+                      label: Text(tag.name, style: const TextStyle(color: Colors.white, fontSize: 12)),
+                      backgroundColor: color.withValues(alpha: 0.8),
+                      padding: EdgeInsets.zero,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      visualDensity: VisualDensity.compact,
+                    );
+                  }).toList(),
+                ),
+              ],
+              if (_noteContent != null && _noteContent!.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(loc.note, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                const SizedBox(height: 6),
+                Text(
+                  _noteContent!,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  maxLines: 5,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ],
           ),
-          const SizedBox(height: 8),
-          FloatingActionButton.small(
-            heroTag: 'reset',
-            onPressed: () => setState(() => _resetTransform()),
-            backgroundColor: Colors.black54,
-            child: const Icon(Icons.refresh, color: Colors.white, size: 18),
-          ),
-          const SizedBox(height: 8),
-          FloatingActionButton.small(
-            heroTag: 'exitDetail',
-            onPressed: () => setState(() => _toggleDetailMode()),
-            backgroundColor: Colors.black54,
-            child: const Icon(Icons.close_fullscreen, color: Colors.white, size: 18),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-
-
-  Widget _buildSectionHeader(String label) {
+  Widget _buildInfoRow(IconData icon, String text) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(label,
-          style: const TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w600)),
-    );
-  }
-
-  Widget _buildInfoRow(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 16, color: Colors.white.withOpacity(0.5)),
+          Icon(icon, size: 16, color: Colors.white70),
           const SizedBox(width: 8),
-          Text('$label: ', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 13)),
           Expanded(
-            child: Text(value, style: const TextStyle(color: Colors.white, fontSize: 13),
-                overflow: TextOverflow.ellipsis, maxLines: 2),
+            child: Text(
+              text,
+              style: const TextStyle(color: Colors.white, fontSize: 13),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),
@@ -684,4 +575,3 @@ class _TagSelectorDialogState extends State<_TagSelectorDialog> {
     );
   }
 }
-

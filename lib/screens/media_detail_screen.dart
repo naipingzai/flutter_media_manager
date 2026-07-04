@@ -306,7 +306,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
             children: [
               const Icon(Icons.broken_image, size: 64, color: Colors.white54),
               const SizedBox(height: 16),
-              Text('无法加载图片', style: TextStyle(color: Colors.white.withOpacity(0.7))),
+              Text('无法加载图片', style: TextStyle(color: Colors.white.withValues(alpha: 0.7))),
             ],
           ),
         );
@@ -332,7 +332,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
               children: [
                 const Icon(Icons.broken_image, size: 64, color: Colors.white54),
                 const SizedBox(height: 16),
-                Text('无法加载图片', style: TextStyle(color: Colors.white.withOpacity(0.7))),
+                Text('无法加载图片', style: TextStyle(color: Colors.white.withValues(alpha: 0.7))),
               ],
             );
           },
@@ -357,7 +357,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
           const SizedBox(height: 24),
           Text(_currentMedia.originalName, style: const TextStyle(color: Colors.white, fontSize: 18), textAlign: TextAlign.center),
           const SizedBox(height: 8),
-          Text(_formatFileSize(_currentMedia.size), style: TextStyle(color: Colors.white.withOpacity(0.6))),
+          Text(_formatFileSize(_currentMedia.size), style: TextStyle(color: Colors.white.withValues(alpha: 0.6))),
           const SizedBox(height: 32),
           if (_videoController != null && _videoController!.value.isInitialized)
             IconButton(
@@ -390,9 +390,9 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
           const SizedBox(height: 24),
           Text(_currentMedia.originalName, style: const TextStyle(color: Colors.white, fontSize: 18), textAlign: TextAlign.center),
           const SizedBox(height: 8),
-          Text(_formatFileSize(_currentMedia.size), style: TextStyle(color: Colors.white.withOpacity(0.6))),
+          Text(_formatFileSize(_currentMedia.size), style: TextStyle(color: Colors.white.withValues(alpha: 0.6))),
           const SizedBox(height: 16),
-          Text(_currentMedia.mimeType, style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12)),
+          Text(_currentMedia.mimeType, style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12)),
         ],
       ),
     );
@@ -410,7 +410,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
           gradient: LinearGradient(
             begin: Alignment.bottomCenter,
             end: Alignment.topCenter,
-            colors: [Colors.black.withOpacity(0.8), Colors.transparent],
+            colors: [Colors.black.withValues(alpha: 0.8), Colors.transparent],
           ),
         ),
         padding: EdgeInsets.fromLTRB(16, 32, 16, MediaQuery.of(context).padding.bottom + 16),
@@ -453,7 +453,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
       right: 0,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.85),
+          color: Colors.black.withValues(alpha: 0.85),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
         ),
         padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).padding.bottom + 12),
@@ -474,7 +474,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
         // 变换参数显示
         Text(
           '缩放: ${(_scale * 100).toStringAsFixed(0)}%  旋转: ${_rotation.toStringAsFixed(0)}°',
-          style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12),
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 12),
         ),
         const SizedBox(height: 12),
         // 变换按钮行
@@ -526,7 +526,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     return Tooltip(
       message: tooltip,
       child: Material(
-        color: Colors.white.withOpacity(0.1),
+        color: Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
         child: InkWell(
           onTap: onPressed,
@@ -684,7 +684,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   /// 导出到 Download 目录
   Future<void> _exportMedia(BuildContext context) async {
     try {
-      final result = await scanner_api.importSingleFile(filePath: _currentMedia.filePath);
+      await scanner_api.importSingleFile(filePath: _currentMedia.filePath);
       // 实际导出
       final exportPath = '/storage/emulated/0/Download/${_currentMedia.originalName}';
       // 复制文件到 Download

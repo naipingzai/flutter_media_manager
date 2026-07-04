@@ -65,6 +65,7 @@ class AppLocalizations {
   String get document => _get('document');
 
   // ─── 过滤器 ───
+  String get filter => _get('filter');
   String get filterAll => _get('filterAll');
   String get filterImages => _get('filterImages');
   String get filterVideos => _get('filterVideos');
@@ -329,6 +330,7 @@ const Map<String, String> _zhStrings = {
   'importFromDirectory': '从文件夹导入',
   'noMedia': '还没有媒体文件', 'noMediaDesc': '点击下方按钮导入您的第一张图片或视频',
   'image': '图片', 'video': '视频', 'audio': '音频', 'document': '文档',
+  'filter': '筛选',
   'filterAll': '全部', 'filterImages': '图片', 'filterVideos': '视频',
   'filterAudios': '音频', 'filterDocuments': '文档',
   'filterWithTags': '有标签的', 'filterWithoutTags': '无标签的',
@@ -457,6 +459,7 @@ const Map<String, String> _enStrings = {
   'importFromDirectory': 'Import from Folder',
   'noMedia': 'No media files yet', 'noMediaDesc': 'Tap below to import your first photo or video',
   'image': 'Image', 'video': 'Video', 'audio': 'Audio', 'document': 'Document',
+  'filter': 'Filter',
   'filterAll': 'All', 'filterImages': 'Images', 'filterVideos': 'Videos',
   'filterAudios': 'Audios', 'filterDocuments': 'Documents',
   'filterWithTags': 'With Tags', 'filterWithoutTags': 'Without Tags',

@@ -55,8 +55,6 @@ class _NoteEditScreenState extends State<NoteEditScreen> {
     return _contentController.text != widget.note!.content;
   }
 
-  bool get _canSave => true; // 允许保存空笔记（清空内容）
-
   Future<bool> _confirmLeave() async {
     if (!_isDirty) return true;
     final loc = AppLocalizations.of(context);

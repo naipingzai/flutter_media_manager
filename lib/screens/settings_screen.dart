@@ -73,32 +73,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const Divider(),
               _SectionHeader(title: AppLocalizations.of(context).display),
-              SwitchListTile(
-                secondary: const Icon(Icons.preview),
-                title: Text(loc.contentPreview),
-                subtitle: Text(loc.contentPreviewDesc),
-                value: settings.showContentPreviews != 0,
-                onChanged: (val) {
-                  final updated = rust_settings.AppSettings(
-                    themeMode: settings.themeMode,
-                    gridColumns: settings.gridColumns,
-                    albumGridColumns: settings.albumGridColumns,
-                    showContentPreviews: val ? 1 : 0,
-                    thumbnailQuality: settings.thumbnailQuality,
-                    language: settings.language,
-                    dynamicColor: settings.dynamicColor,
-                    lastScanPath: settings.lastScanPath,
-                  );
-                  context.read<AppBloc>().add(
-                        AppSettingsUpdatedEvent(updated),
-                      );
-                },
-              ),
               ListTile(
                 leading: const Icon(Icons.photo_size_select_small),
                 title: Text(loc.thumbnailQualityLabel),
                 subtitle: Text('${settings.thumbnailQuality}%'),
                 onTap: () => _showThumbnailQualityDialog(context, settings),
+              ),
+              ListTile(
+                leading: const Icon(Icons.grid_view),
+                title: Text(loc.gridColumns),
+                subtitle: Text('${settings.gridColumns} ${loc.columns}'),
+                onTap: () => _showGridColumnsDialog(context, settings),
               ),
               const Divider(),
               _SectionHeader(title: loc.storageSection),
@@ -199,7 +184,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final loc = AppLocalizations.of(context);
     if (_stats == null) return loc.storageStats;
     final s = _stats!;
-    return '${loc.clearedThumbnailCount.replaceAll("%d", "\${s.totalMediaCount}")} · ${_formatSize(s.totalSize)} · ${_formatSize(s.databaseSize)}';
+    return '${s.totalMediaCount} ${loc.files} · ${_formatSize(s.totalSize)} · DB ${_formatSize(s.databaseSize)}';
   }
 
   String _formatSize(dynamic size) {
@@ -301,7 +286,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       themeMode: settings.themeMode,
       gridColumns: settings.gridColumns,
       albumGridColumns: settings.albumGridColumns,
-      showContentPreviews: settings.showContentPreviews,
       thumbnailQuality: settings.thumbnailQuality,
       language: value,
       dynamicColor: settings.dynamicColor,
@@ -374,88 +358,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _showGridColumnsDialog(
-      BuildContext context, rust_settings.AppSettings settings) {
-    final columns = [2, 3, 4, 5];
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('选择网格列数'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: columns.map((count) {
-              return RadioListTile<int>(
-                title: Text('$count 列'),
-                value: count,
-                groupValue: settings.gridColumns,
-                onChanged: (value) {
-                  if (value != null) {
-                    final newSettings = rust_settings.AppSettings(
-                      themeMode: settings.themeMode,
-                      gridColumns: value,
-                      albumGridColumns: settings.albumGridColumns,
-                      showContentPreviews: settings.showContentPreviews,
-                      thumbnailQuality: settings.thumbnailQuality,
-                      language: settings.language,
-                      dynamicColor: settings.dynamicColor,
-                      lastScanPath: settings.lastScanPath,
-                    );
-                    context
-                        .read<AppBloc>()
-                        .add(AppSettingsUpdatedEvent(newSettings));
-                    Navigator.pop(context);
-                  }
-                },
-              );
-            }).toList(),
-          ),
-        );
-      },
-    );
-  }
-
-  void _showAlbumGridColumnsDialog(
-      BuildContext context, rust_settings.AppSettings settings) {
-    final columns = [2, 3, 4, 5];
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('选择相册网格列数'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: columns.map((count) {
-              return RadioListTile<int>(
-                title: Text('$count 列'),
-                value: count,
-                groupValue: settings.albumGridColumns,
-                onChanged: (value) {
-                  if (value != null) {
-                    final newSettings = rust_settings.AppSettings(
-                      themeMode: settings.themeMode,
-                      gridColumns: settings.gridColumns,
-                      albumGridColumns: value,
-                      showContentPreviews: settings.showContentPreviews,
-                      thumbnailQuality: settings.thumbnailQuality,
-                      language: settings.language,
-                      dynamicColor: settings.dynamicColor,
-                      lastScanPath: settings.lastScanPath,
-                    );
-                    context
-                        .read<AppBloc>()
-                        .add(AppSettingsUpdatedEvent(newSettings));
-                    Navigator.pop(context);
-                  }
-                },
-              );
-            }).toList(),
-          ),
-        );
-      },
-    );
-  }
-
   void _showThumbnailQualityDialog(
       BuildContext context, rust_settings.AppSettings settings) {
     final qualities = [50, 60, 70, 80, 85, 90, 95, 100];
@@ -477,8 +379,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       themeMode: settings.themeMode,
                       gridColumns: settings.gridColumns,
                       albumGridColumns: settings.albumGridColumns,
-                      showContentPreviews: settings.showContentPreviews,
                       thumbnailQuality: value,
+                      language: settings.language,
+                      dynamicColor: settings.dynamicColor,
+                      lastScanPath: settings.lastScanPath,
+                    );
+                    context
+                        .read<AppBloc>()
+                        .add(AppSettingsUpdatedEvent(newSettings));
+                    Navigator.pop(context);
+                  }
+                },
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showGridColumnsDialog(
+      BuildContext context, rust_settings.AppSettings settings) {
+    final loc = AppLocalizations.of(context);
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(loc.gridColumns),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [2, 3, 4, 5, 6].map((c) {
+              return RadioListTile<int>(
+                title: Text('$c ${loc.columns}'),
+                value: c,
+                groupValue: settings.gridColumns,
+                onChanged: (value) {
+                  if (value != null) {
+                    final newSettings = rust_settings.AppSettings(
+                      themeMode: settings.themeMode,
+                      gridColumns: value,
+                      albumGridColumns: value,
+                      thumbnailQuality: settings.thumbnailQuality,
                       language: settings.language,
                       dynamicColor: settings.dynamicColor,
                       lastScanPath: settings.lastScanPath,
@@ -984,4 +925,3 @@ class _SectionHeader extends StatelessWidget {
     );
   }
 }
-

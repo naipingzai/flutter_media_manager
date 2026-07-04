@@ -16,11 +16,7 @@ class TagScreen extends StatefulWidget {
   State<TagScreen> createState() => _TagScreenState();
 }
 
-enum TagFilterMode { and, or }
-
 class _TagScreenState extends State<TagScreen> {
-  // 标签筛选模式
-  TagFilterMode _filterMode = TagFilterMode.or;
   final Set<String> _selectedTagIds = {};
   List<MediaItem>? _filteredMedia;
   int get _tagColumns => context.watch<AppBloc>().state.settings?.gridColumns ?? 3;
@@ -68,34 +64,6 @@ class _TagScreenState extends State<TagScreen> {
           },
         ),
         actions: [
-          // 列数控制
-          PopupMenuButton<int>(
-            icon: const Icon(Icons.grid_view),
-            tooltip: loc.gridColumns,
-            onSelected: (cols) {
-              final s = context.read<AppBloc>().state.settings;
-              if (s != null) {
-                final updated = rust_settings.AppSettings(
-                  themeMode: s.themeMode,
-                  gridColumns: cols,
-                  albumGridColumns: cols,
-                  showContentPreviews: s.showContentPreviews,
-                  thumbnailQuality: s.thumbnailQuality,
-                  language: s.language,
-                  dynamicColor: s.dynamicColor,
-                  lastScanPath: s.lastScanPath,
-                );
-                context.read<AppBloc>().add(AppSettingsUpdatedEvent(updated));
-              }
-            },
-            itemBuilder: (_) => [3, 4, 5, 6].map((cols) {
-              return CheckedPopupMenuItem<int>(
-                value: cols,
-                checked: _tagColumns == cols,
-                child: Text('$cols ${loc.columns}'),
-              );
-            }).toList(),
-          ),
           if (_filteredMedia != null)
             IconButton(
               icon: const Icon(Icons.clear_all),
@@ -333,7 +301,7 @@ class _TagScreenState extends State<TagScreen> {
           Icon(Icons.filter_list, size: 16, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 8),
           Text(
-            '${_filterMode == TagFilterMode.and ? loc.filterAnd : loc.filterOr} · ${_selectedTagIds.length} ${loc.tags} · ${_filteredMedia!.length}',
+            '${_selectedTagIds.length} ${loc.tags} · ${_filteredMedia!.length}',
             style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ],
@@ -792,18 +760,16 @@ class _TagScreenState extends State<TagScreen> {
     final allTags = await tag_api.getAllTags();
     if (!mounted) return;
 
-    final result = await showDialog<Map<String, dynamic>>(
+    final result = await showDialog<Set<String>>(
       context: context,
       builder: (ctx) => _TagFilterDialog(
         allTags: allTags,
         selectedTagIds: _selectedTagIds,
-        filterMode: _filterMode,
       ),
     );
 
     if (result == null) return;
-    final selectedIds = result['selectedIds'] as Set<String>;
-    final mode = result['mode'] as TagFilterMode;
+    final selectedIds = result;
 
     if (selectedIds.isEmpty) {
       _clearFilter();
@@ -814,7 +780,6 @@ class _TagScreenState extends State<TagScreen> {
       _selectedTagIds
         ..clear()
         ..addAll(selectedIds);
-      _filterMode = mode;
     });
 
     await _executeFilter();
@@ -824,11 +789,7 @@ class _TagScreenState extends State<TagScreen> {
   Future<void> _executeFilter() async {
     try {
       List<MediaItem> results;
-      if (_filterMode == TagFilterMode.and) {
-        results = await tag_api.getMediaByTagsAnd(tagIds: _selectedTagIds.toList());
-      } else {
-        results = await tag_api.getMediaByTagsOr(tagIds: _selectedTagIds.toList());
-      }
+      results = await tag_api.getMediaByTagsOr(tagIds: _selectedTagIds.toList());
       if (mounted) {
         setState(() => _filteredMedia = results);
       }
@@ -895,7 +856,7 @@ class _TagCard extends StatelessWidget {
           children: [
             Expanded(
               child: Container(
-                color: (color ?? Theme.of(context).colorScheme.primary).withOpacity(0.15),
+                color: (color ?? Theme.of(context).colorScheme.primary).withValues(alpha: 0.15),
                 child: Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -918,7 +879,7 @@ class _TagCard extends StatelessWidget {
               ),
             ),
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 border: Border(
                   left: BorderSide(
@@ -929,17 +890,22 @@ class _TagCard extends StatelessWidget {
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     tag.name,
-                    style: Theme.of(context).textTheme.titleSmall,
-                    maxLines: 1,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
                     '$mediaCount ${AppLocalizations.of(context).files}',
-                    style: Theme.of(context).textTheme.bodySmall,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -1036,16 +1002,14 @@ class _MediaGridItem extends StatelessWidget {
   }
 }
 
-/// 标签筛选对话框（支持 AND/OR 模式）
+/// 标签筛选对话框
 class _TagFilterDialog extends StatefulWidget {
   final List<tag_api.Tag> allTags;
   final Set<String> selectedTagIds;
-  final TagFilterMode filterMode;
 
   const _TagFilterDialog({
     required this.allTags,
     required this.selectedTagIds,
-    required this.filterMode,
   });
 
   @override
@@ -1054,13 +1018,11 @@ class _TagFilterDialog extends StatefulWidget {
 
 class _TagFilterDialogState extends State<_TagFilterDialog> {
   late Set<String> _selected;
-  late TagFilterMode _mode;
 
   @override
   void initState() {
     super.initState();
     _selected = Set.from(widget.selectedTagIds);
-    _mode = widget.filterMode;
   }
 
   @override
@@ -1071,60 +1033,35 @@ class _TagFilterDialogState extends State<_TagFilterDialog> {
       content: SizedBox(
         width: double.maxFinite,
         height: 400,
-        child: Column(
-          children: [
-            // AND/OR 模式切换
-            SegmentedButton<TagFilterMode>(
-              segments: [
-                ButtonSegment(
-                  value: TagFilterMode.or,
-                  label: Text(loc.filterOr),
-                ),
-                ButtonSegment(
-                  value: TagFilterMode.and,
-                  label: Text(loc.filterAnd),
-                ),
-              ],
-              selected: {_mode},
-              onSelectionChanged: (selected) {
-                setState(() => _mode = selected.first);
-              },
-            ),
-            const SizedBox(height: 12),
-            // 标签列表
-            Expanded(
-              child: widget.allTags.isEmpty
-                  ? Center(child: Text(loc.noTags))
-                  : ListView.builder(
-                      itemCount: widget.allTags.length,
-                      itemBuilder: (ctx, i) {
-                        final tag = widget.allTags[i];
-                        final isSelected = _selected.contains(tag.id);
-                        return CheckboxListTile(
-                          value: isSelected,
-                          onChanged: (val) {
-                            setState(() {
-                              if (val == true) {
-                                _selected.add(tag.id);
-                              } else {
-                                _selected.remove(tag.id);
-                              }
-                            });
-                          },
-                          title: Text(tag.name),
-                          secondary: tag.color != null
-                              ? CircleAvatar(
-                                  radius: 12,
-                                  backgroundColor: Color(int.parse(
-                                      tag.color!.replaceFirst('#', '0xFF'))),
-                                )
-                              : null,
-                        );
-                      },
-                    ),
-            ),
-          ],
-        ),
+        child: widget.allTags.isEmpty
+            ? Center(child: Text(loc.noTags))
+            : ListView.builder(
+                itemCount: widget.allTags.length,
+                itemBuilder: (ctx, i) {
+                  final tag = widget.allTags[i];
+                  final isSelected = _selected.contains(tag.id);
+                  return CheckboxListTile(
+                    value: isSelected,
+                    onChanged: (val) {
+                      setState(() {
+                        if (val == true) {
+                          _selected.add(tag.id);
+                        } else {
+                          _selected.remove(tag.id);
+                        }
+                      });
+                    },
+                    title: Text(tag.name),
+                    secondary: tag.color != null
+                        ? CircleAvatar(
+                            radius: 12,
+                            backgroundColor: Color(int.parse(
+                                tag.color!.replaceFirst('#', '0xFF'))),
+                          )
+                        : null,
+                  );
+                },
+              ),
       ),
       actions: [
         TextButton(
@@ -1133,10 +1070,7 @@ class _TagFilterDialogState extends State<_TagFilterDialog> {
         ),
         FilledButton(
           onPressed: () {
-            Navigator.pop(context, {
-              'selectedIds': _selected,
-              'mode': _mode,
-            });
+            Navigator.pop(context, _selected);
           },
           child: Text('${loc.tags} (${_selected.length})'),
         ),

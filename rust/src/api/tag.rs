@@ -33,10 +33,10 @@ pub struct TagBreadcrumb {
     pub name: String,
 }
 
-/// 过滤模式
+/// 标签过滤模式（AND/OR）
 #[frb]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum FilterMode {
+pub enum TagFilterMode {
     And,
     Or,
 }

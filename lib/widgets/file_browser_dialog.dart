@@ -276,7 +276,7 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
           // 导航栏
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -534,7 +534,7 @@ class _DirectoryPickerPageState extends State<DirectoryPickerPage> {
           // 导航栏
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(

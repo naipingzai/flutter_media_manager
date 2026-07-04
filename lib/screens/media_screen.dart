@@ -25,8 +25,6 @@ class MediaScreen extends StatefulWidget {
 }
 
 class _MediaScreenState extends State<MediaScreen> {
-  FilterMode? _filterMode;
-
   @override
   void initState() {
     super.initState();
@@ -35,198 +33,141 @@ class _MediaScreenState extends State<MediaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(AppLocalizations.of(context).tabAllMedia),
-        actions: [
-          // 列数控制按钮
-          BlocBuilder<MediaBloc, MediaState>(
-            buildWhen: (prev, curr) => prev.gridColumns != curr.gridColumns,
-            builder: (context, state) {
-              return PopupMenuButton<int>(
-                icon: const Icon(Icons.grid_view),
-                tooltip: AppLocalizations.of(context).gridColumns,
-                onSelected: (cols) {
-                  context.read<MediaBloc>().add(MediaSetGridColumnsEvent(cols));
-                },
-                itemBuilder: (_) => [3, 4, 5, 6].map((cols) {
-                  return CheckedPopupMenuItem<int>(
-                    value: cols,
-                    checked: state.gridColumns == cols,
-                    child: Text('$cols ${AppLocalizations.of(context).columns}'),
-                  );
-                }).toList(),
-              );
-            },
-          ),
-          // 排序按钮
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.sort),
-            tooltip: AppLocalizations.of(context).sort,
-            onSelected: (val) {
-              final parts = val.split(':');
-              final field = SortField.values.firstWhere((f) => f.name == parts[0]);
-              final order = SortOrder.values.firstWhere((o) => o.name == parts[1]);
-              context.read<MediaBloc>().add(MediaSortEvent(field, order));
-            },
-            itemBuilder: (_) {
-              final loc = AppLocalizations.of(context);
-              return [
-                PopupMenuItem(value: 'date:descending', child: Text(loc.sortNewestFirst)),
-                PopupMenuItem(value: 'date:ascending', child: Text(loc.sortOldestFirst)),
-                PopupMenuItem(value: 'name:ascending', child: Text(loc.sortNameAsc)),
-                PopupMenuItem(value: 'name:descending', child: Text(loc.sortNameDesc)),
-                PopupMenuItem(value: 'size:descending', child: Text(loc.sortSizeDesc)),
-                PopupMenuItem(value: 'size:ascending', child: Text(loc.sortSizeAsc)),
-              ];
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.search),
-            tooltip: AppLocalizations.of(context).search,
-            onPressed: () => _showSearch(context),
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            tooltip: AppLocalizations.of(context).settings,
-            onPressed: () => _openSettings(context),
-          ),
-        ],
-      ),
-      body: BlocBuilder<MediaBloc, MediaState>(
-        builder: (context, state) => Column(
-          children: [
-            // 过滤器 Chip 行（多选模式下隐藏）
-            if (!state.isSelectionMode) _buildFilterChips(context, state),
-            // 内容区域
-            Expanded(child: _buildBody(context, state)),
-          ],
-        ),
-      ),
-      // 多选模式底栏
-      bottomNavigationBar: BlocBuilder<MediaBloc, MediaState>(
-        builder: (context, state) {
-          if (!state.isSelectionMode) return const SizedBox.shrink();
-          return _buildSelectionBottomBar(context, state);
-        },
-      ),
-      // FAB: 导入（多选模式下隐藏）
-      floatingActionButton: BlocBuilder<MediaBloc, MediaState>(
-        builder: (context, state) {
-          if (state.isSelectionMode) return const SizedBox.shrink();
-          return FloatingActionButton(
-            onPressed: () => _showImportMenu(context),
-            tooltip: AppLocalizations.of(context).importMedia,
-            child: const Icon(Icons.add_photo_alternate),
-          );
-        },
-      ),
-    );
-  }
-
-  /// 过滤器 Chip 行
-  ///
-  /// 规范 Skill-10 §2.2：提供两组过滤
-  /// 1. 媒体类型：全部/图片/视频/音频/文档（多选互斥）
-  /// 2. 关联状态：有标签/无标签/有相册/无相册（多选互斥）
-  Widget _buildFilterChips(BuildContext context, MediaState state) {
-    final loc = AppLocalizations.of(context);
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          // ── 媒体类型过滤（Skill-10 §2.2：3 个 chip） ──
-          _buildTypeChip(context, loc.filterAll, null),
-          const SizedBox(width: 6),
-          _buildTypeChip(context, loc.filterImages, MediaType.image),
-          const SizedBox(width: 6),
-          _buildTypeChip(context, loc.filterVideos, MediaType.video),
-          const SizedBox(width: 16),
-          const VerticalDivider(width: 1, thickness: 1),
-          const SizedBox(width: 16),
-          // ── 关联状态过滤 ──
-          _buildFilterChip(loc.filterWithTags, FilterMode.withTags),
-          const SizedBox(width: 6),
-          _buildFilterChip(loc.filterWithoutTags, FilterMode.withoutTags),
-          const SizedBox(width: 6),
-          _buildFilterChip(loc.filterWithAlbums, FilterMode.withAlbums),
-          const SizedBox(width: 6),
-          _buildFilterChip(loc.filterWithoutAlbums, FilterMode.withoutAlbums),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilterChip(String label, FilterMode? mode) {
-    final selected = _filterMode == mode;
-    return FilterChip(
-      label: Text(label),
-      selected: selected,
-      onSelected: (_) => _toggleFilter(mode),
-    );
-  }
-
-  Widget _buildTypeChip(BuildContext context, String label, MediaType? type) {
     return BlocBuilder<MediaBloc, MediaState>(
-      buildWhen: (prev, curr) => prev.currentFilter != curr.currentFilter,
-      builder: (ctx, state) {
-        final selected = state.currentFilter == type;
-        return FilterChip(
-          label: Text(label),
-          selected: selected,
-          avatar: type != null ? Icon(_iconForType(type), size: 16) : null,
-          onSelected: (_) => _toggleTypeFilter(type),
+      builder: (context, state) {
+        return PopScope(
+          canPop: !state.isSelectionMode,
+          onPopInvoked: (didPop) {
+            if (!didPop && state.isSelectionMode) {
+              context.read<MediaBloc>().add(const MediaClearSelectionEvent());
+              context.read<MediaBloc>().add(const MediaToggleSelectionModeEvent());
+            }
+          },
+          child: Scaffold(
+            appBar: AppBar(
+              title: Text(AppLocalizations.of(context).tabAllMedia),
+              actions: [
+                // 过滤菜单
+                _buildFilterMenuButton(context, state),
+                // 排序按钮
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.sort),
+                  tooltip: AppLocalizations.of(context).sort,
+                  onSelected: (val) {
+                    final parts = val.split(':');
+                    final field = SortField.values.firstWhere((f) => f.name == parts[0]);
+                    final order = SortOrder.values.firstWhere((o) => o.name == parts[1]);
+                    context.read<MediaBloc>().add(MediaSortEvent(field, order));
+                  },
+                  itemBuilder: (_) {
+                    final loc = AppLocalizations.of(context);
+                    return [
+                      PopupMenuItem(value: 'date:descending', child: Text(loc.sortNewestFirst)),
+                      PopupMenuItem(value: 'date:ascending', child: Text(loc.sortOldestFirst)),
+                      PopupMenuItem(value: 'name:ascending', child: Text(loc.sortNameAsc)),
+                      PopupMenuItem(value: 'name:descending', child: Text(loc.sortNameDesc)),
+                      PopupMenuItem(value: 'size:descending', child: Text(loc.sortSizeDesc)),
+                      PopupMenuItem(value: 'size:ascending', child: Text(loc.sortSizeAsc)),
+                    ];
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.search),
+                  tooltip: AppLocalizations.of(context).search,
+                  onPressed: () => _showSearch(context),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.settings_outlined),
+                  tooltip: AppLocalizations.of(context).settings,
+                  onPressed: () => _openSettings(context),
+                ),
+              ],
+            ),
+            body: _buildBody(context, state),
+            // 多选模式底栏
+            bottomNavigationBar: state.isSelectionMode
+                ? _buildSelectionBottomBar(context, state)
+                : const SizedBox.shrink(),
+            // FAB: 导入（多选模式下隐藏）
+            floatingActionButton: state.isSelectionMode
+                ? const SizedBox.shrink()
+                : FloatingActionButton(
+                    onPressed: () => _showImportMenu(context),
+                    tooltip: AppLocalizations.of(context).importMedia,
+                    child: const Icon(Icons.add_photo_alternate),
+                  ),
+          ),
         );
       },
     );
   }
 
-  IconData _iconForType(MediaType type) {
-    switch (type) {
-      case MediaType.image:
-        return Icons.image;
-      case MediaType.video:
-        return Icons.videocam;
-      case MediaType.audio:
-        return Icons.audiotrack;
-      case MediaType.document:
-        return Icons.description;
-      default:
-        return Icons.insert_drive_file;
-    }
-  }
-
-  void _toggleFilter(FilterMode? mode) {
-    setState(() {
-      if (_filterMode == mode) {
-        _filterMode = null;
-      } else {
-        _filterMode = mode;
-      }
-    });
-    if (mode != null) {
-      context.read<MediaBloc>().add(MediaFilterByFilterModeEvent(mode));
+  /// 右上角过滤菜单
+  ///
+  /// 将“全部/图片/视频/有标签”收敛到右上角按钮，避免顶部 Chip 行遮挡内容。
+  Widget _buildFilterMenuButton(BuildContext context, MediaState state) {
+    final loc = AppLocalizations.of(context);
+    String currentLabel;
+    if (state.currentFilterMode == FilterMode.withTags) {
+      currentLabel = loc.filterWithTags;
+    } else if (state.currentFilter == MediaType.image) {
+      currentLabel = loc.filterImages;
+    } else if (state.currentFilter == MediaType.video) {
+      currentLabel = loc.filterVideos;
     } else {
-      context.read<MediaBloc>().add(const MediaLoadAllEvent());
+      currentLabel = loc.filterAll;
     }
-    context.read<MediaBloc>().add(const MediaClearSelectionEvent());
-  }
 
-  void _toggleTypeFilter(MediaType? type) {
-    if (type == null) {
-      // 「全部」— 清空类型过滤
-      context.read<MediaBloc>().add(const MediaLoadAllEvent());
-    } else {
-      // 在「全部 ↔ 类型」之间互斥切换
-      final bloc = context.read<MediaBloc>();
-      if (bloc.state.currentFilter == type) {
-        bloc.add(const MediaLoadAllEvent());
-      } else {
-        bloc.add(MediaFilterByTypeEvent(type));
-      }
-    }
-    context.read<MediaBloc>().add(const MediaClearSelectionEvent());
+    return PopupMenuButton<String>(
+      icon: Badge(
+        label: Text(currentLabel),
+        child: const Icon(Icons.filter_list),
+      ),
+      tooltip: AppLocalizations.of(context).filter,
+      onSelected: (value) {
+        final bloc = context.read<MediaBloc>();
+        bloc.add(const MediaClearSelectionEvent());
+        switch (value) {
+          case 'all':
+            bloc.add(const MediaLoadAllEvent());
+            break;
+          case 'image':
+            bloc.add(const MediaFilterByTypeEvent(MediaType.image));
+            break;
+          case 'video':
+            bloc.add(const MediaFilterByTypeEvent(MediaType.video));
+            break;
+          case 'withTags':
+            bloc.add(const MediaFilterByFilterModeEvent(FilterMode.withTags));
+            break;
+        }
+      },
+      itemBuilder: (context) {
+        return [
+          CheckedPopupMenuItem(
+            value: 'all',
+            checked: state.currentFilter == null && state.currentFilterMode == null,
+            child: Text(loc.filterAll),
+          ),
+          CheckedPopupMenuItem(
+            value: 'image',
+            checked: state.currentFilter == MediaType.image,
+            child: Text(loc.filterImages),
+          ),
+          CheckedPopupMenuItem(
+            value: 'video',
+            checked: state.currentFilter == MediaType.video,
+            child: Text(loc.filterVideos),
+          ),
+          const PopupMenuDivider(),
+          CheckedPopupMenuItem(
+            value: 'withTags',
+            checked: state.currentFilterMode == FilterMode.withTags,
+            child: Text(loc.filterWithTags),
+          ),
+        ];
+      },
+    );
   }
 
   /// 判断当前过滤结果是否已全部选中
@@ -267,7 +208,8 @@ class _MediaScreenState extends State<MediaScreen> {
         return MediaGrid(
           mediaList: state.filteredList,
           selectedIds: state.selectedMediaIds,
-          crossAxisCount: state.gridColumns,
+          isSelectionMode: state.isSelectionMode,
+          crossAxisCount: context.read<AppBloc>().state.settings?.gridColumns ?? 3,
         );
     }
   }
@@ -275,7 +217,7 @@ class _MediaScreenState extends State<MediaScreen> {
   Widget _buildEmptyState() {
     final loc = AppLocalizations.of(context);
     String text = loc.noMedia;
-    String? subtitle = _filterMode == null ? loc.noMediaDesc : null;
+    String? subtitle = loc.noMediaDesc;
 
     return Center(
       child: Padding(
@@ -296,7 +238,7 @@ class _MediaScreenState extends State<MediaScreen> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, -2)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, -2)),
         ],
       ),
       child: SafeArea(
@@ -787,7 +729,7 @@ class _SearchOverlayState extends State<_SearchOverlay> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.search, size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3)),
+          Icon(Icons.search, size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.3)),
           const SizedBox(height: 12),
           Text(AppLocalizations.of(context).searchHint, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
         ],

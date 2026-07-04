@@ -92,18 +92,23 @@ set(RUST_CRATE_DIR "${CMAKE_SOURCE_DIR}/../rust")
 set(RUST_LIB_NAME "libadvance_media_kb.so")
 set(RUST_LIB_DIR "${CMAKE_BINARY_DIR}/rust_build")
 
-# Build the Rust shared library using cargo
-add_custom_command(
-  OUTPUT "${RUST_LIB_DIR}/${RUST_LIB_NAME}"
-  COMMAND ${CMAKE_COMMAND} -E make_directory "${RUST_LIB_DIR}"
-  COMMAND cargo build --release --manifest-path "${RUST_CRATE_DIR}/Cargo.toml" --target-dir "${CMAKE_BINARY_DIR}/cargo_target"
-  COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    "${CMAKE_BINARY_DIR}/cargo_target/release/${RUST_LIB_NAME}"
-    "${RUST_LIB_DIR}/${RUST_LIB_NAME}"
-  COMMENT "Building Rust library..."
-)
-
-add_custom_target(rust_build ALL DEPENDS "${RUST_LIB_DIR}/${RUST_LIB_NAME}")
+# Use pre-built Rust library if available, otherwise build with cargo
+if(EXISTS "${RUST_LIB_DIR}/${RUST_LIB_NAME}")
+  message(STATUS "Using pre-built Rust library: ${RUST_LIB_DIR}/${RUST_LIB_NAME}")
+  add_custom_target(rust_build ALL DEPENDS "${RUST_LIB_DIR}/${RUST_LIB_NAME}")
+else()
+  # Build the Rust shared library using cargo
+  add_custom_command(
+    OUTPUT "${RUST_LIB_DIR}/${RUST_LIB_NAME}"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${RUST_LIB_DIR}"
+    COMMAND cargo build --release --manifest-path "${RUST_CRATE_DIR}/Cargo.toml" --target-dir "${CMAKE_BINARY_DIR}/cargo_target"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      "${CMAKE_BINARY_DIR}/cargo_target/release/${RUST_LIB_NAME}"
+      "${RUST_LIB_DIR}/${RUST_LIB_NAME}"
+    COMMENT "Building Rust library..."
+  )
+  add_custom_target(rust_build ALL DEPENDS "${RUST_LIB_DIR}/${RUST_LIB_NAME}")
+endif()
 
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.

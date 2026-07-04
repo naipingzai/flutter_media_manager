@@ -4,7 +4,6 @@ import 'package:advance_media_kb/screens/home_screen.dart';
 import 'package:advance_media_kb/screens/settings_screen.dart';
 import 'package:advance_media_kb/widgets/viewer/viewer_page.dart';
 import 'package:advance_media_kb/src/rust/api/media.dart' as media_api;
-import 'package:advance_media_kb/screens/media_screen.dart';
 
 /// 搜索覆盖层（暂用 media_screen 内的 _SearchOverlay；预留接口）
 class SearchScreen extends StatelessWidget {

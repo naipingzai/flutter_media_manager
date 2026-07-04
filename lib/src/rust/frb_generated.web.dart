@@ -382,7 +382,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
       cst_encode_theme_mode(raw.themeMode),
       cst_encode_i_32(raw.gridColumns),
       cst_encode_i_32(raw.albumGridColumns),
-      cst_encode_i_32(raw.showContentPreviews),
       cst_encode_i_32(raw.thumbnailQuality),
       cst_encode_String(raw.language),
       cst_encode_i_32(raw.dynamicColor),

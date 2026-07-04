@@ -27,7 +27,7 @@ class ImageViewer extends StatelessWidget {
               const SizedBox(height: 16),
               Text(
                 '无法加载图片',
-                style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
               ),
             ],
           ),

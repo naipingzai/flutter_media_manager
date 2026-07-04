@@ -59,7 +59,7 @@ class MediaItemCard extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.7),
+                        color: Colors.black.withValues(alpha: 0.7),
                         borderRadius: BorderRadius.circular(AppRadius.sm),
                       ),
                       child: Text(
@@ -87,7 +87,7 @@ class MediaItemCard extends StatelessWidget {
                               : 1,
                         ),
                         color: isSelected
-                            ? colorScheme.primary.withOpacity(AppSize.overlayOpacity)
+                            ? colorScheme.primary.withValues(alpha: AppSize.overlayOpacity)
                             : null,
                       ),
                     ),

@@ -1,3 +1,4 @@
+/// ignore_for_file: invalid_use_of_internal_member
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,6 +12,7 @@ import 'package:advance_media_kb/src/rust/frb_generated.dart';
 import 'package:logger/logger.dart';
 import '../core/i18n/app_localizations.dart';
 import '../src/rust/api/settings.dart' as rust_settings;
+import '../widgets/viewer/viewer_page.dart';
 
 final _logger = Logger();
 
@@ -22,10 +24,33 @@ class AlbumScreen extends StatefulWidget {
   State<AlbumScreen> createState() => _AlbumScreenState();
 }
 
+enum AlbumSortMode { nameAsc, nameDesc, dateNewest, dateOldest, countMost, countLeast }
+
 class _AlbumScreenState extends State<AlbumScreen> {
+  AlbumSortMode _sortMode = AlbumSortMode.dateNewest;
+
   int get _albumColumns {
     final settings = context.watch<AppBloc>().state.settings;
     return settings?.gridColumns ?? 3;
+  }
+
+  List<AlbumWithInfo> _sortAlbums(List<AlbumWithInfo> albums) {
+    final sorted = List<AlbumWithInfo>.from(albums);
+    switch (_sortMode) {
+      case AlbumSortMode.nameAsc:
+        sorted.sort((a, b) => a.album.name.compareTo(b.album.name));
+      case AlbumSortMode.nameDesc:
+        sorted.sort((a, b) => b.album.name.compareTo(a.album.name));
+      case AlbumSortMode.dateNewest:
+        sorted.sort((a, b) => b.album.createdAt.compareTo(a.album.createdAt));
+      case AlbumSortMode.dateOldest:
+        sorted.sort((a, b) => a.album.createdAt.compareTo(b.album.createdAt));
+      case AlbumSortMode.countMost:
+        sorted.sort((a, b) => b.mediaCount.compareTo(a.mediaCount));
+      case AlbumSortMode.countLeast:
+        sorted.sort((a, b) => a.mediaCount.compareTo(b.mediaCount));
+    }
+    return sorted;
   }
 
   @override
@@ -41,94 +66,116 @@ class _AlbumScreenState extends State<AlbumScreen> {
       builder: (context, state) {
         final isSelectionMode = state.selectedMediaIds.isNotEmpty;
 
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(AppLocalizations.of(context).tabAlbums),
-            actions: [
-              BlocBuilder<AppBloc, AppState>(
-                buildWhen: (prev, curr) => prev.settings?.gridColumns != curr.settings?.gridColumns,
-                builder: (ctx, st) {
-                  final cols = st.settings?.gridColumns ?? 3;
-                  return PopupMenuButton<int>(
-                    icon: const Icon(Icons.grid_view),
-                    tooltip: AppLocalizations.of(context).gridColumns,
-                    onSelected: (c) {
-                      final s = st.settings!;
-                      final updated = rust_settings.AppSettings(
-                        themeMode: s.themeMode,
-                        gridColumns: c,
-                        albumGridColumns: c,
-                        showContentPreviews: s.showContentPreviews,
-                        thumbnailQuality: s.thumbnailQuality,
-                        language: s.language,
-                        dynamicColor: s.dynamicColor,
-                        lastScanPath: s.lastScanPath,
-                      );
-                      ctx.read<AppBloc>().add(AppSettingsUpdatedEvent(updated));
-                    },
-                    itemBuilder: (_) => [3, 4, 5, 6].map((c) {
-                      return CheckedPopupMenuItem<int>(
-                        value: c,
-                        checked: cols == c,
-                        child: Text('$c ${AppLocalizations.of(context).columns}'),
-                      );
-                    }).toList(),
-                  );
-                },
-              ),
-            ],
-          ),
-          body: Column(
-            children: [
-              // 面包屑导航
-              _BreadcrumbBar(
-                breadcrumb: state.breadcrumb,
-                isRoot: state.isRoot,
-                onHomeClick: () {
-                  context.read<AlbumBloc>().add(const AlbumNavigateToRootEvent());
-                },
-                onAlbumClick: (item) {
-                  context.read<AlbumBloc>().add(AlbumNavigateToEvent(item.id));
-                },
-              ),
-              // 内容区
-              Expanded(
-                child: _buildContent(context, state),
-              ),
-            ],
-          ),
-          // 选择模式下的底部操作栏
-          bottomNavigationBar: isSelectionMode
-              ? _SelectionBottomBar(
-                  count: state.selectedMediaIds.length,
-                  onCancel: () {
-                    context.read<AlbumBloc>().add(const AlbumClearSelectionEvent());
+        return WillPopScope(
+          onWillPop: () async {
+            if (isSelectionMode) {
+              context.read<AlbumBloc>().add(const AlbumClearSelectionEvent());
+              return false;
+            }
+            if (!state.isRoot) {
+              context.read<AlbumBloc>().add(const AlbumNavigateUpEvent());
+              return false;
+            }
+            return true;
+          },
+          child: Scaffold(
+            appBar: AppBar(
+              title: Text(AppLocalizations.of(context).tabAlbums),
+              actions: [
+                // 排序按钮
+                PopupMenuButton<AlbumSortMode>(
+                  icon: const Icon(Icons.sort),
+                  tooltip: '排序',
+                  onSelected: (mode) {
+                    setState(() => _sortMode = mode);
                   },
-                  onRemove: () {
-                    context.read<AlbumBloc>().add(const AlbumRemoveSelectedMediaEvent());
-                  },
-                )
-              : null,
-          // FAB
-          floatingActionButton: isSelectionMode
-              ? null
-              : Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (state.currentParentId != null)
-                      FloatingActionButton.small(
-                        heroTag: 'addMedia',
-                        onPressed: () => _showAddMediaDialog(context),
-                        child: const Icon(Icons.add_photo_alternate),
-                      ),
-                    const SizedBox(height: 8),
-                    FloatingActionButton(
-                      heroTag: 'createAlbum',
-                      onPressed: () => _showCreateAlbumDialog(context),
-                      child: const Icon(Icons.add),
+                  itemBuilder: (_) => [
+                    CheckedPopupMenuItem(
+                      value: AlbumSortMode.nameAsc,
+                      checked: _sortMode == AlbumSortMode.nameAsc,
+                      child: const Text('名称 A→Z'),
+                    ),
+                    CheckedPopupMenuItem(
+                      value: AlbumSortMode.nameDesc,
+                      checked: _sortMode == AlbumSortMode.nameDesc,
+                      child: const Text('名称 Z→A'),
+                    ),
+                    CheckedPopupMenuItem(
+                      value: AlbumSortMode.dateNewest,
+                      checked: _sortMode == AlbumSortMode.dateNewest,
+                      child: const Text('最新优先'),
+                    ),
+                    CheckedPopupMenuItem(
+                      value: AlbumSortMode.dateOldest,
+                      checked: _sortMode == AlbumSortMode.dateOldest,
+                      child: const Text('最旧优先'),
+                    ),
+                    CheckedPopupMenuItem(
+                      value: AlbumSortMode.countMost,
+                      checked: _sortMode == AlbumSortMode.countMost,
+                      child: const Text('媒体最多'),
+                    ),
+                    CheckedPopupMenuItem(
+                      value: AlbumSortMode.countLeast,
+                      checked: _sortMode == AlbumSortMode.countLeast,
+                      child: const Text('媒体最少'),
                     ),
                   ],
                 ),
+              ],
+            ),
+            body: Column(
+              children: [
+                // 面包屑导航
+                _BreadcrumbBar(
+                  breadcrumb: state.breadcrumb,
+                  isRoot: state.isRoot,
+                  onHomeClick: () {
+                    context.read<AlbumBloc>().add(const AlbumNavigateToRootEvent());
+                  },
+                  onAlbumClick: (item) {
+                    context.read<AlbumBloc>().add(AlbumNavigateToEvent(item.id));
+                  },
+                ),
+                // 内容区
+                Expanded(
+                  child: _buildContent(context, state),
+                ),
+              ],
+            ),
+            // 选择模式下的底部操作栏
+            bottomNavigationBar: isSelectionMode
+                ? _SelectionBottomBar(
+                    count: state.selectedMediaIds.length,
+                    onCancel: () {
+                      context.read<AlbumBloc>().add(const AlbumClearSelectionEvent());
+                    },
+                    onRemove: () {
+                      context.read<AlbumBloc>().add(const AlbumRemoveSelectedMediaEvent());
+                    },
+                  )
+                : null,
+            // FAB
+            floatingActionButton: isSelectionMode
+                ? null
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (state.currentParentId != null)
+                        FloatingActionButton.small(
+                          heroTag: 'addMedia',
+                          onPressed: () => _showAddMediaDialog(context),
+                          child: const Icon(Icons.add_photo_alternate),
+                        ),
+                      const SizedBox(height: 8),
+                      FloatingActionButton(
+                        heroTag: 'createAlbum',
+                        onPressed: () => _showCreateAlbumDialog(context),
+                        child: const Icon(Icons.add),
+                      ),
+                    ],
+                  ),
+          ),
         );
       },
     );
@@ -156,7 +203,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
     // 根目录只显示相册网格
     if (state.isRoot) {
       return _AlbumGrid(
-        albums: state.albums,
+        albums: _sortAlbums(state.albums),
         columns: _albumColumns,
         onAlbumClick: (album) {
           context.read<AlbumBloc>().add(AlbumNavigateToEvent(album.album.id));
@@ -165,17 +212,27 @@ class _AlbumScreenState extends State<AlbumScreen> {
       );
     }
 
-    // 子目录：子相册和媒体统一网格显示（Skill-11 要求统一展示）
+    // 子目录：子相册和媒体统一网格显示
     return _AlbumMediaGrid(
       mediaList: state.albumMedia,
       selectedIds: state.selectedMediaIds,
       columns: _albumColumns,
-      albums: hasChildren ? state.albums : null,
-      showContentPreview: context.read<AppBloc>().state.settings?.showContentPreviews != 0,
+      albums: hasChildren ? _sortAlbums(state.albums) : null,
       onTap: (media) {
-        context.read<AlbumBloc>().add(AlbumToggleMediaSelectionEvent(media.id));
+        if (state.selectedMediaIds.isNotEmpty) {
+          context.read<AlbumBloc>().add(AlbumToggleMediaSelectionEvent(media.id));
+        } else {
+          // 正常模式：单击打开查看器
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ViewerPage(initialMedia: media, mediaList: state.albumMedia),
+            ),
+          );
+        }
       },
       onLongPress: (media) {
+        // 长按进入多选模式
         context.read<AlbumBloc>().add(AlbumToggleMediaSelectionEvent(media.id));
       },
       onAlbumClick: (album) {
@@ -358,24 +415,21 @@ class _AlbumGrid extends StatelessWidget {
   final List<AlbumWithInfo> albums;
   final Function(AlbumWithInfo) onAlbumClick;
   final Function(AlbumWithInfo) onAlbumLongPress;
-  final Axis scrollDirection;
   final int columns;
 
   const _AlbumGrid({
     required this.albums,
     required this.onAlbumClick,
     required this.onAlbumLongPress,
-    this.scrollDirection = Axis.vertical,
     this.columns = 3,
   });
 
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
-      scrollDirection: scrollDirection,
       padding: const EdgeInsets.all(8),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: scrollDirection == Axis.vertical ? columns : 1,
+        crossAxisCount: columns,
         childAspectRatio: 1.0,
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
@@ -399,107 +453,47 @@ class _AlbumCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onLongPress;
 
-  final bool showContentPreview;
   const _AlbumCard({
     required this.album,
     required this.onTap,
     required this.onLongPress,
-    this.showContentPreview = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final hasCover = album.coverThumbnailPath != null;
-
     return GestureDetector(
       onTap: onTap,
       onLongPress: onLongPress,
       child: Card(
         clipBehavior: Clip.antiAlias,
-        child: Stack(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 封面图或默认图标
-            if (hasCover)
-              Positioned.fill(
-                child: Image.file(
-                  File(album.coverThumbnailPath!),
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _buildDefaultIcon(context),
-                ),
-              )
-            else
-              _buildDefaultIcon(context),
-
-            // 渐变蒙层
-            if (hasCover)
-              Positioned.fill(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        Colors.black.withOpacity(0.6),
-                      ],
-                    ),
+            Expanded(
+              child: Container(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                child: const Center(
+                  child: Icon(
+                    Icons.folder,
+                    size: 48,
+                    color: Colors.blue,
                   ),
                 ),
-              ),
-
-            // 相册名 + 媒体数量
-            Positioned(
-              left: 8,
-              bottom: 8,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    album.album.name,
-                    style: TextStyle(
-                      color: hasCover ? Colors.white : Theme.of(context).colorScheme.onSurface,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Text(
-                    '${album.mediaCount} ${AppLocalizations.of(context).files}',
-                    style: TextStyle(
-                      color: hasCover ? Colors.white70 : Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
               ),
             ),
-
-            // 子相册指示
-            if (album.hasChildren > 0)
-              Positioned(
-                right: 6,
-                top: 6,
-                child: Icon(
-                  Icons.chevron_right,
-                  size: 20,
-                  color: hasCover ? Colors.white : Theme.of(context).colorScheme.onSurfaceVariant,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+              child: Text(
+                album.album.name,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
                 ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
               ),
+            ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDefaultIcon(BuildContext context) {
-    return Container(
-      color: Theme.of(context).colorScheme.surfaceVariant,
-      child: Center(
-        child: Icon(
-          Icons.folder,
-          size: 48,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
       ),
     );
@@ -522,7 +516,7 @@ class _EmptyState extends StatelessWidget {
           Icon(
             Icons.folder_open,
             size: 64,
-            color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.5),
+            color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 16),
           Text(
@@ -536,7 +530,7 @@ class _EmptyState extends StatelessWidget {
             Text(
               subMessage!,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                   ),
             ),
           ],
@@ -590,18 +584,16 @@ class _AlbumMediaGrid extends StatelessWidget {
   final List<AlbumWithInfo>? albums;
   final void Function(AlbumWithInfo)? onAlbumClick;
   final void Function(AlbumWithInfo)? onAlbumLongPress;
-  final bool showContentPreview;
-
   const _AlbumMediaGrid({
     required this.mediaList,
     required this.selectedIds,
     required this.onTap,
     required this.onLongPress,
-    this.columns = 3,
+    this.columns = 3
+,
     this.albums,
     this.onAlbumClick,
     this.onAlbumLongPress,
-    this.showContentPreview = false,
   });
 
   @override
@@ -653,7 +645,7 @@ class _AlbumMediaGrid extends StatelessWidget {
                 Positioned.fill(
                   child: Container(
                     color: isSelected
-                        ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
+                        ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
                         : Colors.transparent,
                   ),
                 ),
@@ -666,7 +658,7 @@ class _AlbumMediaGrid extends StatelessWidget {
                     size: 24,
                     color: isSelected
                         ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                        : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                   ),
                 ),
             ],
@@ -762,7 +754,7 @@ class _AddMediaDialogContentState extends State<_AddMediaDialogContent> {
                             if (isSelected)
                               Positioned.fill(
                                 child: Container(
-                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                                 ),
                               ),
                             if (isSelected)

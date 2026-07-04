@@ -83,7 +83,8 @@ class ErrorApp extends StatelessWidget {
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
-            child: Column(
+            child: SingleChildScrollView(
+        child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Icon(Icons.error_outline, color: Colors.red, size: 64),
@@ -93,14 +94,15 @@ class ErrorApp extends StatelessWidget {
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
-                Text(
+                SelectableText(
                   error,
-                  style: const TextStyle(fontSize: 14, color: Colors.red),
+                  style: const TextStyle(fontSize: 12, color: Colors.red),
                   textAlign: TextAlign.center,
                 ),
               ],
             ),
           ),
+        ),
         ),
       ),
     );

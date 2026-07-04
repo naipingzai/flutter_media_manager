@@ -25,6 +25,7 @@ class MediaBloc extends Bloc<MediaEvent, MediaState> {
     on<MediaRefreshEvent>(_onRefresh);
     on<MediaSelectEvent>(_onSelect);
     on<MediaClearSelectionEvent>(_onClearSelection);
+    on<MediaToggleSelectAllEvent>(_onToggleSelectAll);
     on<MediaToggleSelectionModeEvent>(_onToggleSelectionMode);
     on<MediaLoadAdjacentEvent>(_onLoadAdjacent);
     on<MediaSortEvent>(_onSort);
@@ -202,13 +203,14 @@ class MediaBloc extends Bloc<MediaEvent, MediaState> {
     MediaToggleSelectAllEvent event,
     Emitter<MediaState> emit,
   ) {
-    final filteredIds = state.filteredList.map((m) => m.id).toSet();
-    // 若当前过滤列表已全选则取消全选，否则全选
-    final allSelected =
-        filteredIds.isNotEmpty && state.selectedMediaIds.containsAll(filteredIds);
-    emit(state.copyWith(
-      selectedMediaIds: allSelected ? <String>{} : filteredIds,
-    ));
+    final allIds = state.filteredList.map((m) => m.id).toSet();
+    final currentlySelected = state.selectedMediaIds;
+    final allSelected = allIds.isNotEmpty && allIds.every(currentlySelected.contains);
+    if (allSelected) {
+      emit(state.copyWith(selectedMediaIds: {}));
+    } else {
+      emit(state.copyWith(selectedMediaIds: allIds, isSelectionMode: true));
+    }
   }
 
   void _onToggleSelectionMode(
@@ -253,7 +255,6 @@ class MediaBloc extends Bloc<MediaEvent, MediaState> {
           comparison = a.mediaType.index.compareTo(b.mediaType.index);
           break;
         case SortField.date:
-        default:
           comparison = a.createdAt.compareTo(b.createdAt);
           break;
       }

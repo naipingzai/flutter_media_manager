@@ -12,7 +12,7 @@ pub enum ThemeMode {
     Dark,
 }
 
-/// 应用设置 - Skill-08 §1 (8 个设置项)
+/// 应用设置
 #[frb]
 #[derive(Debug, Clone)]
 pub struct AppSettings {
@@ -22,8 +22,6 @@ pub struct AppSettings {
     pub grid_columns: i32,
     /// 相册网格列数 - 默认: 2
     pub album_grid_columns: i32,
-    /// 是否显示内容预览 - 默认: true
-    pub show_content_previews: i32,
     /// 缩略图质量 1-100 - 默认: 85
     pub thumbnail_quality: i32,
     /// 语言 (system/zh/en) - 默认: system
@@ -61,7 +59,6 @@ pub async fn get_settings() -> Result<AppSettings, String> {
                 theme_mode: ThemeMode::System,
                 grid_columns: 3,
                 album_grid_columns: 2,
-                show_content_previews: 1,
                 thumbnail_quality: 85,
                 language: "system".to_string(),
                 dynamic_color: 1,
@@ -82,13 +79,12 @@ pub async fn save_settings(settings: AppSettings) -> Result<(), String> {
     };
 
     sqlx::query(
-        "INSERT INTO app_settings (id, theme_mode, grid_columns, album_grid_columns, show_content_previews, thumbnail_quality, language, dynamic_color, last_scan_path)
-         VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?)
+        "INSERT INTO app_settings (id, theme_mode, grid_columns, album_grid_columns, thumbnail_quality, language, dynamic_color, last_scan_path)
+         VALUES (1, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(id) DO UPDATE SET
             theme_mode = excluded.theme_mode,
             grid_columns = excluded.grid_columns,
             album_grid_columns = excluded.album_grid_columns,
-            show_content_previews = excluded.show_content_previews,
             thumbnail_quality = excluded.thumbnail_quality,
             language = excluded.language,
             dynamic_color = excluded.dynamic_color,
@@ -97,7 +93,6 @@ pub async fn save_settings(settings: AppSettings) -> Result<(), String> {
     .bind(theme_int)
     .bind(settings.grid_columns)
     .bind(settings.album_grid_columns)
-    .bind(settings.show_content_previews)
     .bind(settings.thumbnail_quality)
     .bind(&settings.language)
     .bind(settings.dynamic_color)
@@ -201,24 +196,28 @@ pub async fn export_data(export_path: String) -> Result<(), String> {
 }
 
 /// 导入数据（从 SQLite 备份文件恢复）
+///
+/// 注意：此函数会替换数据库文件。调用后需要重启应用以重新初始化数据库连接池。
 #[frb]
 pub async fn import_data(import_path: String) -> Result<(), String> {
     let pool = get_pool()?;
-    let db_path = get_db_path().await?;
+    let db_path = crate::db::get_db_path()?;
 
     // 验证导入文件存在
     if !std::path::Path::new(&import_path).exists() {
         return Err("导入文件不存在".to_string());
     }
 
-    // 关闭当前连接池（释放数据库文件锁定）
-    drop(pool);
-
     // 备份当前数据库
     let backup_path = format!("{}.backup", db_path);
     if let Err(e) = std::fs::copy(&db_path, &backup_path) {
         return Err(format!("备份当前数据库失败: {}", e));
     }
+
+    // 在替换前先关闭所有连接（强制让连接池中的空闲连接释放）
+    // 注意：drop(pool) 只是释放了当前持有的连接，池中其他连接可能仍在使用
+    // 这是一个已知限制，建议调用后重启应用
+    drop(pool);
 
     // 替换数据库文件
     if let Err(e) = std::fs::copy(&import_path, &db_path) {
@@ -250,7 +249,7 @@ pub async fn delete_all_data() -> Result<(), String> {
     // 重置设置
     sqlx::query(
         "UPDATE app_settings SET theme_mode = 0, grid_columns = 3, album_grid_columns = 2,
-         show_content_previews = 1, thumbnail_quality = 85, language = 'system', last_scan_path = '' WHERE id = 1"
+         thumbnail_quality = 85, language = 'system', last_scan_path = '' WHERE id = 1"
     ).execute(&mut *tx).await.map_err(|e| format!("重置设置失败: {}", e))?;
 
     tx.commit().await.map_err(|e| format!("提交事务失败: {}", e))?;
