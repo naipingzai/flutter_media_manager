@@ -43,9 +43,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         title: Text(AppLocalizations.of(context).settings),
         centerTitle: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
+        ),
       ),
       body: BlocBuilder<AppBloc, AppState>(
         builder: (context, state) {
@@ -55,9 +59,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          return ListView(
-            children: [
-              _SectionHeader(title: AppLocalizations.of(context).themeMode),
+          return ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            child: ListView(
+              children: [
+                _SectionHeader(title: AppLocalizations.of(context).themeMode),
               ListTile(
                 leading: const Icon(Icons.palette),
                 title: Text(AppLocalizations.of(context).themeMode),
@@ -174,11 +180,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 subtitle: Text(loc.techStackValue),
               ),
             ],
-          );
-        },
-      ),
-    );
-  }
+          ),
+        );
+      },
+    ),
+  );
+}
 
   String _buildStatsText(BuildContext context) {
     final loc = AppLocalizations.of(context);

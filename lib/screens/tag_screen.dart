@@ -3,10 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/bloc.dart';
 import '../core/i18n/app_localizations.dart';
-import '../src/rust/api/settings.dart' as rust_settings;
 import '../src/rust/api/tag.dart' as tag_api;
 import '../src/rust/api/media.dart';
-import 'media_detail_screen.dart';
+import '../widgets/viewer/viewer_page.dart';
 
 /// 标签浏览页面 - 支持无限层级、面包屑导航、网格列数控制
 class TagScreen extends StatefulWidget {
@@ -18,8 +17,37 @@ class TagScreen extends StatefulWidget {
 
 class _TagScreenState extends State<TagScreen> {
   final Set<String> _selectedTagIds = {};
+  final Set<String> _selectedMediaIds = {};
+  bool _isMediaSelectionMode = false;
   List<MediaItem>? _filteredMedia;
   int get _tagColumns => context.watch<AppBloc>().state.settings?.gridColumns ?? 3;
+
+  void _enterMediaSelection(String mediaId) {
+    setState(() {
+      _isMediaSelectionMode = true;
+      _selectedMediaIds.add(mediaId);
+    });
+  }
+
+  void _toggleMediaSelection(String mediaId) {
+    setState(() {
+      if (_selectedMediaIds.contains(mediaId)) {
+        _selectedMediaIds.remove(mediaId);
+      } else {
+        _selectedMediaIds.add(mediaId);
+      }
+      if (_selectedMediaIds.isEmpty) {
+        _isMediaSelectionMode = false;
+      }
+    });
+  }
+
+  void _clearMediaSelection() {
+    setState(() {
+      _selectedMediaIds.clear();
+      _isMediaSelectionMode = false;
+    });
+  }
 
   @override
   void initState() {
@@ -31,7 +59,14 @@ class _TagScreenState extends State<TagScreen> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
 
-    return Scaffold(
+    return PopScope(
+      canPop: !_isMediaSelectionMode,
+      onPopInvoked: (didPop) {
+        if (!didPop && _isMediaSelectionMode) {
+          _clearMediaSelection();
+        }
+      },
+      child: Scaffold(
       appBar: AppBar(
         title: BlocBuilder<TagBloc, TagState>(
           builder: (context, state) {
@@ -125,93 +160,132 @@ class _TagScreenState extends State<TagScreen> {
           }
         },
       ),
-      floatingActionButton: BlocBuilder<TagBloc, TagState>(
-        builder: (context, state) {
-          if (_filteredMedia != null) return const SizedBox.shrink();
-          return FloatingActionButton(
-            onPressed: () => _showCreateTagDialog(context),
-            tooltip: loc.createTag,
-            child: const Icon(Icons.new_label),
-          );
-        },
+      floatingActionButton: _isMediaSelectionMode
+          ? const SizedBox.shrink()
+          : BlocBuilder<TagBloc, TagState>(
+              builder: (context, state) {
+                if (_filteredMedia != null) return const SizedBox.shrink();
+                return FloatingActionButton(
+                  onPressed: () => _showCreateTagDialog(context),
+                  tooltip: loc.createTag,
+                  child: const Icon(Icons.new_label),
+                );
+              },
+            ),
+      bottomNavigationBar: _isMediaSelectionMode
+          ? _buildMediaSelectionBar(context)
+          : null,
+    ));
+  }
+
+  Widget _buildMediaSelectionBar(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, -2)),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          child: Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.close),
+                tooltip: loc.cancel,
+                onPressed: _clearMediaSelection,
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text('${loc.selected} ${_selectedMediaIds.length}',
+                    style: TextStyle(
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        fontWeight: FontWeight.bold)),
+              ),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                tooltip: loc.delete,
+                onPressed: _selectedMediaIds.isNotEmpty
+                    ? () => _batchDeleteSelectedMedia(context)
+                    : null,
+              ),
+            ],
+          ),
+        ),
       ),
     );
+  }
+
+  Future<void> _batchDeleteSelectedMedia(BuildContext context) async {
+    final loc = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(loc.confirmBatchDelete),
+        content: Text('${loc.confirmBatchDelete} (${_selectedMediaIds.length})'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(loc.cancel)),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(loc.delete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    for (final id in _selectedMediaIds) {
+      await deleteMedia(id: id);
+    }
+    _clearMediaSelection();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${loc.success} ${_selectedMediaIds.length}')));
+      _executeFilter();
+    }
   }
 
   /// 面包屑导航
   Widget _buildBreadcrumb(BuildContext context, TagState state) {
     final loc = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        border: Border(
-          bottom: BorderSide(
-            color: Theme.of(context).colorScheme.outlineVariant,
-            width: 0.5,
-          ),
-        ),
-      ),
-      child: SingleChildScrollView(
+      height: 44,
+      color: cs.surfaceContainerHighest,
+      child: ListView(
         scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            // Home 按钮
-            InkWell(
-              onTap: () {
-                context.read<TagBloc>().add(const TagNavigateToRootEvent());
-              },
-              borderRadius: BorderRadius.circular(4),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.home, size: 18, color: Theme.of(context).colorScheme.primary),
-                    const SizedBox(width: 4),
-                    Text(loc.tabTags, style: TextStyle(
-                      fontSize: 13,
-                      color: Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.w500,
-                    )),
-                  ],
-                ),
-              ),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        children: [
+          _TagBreadcrumbItem(
+            icon: Icons.home_rounded,
+            label: loc.tabTags,
+            isActive: state.breadcrumb.isEmpty,
+            onTap: () => context.read<TagBloc>().add(const TagNavigateToRootEvent()),
+          ),
+          for (int i = 0; i < state.breadcrumb.length; i++) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Icon(Icons.chevron_right, size: 16, color: cs.onSurfaceVariant),
             ),
-            // 各级面包屑
-            for (int i = 0; i < state.breadcrumb.length; i++) ...[
-              Icon(Icons.chevron_right, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
-              InkWell(
-                    onTap: i < state.breadcrumb.length - 1
-                    ? () {
-                        // 回到指定层级
-                        final targetId = state.breadcrumb[i].id;
-                        context.read<TagBloc>().add(
-                              TagNavigateToEvent(targetId),
-                            );
-                      }
-                    : null,
-                borderRadius: BorderRadius.circular(4),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                  child: Text(
-                    state.breadcrumb[i].name,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: i < state.breadcrumb.length - 1
-                          ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).colorScheme.onSurface,
-                      fontWeight: i == state.breadcrumb.length - 1
-                          ? FontWeight.bold
-                          : FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            _TagBreadcrumbItem(
+              icon: i == state.breadcrumb.length - 1 ? Icons.label_important : Icons.label,
+              label: state.breadcrumb[i].name,
+              isActive: i == state.breadcrumb.length - 1,
+              onTap: i < state.breadcrumb.length - 1
+                  ? () => context.read<TagBloc>().add(TagNavigateToEvent(state.breadcrumb[i].id))
+                  : null,
+            ),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -241,17 +315,6 @@ class _TagScreenState extends State<TagScreen> {
       slivers: [
         // 子标签网格
         if (hasTags) ...[
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            sliver: SliverToBoxAdapter(
-              child: Text(
-                '${loc.tags} (${state.tagsWithInfo.length})',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-            ),
-          ),
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             sliver: SliverGrid(
@@ -336,16 +399,24 @@ class _TagScreenState extends State<TagScreen> {
             itemCount: _filteredMedia!.length,
             itemBuilder: (context, index) {
               final media = _filteredMedia![index];
+              final isSelected = _selectedMediaIds.contains(media.id);
               return _MediaGridItem(
                 media: media,
+                isSelectionMode: _isMediaSelectionMode,
+                isSelected: isSelected,
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => MediaDetailScreen(media: media, mediaList: _filteredMedia!),
-                    ),
-                  );
+                  if (_isMediaSelectionMode) {
+                    _toggleMediaSelection(media.id);
+                  } else {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ViewerPage(initialMedia: media, mediaList: _filteredMedia!),
+                      ),
+                    );
+                  }
                 },
+                onLongPress: () => _enterMediaSelection(media.id),
               );
             },
           ),
@@ -827,6 +898,57 @@ class _TagScreenState extends State<TagScreen> {
   ];
 }
 
+class _TagBreadcrumbItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isActive;
+  final VoidCallback? onTap;
+
+  const _TagBreadcrumbItem({
+    required this.icon,
+    required this.label,
+    required this.isActive,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: isActive ? cs.primaryContainer : cs.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: cs.outlineVariant),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14, color: isActive ? cs.onPrimaryContainer : cs.onSurfaceVariant),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                  color: isActive ? cs.onPrimaryContainer : cs.onSurface,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// 标签卡片组件（网格展示）
 class _TagCard extends StatelessWidget {
   final dynamic tagInfo;
@@ -842,11 +964,15 @@ class _TagCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tag = tagInfo.tag;
-    final mediaCount = tagInfo.mediaCount;
     final hasChildren = tagInfo.hasChildren;
     final color = _parseColor(tag.color);
 
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
@@ -862,15 +988,14 @@ class _TagCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        Icons.label,
+                        hasChildren != 0 ? Icons.label_important : Icons.label,
                         size: 40,
                         color: color ?? Theme.of(context).colorScheme.primary,
                       ),
-                      const SizedBox(height: 4),
                       if (hasChildren != 0)
                         Icon(
                           Icons.subdirectory_arrow_right,
-                          size: 16,
+                          size: 14,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                     ],
@@ -879,35 +1004,17 @@ class _TagCard extends StatelessWidget {
               ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                border: Border(
-                  left: BorderSide(
-                    color: color ?? Theme.of(context).colorScheme.primary,
-                    width: 4,
-                  ),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              color: Theme.of(context).colorScheme.surface,
+              child: Text(
+                tag.name,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    tag.name,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '$mediaCount ${AppLocalizations.of(context).files}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
               ),
             ),
           ],
@@ -929,9 +1036,18 @@ class _TagCard extends StatelessWidget {
 /// 媒体网格项（用于标签筛选结果展示）
 class _MediaGridItem extends StatelessWidget {
   final MediaItem media;
+  final bool isSelectionMode;
+  final bool isSelected;
   final VoidCallback onTap;
+  final VoidCallback onLongPress;
 
-  const _MediaGridItem({required this.media, required this.onTap});
+  const _MediaGridItem({
+    required this.media,
+    required this.onTap,
+    this.isSelectionMode = false,
+    this.isSelected = false,
+    required this.onLongPress,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -939,6 +1055,7 @@ class _MediaGridItem extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
+        onLongPress: onLongPress,
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -950,7 +1067,27 @@ class _MediaGridItem extends StatelessWidget {
               )
             else
               _buildPlaceholder(context),
-            if (media.mediaType != MediaType.image)
+            if (isSelectionMode)
+              Positioned.fill(
+                child: Container(
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
+                      : Colors.transparent,
+                ),
+              ),
+            if (isSelectionMode)
+              Positioned(
+                top: 4,
+                right: 4,
+                child: Icon(
+                  isSelected ? Icons.check_circle : Icons.check_circle_outline,
+                  size: 24,
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
+              ),
+            if (media.mediaType != MediaType.image && !isSelectionMode)
               Positioned(
                 bottom: 4,
                 right: 4,

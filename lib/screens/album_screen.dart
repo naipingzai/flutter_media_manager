@@ -8,10 +8,11 @@ import '../bloc/app/app_bloc.dart';
 import '../bloc/album/album_bloc.dart';
 import 'package:advance_media_kb/src/rust/api/album.dart';
 import 'package:advance_media_kb/src/rust/api/media.dart';
-import 'package:advance_media_kb/src/rust/frb_generated.dart';
 import 'package:logger/logger.dart';
 import '../core/i18n/app_localizations.dart';
-import '../src/rust/api/settings.dart' as rust_settings;
+import '../src/rust/api/enums.dart';
+import '../src/rust/api/media.dart';
+import '../src/rust/api/media.dart' as media_api;
 import '../widgets/viewer/viewer_page.dart';
 
 final _logger = Logger();
@@ -347,25 +348,20 @@ class _BreadcrumbBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
-      height: 40,
-      color: Theme.of(context).colorScheme.surface,
+      height: 44,
+      color: cs.surfaceContainerHighest,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         children: [
           // Home 图标
-          IconButton(
-            icon: Icon(
-              Icons.home,
-              size: 18,
-              color: isRoot
-                  ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            onPressed: onHomeClick,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          _BreadcrumbItem(
+            icon: Icons.home_rounded,
+            label: isRoot ? AppLocalizations.of(context).tabAlbums : AppLocalizations.of(context).backToHome,
+            isActive: isRoot,
+            onTap: onHomeClick,
           ),
           // 面包屑项
           ...breadcrumb.asMap().entries.expand((entry) {
@@ -374,37 +370,70 @@ class _BreadcrumbBar extends StatelessWidget {
             final isLast = index == breadcrumb.length - 1;
 
             return [
-              Icon(
-                Icons.chevron_right,
-                size: 16,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                child: ActionChip(
-                  label: Text(
-                    item.name,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: isLast
-                          ? Theme.of(context).colorScheme.onPrimaryContainer
-                          : Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  backgroundColor: isLast
-                      ? Theme.of(context).colorScheme.primaryContainer
-                      : Theme.of(context).colorScheme.surface,
-                  side: BorderSide(
-                    color: Theme.of(context).colorScheme.outlineVariant,
-                  ),
-                  onPressed: () => onAlbumClick(item),
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Icon(Icons.chevron_right, size: 16, color: cs.onSurfaceVariant),
+              ),
+              _BreadcrumbItem(
+                icon: isLast ? Icons.folder_open : Icons.folder,
+                label: item.name,
+                isActive: isLast,
+                onTap: () => onAlbumClick(item),
               ),
             ];
           }),
         ],
+      ),
+    );
+  }
+}
+
+class _BreadcrumbItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _BreadcrumbItem({
+    required this.icon,
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: isActive ? cs.primaryContainer : cs.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: cs.outlineVariant),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14, color: isActive ? cs.onPrimaryContainer : cs.onSurfaceVariant),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                  color: isActive ? cs.onPrimaryContainer : cs.onSurface,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -461,32 +490,40 @@ class _AlbumCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       onLongPress: onLongPress,
       child: Card(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: cs.outlineVariant),
+        ),
         clipBehavior: Clip.antiAlias,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
               child: Container(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                child: const Center(
+                color: cs.primaryContainer.withValues(alpha: 0.3),
+                child: Center(
                   child: Icon(
-                    Icons.folder,
+                    Icons.folder_rounded,
                     size: 48,
-                    color: Colors.blue,
+                    color: cs.primary,
                   ),
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              color: cs.surface,
               child: Text(
                 album.album.name,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w600,
+                  color: cs.onSurface,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -683,100 +720,135 @@ class _AddMediaDialogContentState extends State<_AddMediaDialogContent> {
   List<MediaItem> _allMedia = [];
   final Set<String> _selectedIds = {};
   bool _loading = true;
+  String _filter = 'all';
 
   @override
   void initState() {
     super.initState();
-    _loadMedia();
+    _applyFilter();
   }
 
-  Future<void> _loadMedia() async {
+  Future<void> _applyFilter() async {
+    setState(() => _loading = true);
     try {
-      final media = await RustLib.instance.api.crateApiMediaGetAllMedia();
+      List<MediaItem> results;
+      switch (_filter) {
+        case 'image':
+          results = await media_api.filterMediaByType(mediaType: MediaType.image);
+          break;
+        case 'video':
+          results = await media_api.filterMediaByType(mediaType: MediaType.video);
+          break;
+        case 'withTags':
+          results = await media_api.getMediaByFilter(filter: FilterMode.withTags);
+          break;
+        case 'withoutTags':
+          results = await media_api.getMediaByFilter(filter: FilterMode.withoutTags);
+          break;
+        case 'withAlbums':
+          results = await media_api.getMediaByFilter(filter: FilterMode.withAlbums);
+          break;
+        case 'withoutAlbums':
+          results = await media_api.getMediaByFilter(filter: FilterMode.withoutAlbums);
+          break;
+        default:
+          results = await media_api.getAllMedia();
+      }
       setState(() {
-        _allMedia = media;
+        _allMedia = results;
         _loading = false;
       });
     } catch (e) {
-      _logger.e('加载媒体失败: $e');
+      _logger.e('筛选媒体失败: $e');
       setState(() => _loading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    final items = _allMedia;
     return AlertDialog(
-      title: Text(AppLocalizations.of(context).addToAlbum),
+      title: Text(loc.addToAlbum),
       content: SizedBox(
         width: double.maxFinite,
         height: 400,
-        child: _loading
-            ? const Center(child: CircularProgressIndicator())
-            : _allMedia.isEmpty
-                ? Center(child: Text(AppLocalizations.of(context).noMedia))
-                : GridView.builder(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: context.read<AppBloc>().state.settings?.gridColumns ?? 3,
-                      crossAxisSpacing: 4,
-                      mainAxisSpacing: 4,
-                    ),
-                    itemCount: _allMedia.length,
-                    itemBuilder: (ctx, index) {
-                      final media = _allMedia[index];
-                      final isSelected = _selectedIds.contains(media.id);
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            if (isSelected) {
-                              _selectedIds.remove(media.id);
-                            } else {
-                              _selectedIds.add(media.id);
-                            }
-                          });
-                        },
-                        child: Stack(
-                          children: [
-                            Positioned.fill(
-                              child: media.thumbnailPath.isNotEmpty
-                                  ? Image.file(
-                                      File(media.thumbnailPath),
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => Container(
-                                        color: Theme.of(context).colorScheme.surfaceVariant,
-                                        child: const Icon(Icons.image),
+        child: Column(
+          children: [
+            // 筛选菜单
+            _buildFilterBar(loc),
+            const Divider(height: 1),
+            Expanded(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : items.isEmpty
+                      ? Center(child: Text(loc.noMedia))
+                      : GridView.builder(
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: context.read<AppBloc>().state.settings?.gridColumns ?? 3,
+                            crossAxisSpacing: 4,
+                            mainAxisSpacing: 4,
+                          ),
+                          itemCount: items.length,
+                          itemBuilder: (ctx, index) {
+                            final media = items[index];
+                            final isSelected = _selectedIds.contains(media.id);
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  if (isSelected) {
+                                    _selectedIds.remove(media.id);
+                                  } else {
+                                    _selectedIds.add(media.id);
+                                  }
+                                });
+                              },
+                              child: Stack(
+                                children: [
+                                  Positioned.fill(
+                                    child: media.thumbnailPath.isNotEmpty
+                                        ? Image.file(
+                                            File(media.thumbnailPath),
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, __, ___) => Container(
+                                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                              child: const Icon(Icons.image),
+                                            ),
+                                          )
+                                        : Container(
+                                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                            child: const Icon(Icons.image),
+                                          ),
+                                  ),
+                                  if (isSelected)
+                                    Positioned.fill(
+                                      child: Container(
+                                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                                       ),
-                                    )
-                                  : Container(
-                                      color: Theme.of(context).colorScheme.surfaceVariant,
-                                      child: const Icon(Icons.image),
                                     ),
-                            ),
-                            if (isSelected)
-                              Positioned.fill(
-                                child: Container(
-                                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-                                ),
+                                  if (isSelected)
+                                    Positioned(
+                                      top: 4,
+                                      right: 4,
+                                      child: Icon(
+                                        Icons.check_circle,
+                                        size: 20,
+                                        color: Theme.of(context).colorScheme.primary,
+                                      ),
+                                    ),
+                                ],
                               ),
-                            if (isSelected)
-                              Positioned(
-                                top: 4,
-                                right: 4,
-                                child: Icon(
-                                  Icons.check_circle,
-                                  size: 20,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                              ),
-                          ],
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
+            ),
+          ],
+        ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text(AppLocalizations.of(context).cancel),
+          child: Text(loc.cancel),
         ),
         TextButton(
           onPressed: _selectedIds.isEmpty
@@ -785,12 +857,43 @@ class _AddMediaDialogContentState extends State<_AddMediaDialogContent> {
                   context.read<AlbumBloc>().add(
                     AlbumAddMediaEvent(_selectedIds.toList(), widget.albumId),
                   );
-                  // 刷新子相册列表
                   context.read<AlbumBloc>().add(AlbumLoadChildrenEvent(widget.albumId));
                   Navigator.pop(context);
                 },
-          child: Text('${AppLocalizations.of(context).addToAlbum} (${_selectedIds.length})'),
+          child: Text('${loc.addToAlbum} (${_selectedIds.length})'),
         ),
+      ],
+    );
+  }
+
+  Widget _buildFilterBar(AppLocalizations loc) {
+    String label;
+    switch (_filter) {
+      case 'image': label = loc.filterImages; break;
+      case 'video': label = loc.filterVideos; break;
+      case 'withTags': label = loc.filterWithTags; break;
+      case 'withoutTags': label = loc.filterWithoutTags; break;
+      case 'withAlbums': label = loc.filterWithAlbums; break;
+      case 'withoutAlbums': label = loc.filterWithoutAlbums; break;
+      default: label = loc.filterAll;
+    }
+    return PopupMenuButton<String>(
+      child: Chip(
+        avatar: const Icon(Icons.filter_list, size: 18),
+        label: Text(label),
+      ),
+      onSelected: (value) {
+        _filter = value;
+        _applyFilter();
+      },
+      itemBuilder: (_) => [
+        CheckedPopupMenuItem(value: 'all', checked: _filter == 'all', child: Text(loc.filterAll)),
+        CheckedPopupMenuItem(value: 'image', checked: _filter == 'image', child: Text(loc.filterImages)),
+        CheckedPopupMenuItem(value: 'video', checked: _filter == 'video', child: Text(loc.filterVideos)),
+        CheckedPopupMenuItem(value: 'withTags', checked: _filter == 'withTags', child: Text(loc.filterWithTags)),
+        CheckedPopupMenuItem(value: 'withoutTags', checked: _filter == 'withoutTags', child: Text(loc.filterWithoutTags)),
+        CheckedPopupMenuItem(value: 'withAlbums', checked: _filter == 'withAlbums', child: Text(loc.filterWithAlbums)),
+        CheckedPopupMenuItem(value: 'withoutAlbums', checked: _filter == 'withoutAlbums', child: Text(loc.filterWithoutAlbums)),
       ],
     );
   }

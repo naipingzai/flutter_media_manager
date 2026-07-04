@@ -14,22 +14,22 @@ import '../src/rust/api/tag.dart' as tag_api;
 import '../src/rust/api/scanner.dart' as scanner_api;
 import '../core/i18n/app_localizations.dart';
 
-/// 媒体详情查看页面 - 支持浏览模式 / 详情模式切换
-class MediaDetailScreen extends StatefulWidget {
+/// 媒体编辑页面 - 支持浏览模式 / 编辑模式切换
+class MediaEditScreen extends StatefulWidget {
   final MediaItem media;
   final List<MediaItem> mediaList;
 
-  const MediaDetailScreen({
+  const MediaEditScreen({
     super.key,
     required this.media,
     required this.mediaList,
   });
 
   @override
-  State<MediaDetailScreen> createState() => _MediaDetailScreenState();
+  State<MediaEditScreen> createState() => _MediaEditScreenState();
 }
 
-class _MediaDetailScreenState extends State<MediaDetailScreen>
+class _MediaEditScreenState extends State<MediaEditScreen>
     with WidgetsBindingObserver {
   late MediaItem _currentMedia;
   VideoPlayerController? _videoController;
@@ -37,11 +37,11 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   String? _noteContent;
   List<tag_api.Tag> _mediaTags = [];
 
-  // 浏览模式 / 详情模式
-  bool _isDetailMode = false;
+  // 浏览模式 / 编辑模式
+  bool _isEditMode = false;
   bool _showOverlay = true; // 浏览模式下 overlay 显隐
 
-  // 详情模式图片变换参数
+  // 编辑模式图片变换参数
   double _scale = 1.0;
   double _rotation = 0.0; // 角度
   double _offsetX = 0.0;
@@ -149,7 +149,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
       backgroundColor: Colors.black,
       extendBodyBehindAppBar: true,
       // 浏览模式下显示 AppBar（点击切换 overlay）
-      appBar: _isDetailMode
+      appBar: _isEditMode
           ? null
           : (_showOverlay
               ? AppBar(
@@ -180,13 +180,13 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                           ),
                         ),
                       ),
-                    // 切换到详情模式
+                    // 切换到编辑模式
                     IconButton(
                       icon: const Icon(Icons.tune),
-                      tooltip: '详情模式',
+                      tooltip: '编辑模式',
                       onPressed: () {
                         setState(() {
-                          _isDetailMode = true;
+                          _isEditMode = true;
                           _resetTransform();
                         });
                       },
@@ -202,7 +202,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
         fit: StackFit.expand,
         children: [
           // 媒体内容（支持左右滑动）
-          if (widget.mediaList.length > 1 && !_isDetailMode)
+          if (widget.mediaList.length > 1 && !_isEditMode)
             PageView.builder(
               controller: _pageController,
               itemCount: widget.mediaList.length,
@@ -216,24 +216,24 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
             )
           else
             GestureDetector(
-              onTap: _isDetailMode ? null : () => setState(() => _showOverlay = !_showOverlay),
+              onTap: _isEditMode ? null : () => setState(() => _showOverlay = !_showOverlay),
               child: _buildMediaContent(),
             ),
 
           // 浏览模式底部操作栏
-          if (!_isDetailMode && _showOverlay) _buildBrowseBottomBar(),
+          if (!_isEditMode && _showOverlay) _buildBrowseBottomBar(),
 
-          // 详情模式底部控制面板
-          if (_isDetailMode) _buildDetailControlPanel(),
+          // 编辑模式底部控制面板
+          if (_isEditMode) _buildDetailControlPanel(),
 
-          // 详情模式返回按钮
-          if (_isDetailMode)
+          // 编辑模式返回按钮
+          if (_isEditMode)
             Positioned(
               top: MediaQuery.of(context).padding.top + 8,
               left: 8,
               child: IconButton(
                 icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () => setState(() => _isDetailMode = false),
+                onPressed: () => setState(() => _isEditMode = false),
               ),
             ),
         ],
@@ -277,7 +277,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   Widget _buildMediaContent() {
     switch (_currentMedia.mediaType) {
       case MediaType.image:
-        if (_isDetailMode) {
+        if (_isEditMode) {
           return _buildTransformableImage();
         }
         return _buildImageViewer();
@@ -314,7 +314,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     );
   }
 
-  /// 详情模式可变换图片（用户控制缩放/旋转/平移）
+  /// 编辑模式可变换图片（用户控制缩放/旋转/平移）
   Widget _buildTransformableImage() {
     return Center(
       child: Transform(
@@ -445,8 +445,9 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     );
   }
 
-  /// 详情模式底部控制面板（图片变换按钮 + 视频播放控件）
+  /// 编辑模式底部控制面板（图片变换/视频播放 + 操作按钮）
   Widget _buildDetailControlPanel() {
+    final loc = AppLocalizations.of(context);
     return Positioned(
       bottom: 0,
       left: 0,
@@ -457,11 +458,51 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
           borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
         ),
         padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).padding.bottom + 12),
-        child: _currentMedia.mediaType == MediaType.image
-            ? _buildImageTransformControls()
-            : _currentMedia.mediaType == MediaType.video
-                ? _buildVideoPlaybackControls()
-                : const SizedBox.shrink(),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 媒体类型专属控制
+              if (_currentMedia.mediaType == MediaType.image)
+                _buildImageTransformControls()
+              else if (_currentMedia.mediaType == MediaType.video)
+                _buildVideoPlaybackControls()
+              else
+                const SizedBox.shrink(),
+              const SizedBox(height: 12),
+              // 通用操作按钮
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildDetailAction(Icons.info_outline, loc.infoPanel, () => _showFileInfoDialog(context)),
+                  _buildDetailAction(Icons.label_outline, loc.tags, () => _showTagManager(context)),
+                  _buildDetailAction(Icons.note_add, loc.notePanel, () => _showNoteDialog(context)),
+                  _buildDetailAction(Icons.download, loc.exportToDownload, () => _exportMedia(context)),
+                  _buildDetailAction(Icons.delete_outline, loc.delete, () => _showDeleteConfirm(context)),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailAction(IconData icon, String label, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: Colors.white, size: 22),
+            const SizedBox(height: 3),
+            Text(label, style: const TextStyle(color: Colors.white, fontSize: 10)),
+          ],
+        ),
       ),
     );
   }
@@ -540,7 +581,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     );
   }
 
-  /// 视频播放控件（详情模式）
+  /// 视频播放控件（编辑模式）
   Widget _buildVideoPlaybackControls() {
     if (_videoController == null || !_videoController!.value.isInitialized) {
       return const SizedBox.shrink();

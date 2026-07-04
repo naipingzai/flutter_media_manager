@@ -175,7 +175,7 @@ class AppLocalizations {
   String get storageManagementDesc => _get('storageManagementDesc');
   String get languageChangeRestart => _get('languageChangeRestart');
   String get version => _get('version');
-  String get detailMode => _get('detailMode');
+  String get editMode => _get('editMode');
   String get copyPath => _get('copyPath');
   String get operationFailed => _get('operationFailed');
   String get typeLabel => _get('typeLabel');
@@ -387,7 +387,7 @@ const Map<String, String> _zhStrings = {
   'confirmClearData': '确定要清除所有数据吗？此操作不可恢复！',
   'storageManagement': '存储管理', 'storageManagementDesc': '管理缩略图缓存和未引用的文件',
   'languageChangeRestart': '语言设置将在应用重启后生效', 'version': '版本',
-  'detailMode': '详情模式', 'copyPath': '复制路径',
+  'editMode': '编辑模式', 'copyPath': '复制路径',
   'operationFailed': '操作失败', 'typeLabel': '类型',
   'fileManager': '文件管理器', 'sortByName': '按名称', 'sort': '排序', 'sortNewestFirst': '最新优先', 'sortOldestFirst': '最旧优先', 'sortNameAsc': '名称 A-Z', 'sortNameDesc': '名称 Z-A', 'sortSizeDesc': '最大优先', 'sortSizeAsc': '最小优先', 'filterAnd': '并且', 'filterOr': '或者',
   'sortByType': '按类型', 'importSelected': '导入%s',
@@ -516,7 +516,7 @@ const Map<String, String> _enStrings = {
   'confirmClearData': 'Clear all data? This cannot be undone!',
   'storageManagement': 'Storage Management', 'storageManagementDesc': 'Manage thumbnail cache and unreferenced files',
   'languageChangeRestart': 'Language change takes effect after restart', 'version': 'Version',
-  'detailMode': 'Detail Mode', 'copyPath': 'Copy Path',
+  'editMode': 'Edit Mode', 'copyPath': 'Copy Path',
   'operationFailed': 'Operation failed', 'typeLabel': 'Type',
   'fileManager': 'File Manager', 'sortByName': 'Name', 'sort': 'Sort', 'sortNewestFirst': 'Newest First', 'sortOldestFirst': 'Oldest First', 'sortNameAsc': 'Name A-Z', 'sortNameDesc': 'Name Z-A', 'sortSizeDesc': 'Largest First', 'sortSizeAsc': 'Smallest First', 'filterAnd': 'AND', 'filterOr': 'OR',
   'sortByType': 'Type', 'importSelected': 'Import%s',

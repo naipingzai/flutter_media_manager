@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/bloc.dart';
 import '../src/rust/api/media.dart';
+import '../screens/media_edit_screen.dart';
 import 'viewer/viewer_page.dart';
 
 /// 媒体网格展示组件
@@ -66,6 +67,7 @@ class MediaGrid extends StatelessWidget {
           isSelected: isSelected,
           onTap: () => _onMediaTap(context, media),
           onLongPress: () => _onMediaLongPress(context, media),
+          onEditMode: () => _openEditMode(context, media),
         );
       },
     );
@@ -100,6 +102,18 @@ class MediaGrid extends StatelessWidget {
       ),
     );
   }
+
+  void _openEditMode(BuildContext context, MediaItem media) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MediaEditScreen(
+          media: media,
+          mediaList: mediaList,
+        ),
+      ),
+    );
+  }
 }
 
 /// 单个媒体网格项
@@ -110,12 +124,14 @@ class _MediaGridItem extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
+  final VoidCallback onEditMode;
 
   const _MediaGridItem({
     required this.media,
     required this.isSelected,
     required this.onTap,
     required this.onLongPress,
+    required this.onEditMode,
   });
 
   @override
@@ -162,6 +178,13 @@ class _MediaGridItem extends StatelessWidget {
                     left: 4,
                     child: _buildTypeIcon(),
                   ),
+                  // 编辑模式入口（右上角）
+                  if (!isSelected)
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: _buildEditModeButton(context),
+                    ),
                   // 视频时长标识（右下角）
                   if (media.mediaType == MediaType.video &&
                       media.duration != null)
@@ -273,6 +296,27 @@ class _MediaGridItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
       ),
       child: Icon(iconData, size: 12, color: iconColor),
+    );
+  }
+
+  Widget _buildEditModeButton(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        // 阻止冒泡到 InkWell
+        onEditMode();
+      },
+      child: Container(
+        padding: const EdgeInsets.all(3),
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.55),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: const Icon(
+          Icons.edit,
+          size: 12,
+          color: Colors.white,
+        ),
+      ),
     );
   }
 

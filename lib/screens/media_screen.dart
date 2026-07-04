@@ -15,7 +15,7 @@ import '../src/rust/api/search.dart';
 import '../src/rust/api/tag.dart';
 import '../src/rust/api/album.dart';
 import '../src/rust/api/note.dart' as note_api;
-import 'media_detail_screen.dart';
+import '../widgets/viewer/viewer_page.dart';
 import 'settings_screen.dart';
 
 class MediaScreen extends StatefulWidget {
@@ -104,26 +104,17 @@ class _MediaScreenState extends State<MediaScreen> {
 
   /// 右上角过滤菜单
   ///
-  /// 将“全部/图片/视频/有标签”收敛到右上角按钮，避免顶部 Chip 行遮挡内容。
+  /// 将“全部/图片/视频/有标签/无标签/有相册/无相册”收敛到右上角按钮。
   Widget _buildFilterMenuButton(BuildContext context, MediaState state) {
     final loc = AppLocalizations.of(context);
-    String currentLabel;
-    if (state.currentFilterMode == FilterMode.withTags) {
-      currentLabel = loc.filterWithTags;
-    } else if (state.currentFilter == MediaType.image) {
-      currentLabel = loc.filterImages;
-    } else if (state.currentFilter == MediaType.video) {
-      currentLabel = loc.filterVideos;
-    } else {
-      currentLabel = loc.filterAll;
-    }
+    final String currentLabel = _currentFilterLabel(state, loc);
 
     return PopupMenuButton<String>(
       icon: Badge(
         label: Text(currentLabel),
         child: const Icon(Icons.filter_list),
       ),
-      tooltip: AppLocalizations.of(context).filter,
+      tooltip: loc.filter,
       onSelected: (value) {
         final bloc = context.read<MediaBloc>();
         bloc.add(const MediaClearSelectionEvent());
@@ -140,6 +131,15 @@ class _MediaScreenState extends State<MediaScreen> {
           case 'withTags':
             bloc.add(const MediaFilterByFilterModeEvent(FilterMode.withTags));
             break;
+          case 'withoutTags':
+            bloc.add(const MediaFilterByFilterModeEvent(FilterMode.withoutTags));
+            break;
+          case 'withAlbums':
+            bloc.add(const MediaFilterByFilterModeEvent(FilterMode.withAlbums));
+            break;
+          case 'withoutAlbums':
+            bloc.add(const MediaFilterByFilterModeEvent(FilterMode.withoutAlbums));
+            break;
         }
       },
       itemBuilder: (context) {
@@ -149,6 +149,7 @@ class _MediaScreenState extends State<MediaScreen> {
             checked: state.currentFilter == null && state.currentFilterMode == null,
             child: Text(loc.filterAll),
           ),
+          const PopupMenuDivider(),
           CheckedPopupMenuItem(
             value: 'image',
             checked: state.currentFilter == MediaType.image,
@@ -165,9 +166,34 @@ class _MediaScreenState extends State<MediaScreen> {
             checked: state.currentFilterMode == FilterMode.withTags,
             child: Text(loc.filterWithTags),
           ),
+          CheckedPopupMenuItem(
+            value: 'withoutTags',
+            checked: state.currentFilterMode == FilterMode.withoutTags,
+            child: Text(loc.filterWithoutTags),
+          ),
+          CheckedPopupMenuItem(
+            value: 'withAlbums',
+            checked: state.currentFilterMode == FilterMode.withAlbums,
+            child: Text(loc.filterWithAlbums),
+          ),
+          CheckedPopupMenuItem(
+            value: 'withoutAlbums',
+            checked: state.currentFilterMode == FilterMode.withoutAlbums,
+            child: Text(loc.filterWithoutAlbums),
+          ),
         ];
       },
     );
+  }
+
+  String _currentFilterLabel(MediaState state, AppLocalizations loc) {
+    if (state.currentFilter == MediaType.image) return loc.filterImages;
+    if (state.currentFilter == MediaType.video) return loc.filterVideos;
+    if (state.currentFilterMode == FilterMode.withTags) return loc.filterWithTags;
+    if (state.currentFilterMode == FilterMode.withoutTags) return loc.filterWithoutTags;
+    if (state.currentFilterMode == FilterMode.withAlbums) return loc.filterWithAlbums;
+    if (state.currentFilterMode == FilterMode.withoutAlbums) return loc.filterWithoutAlbums;
+    return loc.filterAll;
   }
 
   /// 判断当前过滤结果是否已全部选中
@@ -815,7 +841,7 @@ class _SearchOverlayState extends State<_SearchOverlay> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => MediaDetailScreen(media: media, mediaList: _results),
+                        builder: (_) => ViewerPage(initialMedia: media, mediaList: _results),
                       ),
                     );
                   },

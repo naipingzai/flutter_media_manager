@@ -96,12 +96,17 @@ class MediaBloc extends Bloc<MediaEvent, MediaState> {
         status: MediaStatus.loaded,
         filteredList: results,
         currentFilter: event.mediaType,
+        clearCurrentFilterMode: true,
+        currentQuery: '',
       ));
     } catch (e) {
       _logger.e('筛选媒体失败: $e');
       emit(state.copyWith(
-        status: MediaStatus.error,
-        errorMessage: e.toString(),
+        status: MediaStatus.loaded,
+        filteredList: state.mediaList,
+        clearCurrentFilter: true,
+        clearCurrentFilterMode: true,
+        currentQuery: '',
       ));
     }
   }
@@ -287,6 +292,8 @@ class MediaBloc extends Bloc<MediaEvent, MediaState> {
         status: MediaStatus.loaded,
         filteredList: results,
         currentFilterMode: event.filterMode,
+        clearCurrentFilter: true,
+        currentQuery: '',
       ));
     } catch (e) {
       _logger.e('按模式过滤媒体失败: $e');
