@@ -82,7 +82,7 @@ Future<bool> _ensureStoragePermission(BuildContext context) async {
   return false;
 }
 
-/// 文件浏览器页面（全屏，完整文件管理器）
+/// 文件浏览器页面（全屏圆角底部弹出）
 class FileBrowserPage extends StatefulWidget {
   const FileBrowserPage({super.key});
 
@@ -98,6 +98,7 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
   bool _loading = true;
   String? _error;
   String _sortBy = 'name'; // name / type
+  final ScrollController _breadcrumbScrollController = ScrollController();
 
   static const _quickPaths = [
     '/storage/emulated/0',
@@ -128,6 +129,12 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
     });
   }
 
+  @override
+  void dispose() {
+    _breadcrumbScrollController.dispose();
+    super.dispose();
+  }
+
   void _navigateTo(String path, AppLocalizations loc) {
     setState(() {
       _loading = true;
@@ -136,6 +143,12 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
       if (!_pathHistory.contains(path)) _pathHistory.add(path);
     });
     _loadDir(path, loc);
+    // 自动滚动面包屑到末尾
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_breadcrumbScrollController.hasClients) {
+        _breadcrumbScrollController.jumpTo(_breadcrumbScrollController.position.maxScrollExtent);
+      }
+    });
   }
 
   void _goBack() {
@@ -215,14 +228,33 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
     for (int i = 0; i < parts.length; i++) {
       acc += '/${parts[i]}';
       final p = acc;
-      chips.add(const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 2),
-        child: Icon(Icons.chevron_right, size: 14, color: Colors.grey),
+      final isLast = i == parts.length - 1;
+      chips.add(Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2),
+        child: Icon(Icons.chevron_right, size: 14, color: isLast ? Theme.of(context).colorScheme.primary : Colors.grey),
       ));
-      chips.add(ActionChip(
-        label: Text(parts[i], style: const TextStyle(fontSize: 11)),
-        onPressed: () => _navigateTo(p, AppLocalizations.of(context)),
-      ));
+      chips.add(
+        InkWell(
+          onTap: isLast ? null : () => _navigateTo(p, AppLocalizations.of(context)),
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: isLast ? Theme.of(context).colorScheme.primaryContainer : Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+            ),
+            child: Text(
+              parts[i],
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isLast ? FontWeight.bold : FontWeight.w500,
+                color: isLast ? Theme.of(context).colorScheme.onPrimaryContainer : Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ),
+        ),
+      );
     }
     return chips;
   }
@@ -270,29 +302,34 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
             onPressed: () => _loadDir(_currentPath, AppLocalizations.of(context)),
           ),
         ],
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
+        ),
       ),
       body: Column(
         children: [
-          // 导航栏
+          // 面包屑导航栏
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
             child: SingleChildScrollView(
+              controller: _breadcrumbScrollController,
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  ActionChip(
-                    avatar: const Icon(Icons.home, size: 16),
-                    label: Text(AppLocalizations.of(context).internalStorage, style: const TextStyle(fontSize: 11)),
-                    onPressed: () => _navigateTo(_homePath, AppLocalizations.of(context)),
+                  _BreadcrumbChip(
+                    icon: Icons.home,
+                    label: AppLocalizations.of(context).internalStorage,
+                    isActive: _pathHistory.length <= 1,
+                    onTap: () => _navigateTo(_homePath, AppLocalizations.of(context)),
                   ),
                   ..._breadcrumbs(),
                   if (_pathHistory.length > 1) ...[
                     const SizedBox(width: 8),
-                    ActionChip(
-                      avatar: const Icon(Icons.arrow_back, size: 14),
-                      label: Text(AppLocalizations.of(context).back, style: TextStyle(fontSize: 11)),
-                      onPressed: _goBack,
+                    _BreadcrumbChip(
+                      icon: Icons.arrow_back,
+                      label: AppLocalizations.of(context).back,
+                      onTap: _goBack,
                     ),
                   ],
                 ],
@@ -418,6 +455,7 @@ class _DirectoryPickerPageState extends State<DirectoryPickerPage> {
   final List<String> _pathHistory = [];
   bool _loading = true;
   String? _error;
+  final ScrollController _breadcrumbScrollController = ScrollController();
 
   static const _quickPaths = [
     '/storage/emulated/0',
@@ -448,6 +486,12 @@ class _DirectoryPickerPageState extends State<DirectoryPickerPage> {
     });
   }
 
+  @override
+  void dispose() {
+    _breadcrumbScrollController.dispose();
+    super.dispose();
+  }
+
   void _navigateTo(String path, AppLocalizations loc) {
     setState(() {
       _loading = true;
@@ -456,6 +500,11 @@ class _DirectoryPickerPageState extends State<DirectoryPickerPage> {
       if (!_pathHistory.contains(path)) _pathHistory.add(path);
     });
     _loadDir(path, loc);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_breadcrumbScrollController.hasClients) {
+        _breadcrumbScrollController.jumpTo(_breadcrumbScrollController.position.maxScrollExtent);
+      }
+    });
   }
 
   void _goBack() {
@@ -505,14 +554,33 @@ class _DirectoryPickerPageState extends State<DirectoryPickerPage> {
     for (int i = 0; i < parts.length; i++) {
       acc += '/${parts[i]}';
       final p = acc;
-      chips.add(const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 2),
-        child: Icon(Icons.chevron_right, size: 14, color: Colors.grey),
+      final isLast = i == parts.length - 1;
+      chips.add(Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2),
+        child: Icon(Icons.chevron_right, size: 14, color: isLast ? Theme.of(context).colorScheme.primary : Colors.grey),
       ));
-      chips.add(ActionChip(
-        label: Text(parts[i], style: const TextStyle(fontSize: 11)),
-        onPressed: () => _navigateTo(p, AppLocalizations.of(context)),
-      ));
+      chips.add(
+        InkWell(
+          onTap: isLast ? null : () => _navigateTo(p, AppLocalizations.of(context)),
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: isLast ? Theme.of(context).colorScheme.primaryContainer : Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+            ),
+            child: Text(
+              parts[i],
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isLast ? FontWeight.bold : FontWeight.w500,
+                color: isLast ? Theme.of(context).colorScheme.onPrimaryContainer : Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ),
+        ),
+      );
     }
     return chips;
   }
@@ -528,29 +596,34 @@ class _DirectoryPickerPageState extends State<DirectoryPickerPage> {
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.pop(context),
         ),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
+        ),
       ),
       body: Column(
         children: [
-          // 导航栏
+          // 面包屑导航栏
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
             child: SingleChildScrollView(
+              controller: _breadcrumbScrollController,
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  ActionChip(
-                    avatar: const Icon(Icons.home, size: 16),
-                    label: Text(AppLocalizations.of(context).internalStorage, style: TextStyle(fontSize: 11)),
-                    onPressed: () => _navigateTo(_homePath, AppLocalizations.of(context)),
+                  _BreadcrumbChip(
+                    icon: Icons.home,
+                    label: AppLocalizations.of(context).internalStorage,
+                    isActive: _pathHistory.length <= 1,
+                    onTap: () => _navigateTo(_homePath, AppLocalizations.of(context)),
                   ),
                   ..._breadcrumbs(),
                   if (_pathHistory.length > 1) ...[
                     const SizedBox(width: 8),
-                    ActionChip(
-                      avatar: const Icon(Icons.arrow_back, size: 14),
-                      label: Text(AppLocalizations.of(context).back, style: TextStyle(fontSize: 11)),
-                      onPressed: _goBack,
+                    _BreadcrumbChip(
+                      icon: Icons.arrow_back,
+                      label: AppLocalizations.of(context).back,
+                      onTap: _goBack,
                     ),
                   ],
                 ],
@@ -633,6 +706,56 @@ class _DirectoryPickerPageState extends State<DirectoryPickerPage> {
           onTap: () => _navigateTo(dir.path, AppLocalizations.of(context)),
         );
       },
+    );
+  }
+}
+
+/// 面包屑导航芯片组件
+class _BreadcrumbChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isActive;
+  final VoidCallback? onTap;
+
+  const _BreadcrumbChip({
+    required this.icon,
+    required this.label,
+    this.isActive = false,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: isActive ? cs.primaryContainer : cs.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: cs.outlineVariant),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14, color: isActive ? cs.onPrimaryContainer : cs.onSurfaceVariant),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                  color: isActive ? cs.onPrimaryContainer : cs.onSurface,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
