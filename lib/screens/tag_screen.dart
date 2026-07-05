@@ -449,85 +449,42 @@ class _TagScreenState extends State<TagScreen> {
   void _showCreateTagDialog(BuildContext context) {
     final loc = AppLocalizations.of(context);
     final nameController = TextEditingController();
-    String selectedColor = '#FF6750A4';
     showDialog(
       context: context,
       builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx, setState) {
-            return AlertDialog(
-              title: Text(loc.createTag),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: nameController,
-                    decoration: InputDecoration(
-                      hintText: loc.tagName,
-                      border: const OutlineInputBorder(),
-                    ),
-                    autofocus: true,
-                  ),
-                  const SizedBox(height: 16),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(loc.selectTagColor, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: _colorOptions.map((color) {
-                      final isSelected = selectedColor == color;
-                      return GestureDetector(
-                        onTap: () => setState(() => selectedColor = color),
-                        child: Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: Color(int.parse(color.replaceFirst('#', '0xFF'))),
-                            shape: BoxShape.circle,
-                            border: isSelected
-                                ? Border.all(color: Colors.white, width: 3)
-                                : null,
-                            boxShadow: isSelected
-                                ? [BoxShadow(color: Colors.black26, blurRadius: 4)]
-                                : null,
-                          ),
-                          child: isSelected
-                              ? const Icon(Icons.check, color: Colors.white, size: 18)
-                              : null,
+        return AlertDialog(
+          title: Text(loc.createTag),
+          content: TextField(
+            controller: nameController,
+            decoration: InputDecoration(
+              hintText: loc.tagName,
+              border: const OutlineInputBorder(),
+            ),
+            autofocus: true,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(loc.cancel),
+            ),
+            FilledButton(
+              onPressed: () {
+                final name = nameController.text.trim();
+                if (name.isNotEmpty) {
+                  final currentParentId = context.read<TagBloc>().state.currentParentId;
+                  context.read<TagBloc>().add(
+                        TagCreateEvent(
+                          name,
+                          color: '#FF6750A4',
+                          parentId: currentParentId,
                         ),
                       );
-                    }).toList(),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: Text(loc.cancel),
-                ),
-                FilledButton(
-                  onPressed: () {
-                    final name = nameController.text.trim();
-                    if (name.isNotEmpty) {
-                      final currentParentId = context.read<TagBloc>().state.currentParentId;
-                      context.read<TagBloc>().add(
-                            TagCreateEvent(
-                              name,
-                              color: selectedColor,
-                              parentId: currentParentId,
-                            ),
-                          );
-                      Navigator.pop(ctx);
-                    }
-                  },
-                  child: Text(loc.confirm),
-                ),
-              ],
-            );
-          },
+                  Navigator.pop(ctx);
+                }
+              },
+              child: Text(loc.confirm),
+            ),
+          ],
         );
       },
     );
