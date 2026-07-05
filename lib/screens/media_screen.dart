@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/bloc.dart';
+import '../core/design_system/app_theme.dart';
 import '../core/design_system/components.dart';
 import '../core/i18n/app_localizations.dart';
 import '../widgets/media_grid.dart';
@@ -214,11 +215,11 @@ class _MediaScreenState extends State<MediaScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.red),
-              const SizedBox(height: 16),
+              Icon(Icons.error_outline, size: AppSize.iconXLarge, color: Theme.of(context).colorScheme.error),
+              const SizedBox(height: AppSpacing.md),
               Text('${AppLocalizations.of(context).error}: ${state.errorMessage ?? AppLocalizations.of(context).unknown}',
                   textAlign: TextAlign.center),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.md),
               ElevatedButton(
                 onPressed: () =>
                     context.read<MediaBloc>().add(const MediaLoadAllEvent()),
@@ -242,16 +243,13 @@ class _MediaScreenState extends State<MediaScreen> {
 
   Widget _buildEmptyState() {
     final loc = AppLocalizations.of(context);
-    String text = loc.noMedia;
-    String? subtitle = loc.noMediaDesc;
-
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(AppSpacing.xxl),
         child: EmptyState(
           icon: Icons.photo_library_outlined,
-          title: text,
-          subtitle: subtitle,
+          title: loc.noMedia,
+          subtitle: loc.noMediaDesc,
         ),
       ),
     );
@@ -259,72 +257,74 @@ class _MediaScreenState extends State<MediaScreen> {
 
   /// 多选模式底栏
   Widget _buildSelectionBottomBar(BuildContext context, MediaState state) {
+    final loc = AppLocalizations.of(context);
     final selectedCount = state.selectedMediaIds.length;
+    final cs = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: cs.surface,
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, -2)),
+          BoxShadow(color: cs.scrim.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, -2)),
         ],
       ),
       child: SafeArea(
         top: false,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        child: Row(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.close),
-              tooltip: AppLocalizations.of(context).cancel,
-              onPressed: () {
-                context.read<MediaBloc>().add(const MediaClearSelectionEvent());
-                context.read<MediaBloc>().add(const MediaToggleSelectionModeEvent());
-              },
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
+          child: Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.close),
+                tooltip: loc.cancel,
+                onPressed: () {
+                  context.read<MediaBloc>().add(const MediaClearSelectionEvent());
+                  context.read<MediaBloc>().add(const MediaToggleSelectionModeEvent());
+                },
               ),
-              child: Text('${AppLocalizations.of(context).selected} $selectedCount',
-                  style: TextStyle(
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
-                      fontWeight: FontWeight.bold)),
-            ),
-            const Spacer(),
-            IconButton(
-              icon: Icon(_isAllSelected(state)
-                  ? Icons.deselect
-                  : Icons.select_all),
-              tooltip: _isAllSelected(state)
-                  ? AppLocalizations.of(context).deselectAll
-                  : AppLocalizations.of(context).selectAll,
-              onPressed: state.filteredList.isEmpty
-                  ? null
-                  : () => context
-                      .read<MediaBloc>()
-                      .add(const MediaToggleSelectAllEvent()),
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline, color: Colors.red),
-              tooltip: AppLocalizations.of(context).delete,
-              onPressed: selectedCount > 0 ? () => _batchDelete(context, state.selectedMediaIds) : null,
-            ),
-            IconButton(
-              icon: const Icon(Icons.label_outline),
-              tooltip: AppLocalizations.of(context).addTag,
-              onPressed: selectedCount > 0 ? () => _batchAddTags(context, state.selectedMediaIds) : null,
-            ),
-            IconButton(
-              icon: const Icon(Icons.photo_album_outlined),
-              tooltip: AppLocalizations.of(context).addToAlbum,
-              onPressed: selectedCount > 0 ? () => _batchAddToAlbum(context, state.selectedMediaIds) : null,
-            ),
-          ],
+              const SizedBox(width: AppSpacing.sm),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: cs.primaryContainer,
+                  borderRadius: BorderRadius.circular(AppRadius.full),
+                ),
+                child: Text('${loc.selected} $selectedCount',
+                    style: TextStyle(
+                        color: cs.onPrimaryContainer,
+                        fontWeight: FontWeight.bold)),
+              ),
+              const Spacer(),
+              IconButton(
+                icon: Icon(_isAllSelected(state)
+                    ? Icons.deselect
+                    : Icons.select_all),
+                tooltip: _isAllSelected(state)
+                    ? loc.deselectAll
+                    : loc.selectAll,
+                onPressed: state.filteredList.isEmpty
+                    ? null
+                    : () => context
+                        .read<MediaBloc>()
+                        .add(const MediaToggleSelectAllEvent()),
+              ),
+              IconButton(
+                icon: Icon(Icons.delete_outline, color: cs.error),
+                tooltip: loc.delete,
+                onPressed: selectedCount > 0 ? () => _batchDelete(context, state.selectedMediaIds) : null,
+              ),
+              IconButton(
+                icon: const Icon(Icons.label_outline),
+                tooltip: loc.addTag,
+                onPressed: selectedCount > 0 ? () => _batchAddTags(context, state.selectedMediaIds) : null,
+              ),
+              IconButton(
+                icon: const Icon(Icons.photo_album_outlined),
+                tooltip: loc.addToAlbum,
+                onPressed: selectedCount > 0 ? () => _batchAddToAlbum(context, state.selectedMediaIds) : null,
+              ),
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -356,7 +356,7 @@ class _MediaScreenState extends State<MediaScreen> {
             ListTile(
               leading: const Icon(Icons.photo_library_outlined),
               title: Text(loc.importFromDevice),
-              subtitle: const Text('逐个选择要导入的文件'),
+              subtitle: Text(loc.noFilesDesc),
               onTap: () {
                 Navigator.pop(ctx);
                 _openFileBrowser(context);
@@ -380,6 +380,7 @@ class _MediaScreenState extends State<MediaScreen> {
 
   /// 打开目录浏览器并递归导入所有媒体
   Future<void> _openDirectoryBrowser(BuildContext context) async {
+    final loc = AppLocalizations.of(context);
     final dirPath = await openDirectoryBrowser(context);
     if (dirPath == null || dirPath.isEmpty) return;
     if (!context.mounted) return;
@@ -387,7 +388,7 @@ class _MediaScreenState extends State<MediaScreen> {
     final dir = Directory(dirPath);
     if (!await dir.exists()) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context).error)),
+        SnackBar(content: Text(loc.error)),
       );
       return;
     }
@@ -411,7 +412,7 @@ class _MediaScreenState extends State<MediaScreen> {
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${AppLocalizations.of(context).error}: $e')),
+        SnackBar(content: Text('${loc.error}: $e')),
       );
       return;
     }
@@ -419,7 +420,7 @@ class _MediaScreenState extends State<MediaScreen> {
     if (mediaFiles.isEmpty) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('此文件夹中未找到支持的媒体文件')),
+        SnackBar(content: Text(loc.noFilesDesc)),
       );
       return;
     }
@@ -460,7 +461,7 @@ class _MediaScreenState extends State<MediaScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('✅ ${AppLocalizations.of(context).success}: $successCount'),
-            if (failCount > 0) Text('❌ ${AppLocalizations.of(context).importFailed}: $failCount', style: const TextStyle(color: Colors.red)),
+            if (failCount > 0) Text('❌ ${AppLocalizations.of(context).importFailed}: $failCount', style: TextStyle(color: Theme.of(context).colorScheme.error)),
           ],
         ),
         actions: [
@@ -515,7 +516,7 @@ class _MediaScreenState extends State<MediaScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('✅ ${AppLocalizations.of(context).success}: $successCount'),
-            if (failCount > 0) Text('❌ ${AppLocalizations.of(context).importFailed}: $failCount', style: const TextStyle(color: Colors.red)),
+            if (failCount > 0) Text('❌ ${AppLocalizations.of(context).importFailed}: $failCount', style: TextStyle(color: Theme.of(context).colorScheme.error)),
           ],
         ),
         actions: [
@@ -1004,7 +1005,7 @@ class _ImportProgressDialog extends StatelessWidget {
           Text('${AppLocalizations.of(context).importing} ($totalCount)'),
           const SizedBox(height: 8),
           Text(AppLocalizations.of(context).loading,
-              style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+              style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
         ],
       ),
     );

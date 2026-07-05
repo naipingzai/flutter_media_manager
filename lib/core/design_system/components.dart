@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'app_theme.dart';
+import '../i18n/app_localizations.dart';
 
 /// Skill-03 §5.1 - 可复用 MediaItemCard
 /// 显示缩略图、选中态、文件名、文件大小
@@ -48,7 +49,7 @@ class MediaItemCard extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                   child: showPreview && thumbnailPath != null
-                      ? _buildThumbnail()
+                      ? _buildThumbnail(colorScheme)
                       : _buildPlaceholder(colorScheme),
                 ),
                 // 视频时长徽章
@@ -57,16 +58,19 @@ class MediaItemCard extends StatelessWidget {
                     right: AppSpacing.xs,
                     bottom: AppSpacing.xs,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.sm,
+                        vertical: AppSpacing.xxs,
+                      ),
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.7),
+                        color: colorScheme.scrim.withValues(alpha: 0.7),
                         borderRadius: BorderRadius.circular(AppRadius.sm),
                       ),
                       child: Text(
                         formatDuration(durationMs!),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
+                        style: TextStyle(
+                          color: colorScheme.onError,
+                          fontSize: 10,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -138,12 +142,9 @@ class MediaItemCard extends StatelessWidget {
     );
   }
 
-  Widget _buildThumbnail() {
+  Widget _buildThumbnail(ColorScheme colorScheme) {
     // 占位：后续接入图片加载（如使用 Rust 端读取文件字节）
-    return Container(
-      color: Colors.grey[300],
-      child: const Center(child: Icon(Icons.image, size: 32, color: Colors.grey)),
-    );
+    return _buildPlaceholder(colorScheme);
   }
 
   Widget _buildPlaceholder(ColorScheme colorScheme) {
@@ -434,21 +435,18 @@ class AlbumCard extends StatelessWidget {
           Expanded(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(AppRadius.md),
-              child: coverThumbnailPath != null
-                  ? Container(
-                      color: Colors.grey[300],
-                      child: const Center(child: Icon(Icons.photo_album, size: 32, color: Colors.grey)),
-                    )
-                  : Container(
-                      color: colorScheme.surfaceContainerHighest,
-                      child: Center(
-                        child: Icon(
+              child: Container(
+                color: colorScheme.surfaceContainerHighest,
+                child: Center(
+                  child: coverThumbnailPath != null
+                      ? const Icon(Icons.photo_album, size: AppSize.iconLarge)
+                      : Icon(
                           Icons.photo_album,
                           size: AppSize.iconLarge,
                           color: colorScheme.onSurfaceVariant,
                         ),
-                      ),
-                    ),
+                ),
+              ),
             ),
           ),
           // 信息区域
@@ -464,7 +462,7 @@ class AlbumCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
-                  '$mediaCount 个媒体',
+                  '$mediaCount ${AppLocalizations.of(context).files}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),
@@ -492,9 +490,12 @@ class UIHelper {
     BuildContext context, {
     required String title,
     required String message,
-    String confirmLabel = '确定',
-    String cancelLabel = '取消',
+    String? confirmLabel,
+    String? cancelLabel,
   }) async {
+    final loc = AppLocalizations.of(context);
+    final effectiveConfirm = confirmLabel ?? loc.confirm;
+    final effectiveCancel = cancelLabel ?? loc.cancel;
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -503,11 +504,11 @@ class UIHelper {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: Text(cancelLabel),
+            child: Text(effectiveCancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: Text(confirmLabel),
+            child: Text(effectiveConfirm),
           ),
         ],
       ),

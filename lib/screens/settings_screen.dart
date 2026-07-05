@@ -56,6 +56,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         builder: (context, state) {
           final settings = state.settings;
           final loc = AppLocalizations.of(context);
+          final cs = Theme.of(context).colorScheme;
           if (settings == null) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -96,7 +97,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _SectionHeader(title: loc.storageSection),
               if (_loadingStats)
                 const Padding(
-                  padding: EdgeInsets.all(16),
+                  padding: EdgeInsets.all(AppSpacing.lg),
                   child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
                 )
               else ...[
@@ -146,10 +147,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onTap: () => _showFindUnreferencedDialog(context),
               ),
               ListTile(
-                leading: const Icon(Icons.delete_forever, color: Colors.red),
+                leading: Icon(Icons.delete_forever, color: cs.error),
                 title: Text(
                   loc.clearAllData,
-                  style: const TextStyle(color: Colors.red),
+                  style: TextStyle(color: cs.error),
                 ),
                 onTap: () => _showClearDataConfirmDialog(context),
               ),
@@ -206,40 +207,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _clearThumbnailCache(BuildContext context) async {
+    final loc = AppLocalizations.of(context);
     try {
       final deleted = await rust_settings.clearThumbnailCache();
       await _loadStats();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('已清理 $deleted 个缩略图文件')),
+        SnackBar(content: Text(loc.clearedThumbnailCount.replaceAll('%d', deleted.toString()))),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('清理失败: $e')),
+        SnackBar(content: Text(loc.cleanFailed.replaceAll('%s', e.toString()))),
       );
     }
   }
 
   String _themeModeLabel(rust_settings.ThemeMode mode) {
+    final loc = AppLocalizations.of(context);
     switch (mode) {
       case rust_settings.ThemeMode.light:
-        return '浅色';
+        return loc.themeLight;
       case rust_settings.ThemeMode.dark:
-        return '深色';
+        return loc.themeDark;
       default:
-        return '跟随系统';
+        return loc.themeSystem;
     }
   }
 
   String _languageLabel(String lang) {
+    final loc = AppLocalizations.of(context);
     switch (lang) {
       case 'zh':
-        return '中文';
+        return loc.languageZh;
       case 'en':
-        return 'English';
+        return loc.languageEn;
       default:
-        return '跟随系统';
+        return loc.languageSystem;
     }
   }
 
@@ -312,16 +316,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _showThemeModeDialog(
       BuildContext context, rust_settings.AppSettings settings) {
+    final loc = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('选择主题模式'),
+          title: Text(loc.themeMode),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               RadioListTile<rust_settings.ThemeMode>(
-                title: const Text('跟随系统'),
+                title: Text(loc.themeSystem),
                 value: rust_settings.ThemeMode.system,
                 groupValue: settings.themeMode,
                 onChanged: (value) {
@@ -334,7 +339,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 },
               ),
               RadioListTile<rust_settings.ThemeMode>(
-                title: const Text('浅色'),
+                title: Text(loc.themeLight),
                 value: rust_settings.ThemeMode.light,
                 groupValue: settings.themeMode,
                 onChanged: (value) {
@@ -347,7 +352,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 },
               ),
               RadioListTile<rust_settings.ThemeMode>(
-                title: const Text('深色'),
+                title: Text(loc.themeDark),
                 value: rust_settings.ThemeMode.dark,
                 groupValue: settings.themeMode,
                 onChanged: (value) {
@@ -368,12 +373,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _showThumbnailQualityDialog(
       BuildContext context, rust_settings.AppSettings settings) {
+    final loc = AppLocalizations.of(context);
     final qualities = [50, 60, 70, 80, 85, 90, 95, 100];
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('缩略图质量'),
+          title: Text(loc.thumbnailQualityLabel),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: qualities.map((q) {
@@ -447,19 +453,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showImportDialog(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('导入数据'),
-          content: const Text(
-            '导入功能将替换当前数据库。请确保已备份重要数据。\n\n'
-            '选择之前导出的数据库文件（.db）进行导入。',
-          ),
+          title: Text(loc.importData),
+          content: Text(loc.importDataDesc),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('取消'),
+              child: Text(loc.cancel),
             ),
             TextButton(
               onPressed: () async {
@@ -474,7 +478,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     await rust_settings.importData(importPath: path);
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('数据导入成功')),
+                        SnackBar(content: Text(loc.importDataSuccess)),
                       );
                       context
                           .read<AppBloc>()
@@ -486,13 +490,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   } catch (e) {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('导入失败: $e')),
+                        SnackBar(content: Text('${loc.importFailed}: $e')),
                       );
                     }
                   }
                 }
               },
-              child: const Text('选择文件'),
+              child: Text(loc.selectFile),
             ),
           ],
         );
@@ -501,19 +505,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showExportDialog(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('导出数据'),
-          content: const Text(
-            '导出将创建当前数据库的备份副本。\n\n'
-            '请选择保存位置。',
-          ),
+          title: Text(loc.exportData),
+          content: Text(loc.exportDataDesc),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('取消'),
+              child: Text(loc.cancel),
             ),
             TextButton(
               onPressed: () async {
@@ -527,19 +529,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         exportPath: exportPath);
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('已导出到: $exportPath')),
+                        SnackBar(content: Text('${loc.exportedTo}: $exportPath')),
                       );
                     }
                   } catch (e) {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('导出失败: $e')),
+                        SnackBar(content: Text('${loc.exportFailed}: $e')),
                       );
                     }
                   }
                 }
               },
-              child: const Text('导出'),
+              child: Text(loc.export),
             ),
           ],
         );
@@ -548,28 +550,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showClearDataConfirmDialog(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('确认清除'),
-          content: const Text(
-            '此操作将删除所有媒体、相册、标签和笔记数据，不可恢复。是否继续？',
-          ),
+          title: Text(loc.clearDataConfirmTitle),
+          content: Text(loc.clearDataConfirmContent),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('取消'),
+              child: Text(loc.cancel),
             ),
             FilledButton(
               style: FilledButton.styleFrom(
-                backgroundColor: Colors.red,
+                backgroundColor: cs.error,
               ),
               onPressed: () async {
                 Navigator.pop(context);
                 await _clearAllData(context);
               },
-              child: const Text('清除'),
+              child: Text(loc.clear),
             ),
           ],
         );
@@ -578,21 +580,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showImportZipDialog(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('导入 ZIP 包'),
-        content: const Text(
-          '选择包含数据库和媒体文件的 ZIP 备份包进行导入。\n\n'
-          '支持的冲突策略：\n'
-          '- 跳过：跳过已存在的文件\n'
-          '- 替换：覆盖已存在的文件\n'
-          '- 重命名：将已存在文件重命名为 .backup',
-        ),
+        title: Text(loc.importZip),
+        content: Text(loc.importZipDesc),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
+            child: Text(loc.cancel),
           ),
           TextButton(
             onPressed: () async {
@@ -608,25 +605,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 final strategy = await showDialog<rust_import_export.ConflictStrategy>(
                   context: context,
                   builder: (ctx) => AlertDialog(
-                    title: const Text('选择冲突策略'),
+                    title: Text(loc.conflictStrategy),
                     content: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         ListTile(
-                          title: const Text('跳过'),
-                          subtitle: const Text('跳过已存在的文件'),
+                          title: Text(loc.strategySkip),
+                          subtitle: Text(loc.strategySkipDesc),
                           leading: const Icon(Icons.skip_next),
                           onTap: () => Navigator.pop(ctx, rust_import_export.ConflictStrategy.skip),
                         ),
                         ListTile(
-                          title: const Text('替换'),
-                          subtitle: const Text('覆盖已存在的文件'),
+                          title: Text(loc.strategyReplace),
+                          subtitle: Text(loc.strategyReplaceDesc),
                           leading: const Icon(Icons.swap_horiz),
                           onTap: () => Navigator.pop(ctx, rust_import_export.ConflictStrategy.replace),
                         ),
                         ListTile(
-                          title: const Text('重命名'),
-                          subtitle: const Text('重命名已存在文件为 .backup'),
+                          title: Text(loc.strategyRename),
+                          subtitle: Text(loc.strategyRenameDesc),
                           leading: const Icon(Icons.drive_file_rename_outline),
                           onTap: () => Navigator.pop(ctx, rust_import_export.ConflictStrategy.rename),
                         ),
@@ -640,13 +637,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 showDialog(
                   context: context,
                   barrierDismissible: false,
-                  builder: (_) => const AlertDialog(
+                  builder: (_) => AlertDialog(
                     content: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        CircularProgressIndicator(),
-                        SizedBox(height: 16),
-                        Text('正在导入 ZIP 包...'),
+                        const CircularProgressIndicator(),
+                        SizedBox(height: AppSpacing.lg),
+                        Text(loc.importingZip),
                       ],
                     ),
                   ),
@@ -660,7 +657,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   if (!context.mounted) return;
                   Navigator.pop(context); // 关闭进度
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('导入完成: ${result.status}')),
+                    SnackBar(content: Text('${loc.importCompleted}: ${result.status}')),
                   );
                   context.read<AppBloc>().add(const AppInitializeEvent());
                   context.read<MediaBloc>().add(const MediaLoadAllEvent());
@@ -668,12 +665,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   if (!context.mounted) return;
                   Navigator.pop(context); // 关闭进度
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('ZIP 导入失败: $e')),
+                    SnackBar(content: Text('${loc.zipImportFailed}: $e')),
                   );
                 }
               }
             },
-            child: const Text('选择 ZIP 文件'),
+            child: Text(loc.selectZipFile),
           ),
         ],
       ),
@@ -681,18 +678,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showExportZipDialog(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('导出 ZIP 包'),
-        content: const Text(
-          '导出为 ZIP 格式，包含数据库和媒体文件。\n\n'
-          '请选择保存位置和文件名（以 .zip 结尾）。',
-        ),
+        title: Text(loc.exportZip),
+        content: Text(loc.exportZipDesc),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
+            child: Text(loc.cancel),
           ),
           TextButton(
             onPressed: () async {
@@ -708,16 +703,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
               final includeMedia = await showDialog<bool>(
                 context: context,
                 builder: (ctx) => AlertDialog(
-                  title: const Text('导出选项'),
-                  content: const Text('是否包含媒体文件？\n不包含仅导出数据库。'),
+                  title: Text(loc.exportOptions),
+                  content: Text(loc.exportOptionsDesc),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text('仅数据库'),
+                      child: Text(loc.dbOnly),
                     ),
                     FilledButton(
                       onPressed: () => Navigator.pop(ctx, true),
-                      child: const Text('包含媒体'),
+                      child: Text(loc.includeMedia),
                     ),
                   ],
                 ),
@@ -728,13 +723,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               showDialog(
                 context: context,
                 barrierDismissible: false,
-                builder: (_) => const AlertDialog(
+                builder: (_) => AlertDialog(
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      CircularProgressIndicator(),
-                      SizedBox(height: 16),
-                      Text('正在导出 ZIP 包...'),
+                      const CircularProgressIndicator(),
+                      SizedBox(height: AppSpacing.lg),
+                      Text(loc.exportingZip),
                     ],
                   ),
                 ),
@@ -748,17 +743,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 if (!context.mounted) return;
                 Navigator.pop(context); // 关闭进度
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('导出完成: ${exportResult.status}')),
+                  SnackBar(content: Text('${loc.exportCompleted}: ${exportResult.status}')),
                 );
               } catch (e) {
                 if (!context.mounted) return;
                 Navigator.pop(context); // 关闭进度
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('ZIP 导出失败: $e')),
+                  SnackBar(content: Text('${loc.zipExportFailed}: $e')),
                 );
               }
             },
-            child: const Text('导出 ZIP'),
+            child: Text(loc.exportZipButton),
           ),
         ],
       ),
@@ -767,16 +762,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   /// 查找未引用的文件
   void _showFindUnreferencedDialog(BuildContext context) async {
+    final loc = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const AlertDialog(
+      builder: (_) => AlertDialog(
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('正在扫描未引用文件...'),
+            const CircularProgressIndicator(),
+            SizedBox(height: AppSpacing.lg),
+            Text(loc.scanningUnreferenced),
           ],
         ),
       ),
@@ -815,12 +812,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('扫描完成'),
-            content: const Text('未发现未引用的文件，所有文件都在数据库中有记录。'),
+            title: Text(loc.scanComplete),
+            content: Text(loc.noUnreferencedFiles),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('确定'),
+                child: Text(loc.confirm),
               ),
             ],
           ),
@@ -832,7 +829,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: Text('发现 ${unreferenced.length} 个未引用文件'),
+          title: Text(loc.unreferencedFound.replaceAll('%d', '${unreferenced.length}')),
           content: SizedBox(
             width: double.maxFinite,
             height: 300,
@@ -844,11 +841,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 final size = file.existsSync() ? file.lengthSync() : 0;
                 return ListTile(
                   dense: true,
-                  leading: const Icon(Icons.insert_drive_file, size: 20),
-                  title: Text(fileName, style: const TextStyle(fontSize: 13)),
+                  leading: const Icon(Icons.insert_drive_file, size: AppSpacing.xl),
+                  title: Text(fileName, style: AppTextStyles.body),
                   subtitle: Text(
                     '${(size / 1024).toStringAsFixed(1)} KB',
-                    style: const TextStyle(fontSize: 11),
+                    style: AppTextStyles.caption,
                   ),
                 );
               },
@@ -857,10 +854,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('取消'),
+              child: Text(loc.cancel),
             ),
             FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: Colors.red),
+              style: FilledButton.styleFrom(backgroundColor: cs.error),
               onPressed: () async {
                 Navigator.pop(ctx);
                 var deleted = 0;
@@ -872,11 +869,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 }
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('已删除 $deleted 个未引用文件')),
+                  SnackBar(content: Text(loc.unreferencedDeleted.replaceAll('%d', deleted.toString()))),
                 );
                 await _loadStats();
               },
-              child: Text('全部删除 (${unreferenced.length})'),
+              child: Text(loc.deleteAll.replaceAll('%d', '${unreferenced.length}')),
             ),
           ],
         ),
@@ -885,18 +882,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) return;
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('扫描失败: $e')),
+        SnackBar(content: Text('${loc.scanFailed}: $e')),
       );
     }
   }
 
   Future<void> _clearAllData(BuildContext context) async {
+    final loc = AppLocalizations.of(context);
     try {
       await rust_settings.deleteAllData();
       await _loadStats();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('所有数据已清除')),
+          SnackBar(content: Text(loc.allDataCleared)),
         );
         context.read<AppBloc>().add(const AppInitializeEvent());
         context.read<MediaBloc>().add(const MediaLoadAllEvent());
@@ -906,7 +904,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('清除失败: $e')),
+          SnackBar(content: Text('${loc.clearFailed}: $e')),
         );
       }
     }
@@ -922,7 +920,7 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.md),
       child: Text(
         title,
         style: Theme.of(context).textTheme.titleSmall?.copyWith(

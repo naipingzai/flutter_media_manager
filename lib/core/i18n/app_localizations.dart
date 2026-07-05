@@ -304,6 +304,67 @@ class AppLocalizations {
   String get selectLanguage => _get('selectLanguage');
   String get moveLeft => _get('moveLeft');
   String get moveRight => _get('moveRight');
+
+  // ─── 设置页补充 ───
+  String get importData => _get('importData');
+  String get importDataDesc => _get('importDataDesc');
+  String get exportData => _get('exportData');
+  String get exportDataDesc => _get('exportDataDesc');
+  String get export => _get('export');
+  String get clearDataConfirmTitle => _get('clearDataConfirmTitle');
+  String get clearDataConfirmContent => _get('clearDataConfirmContent');
+  String get clear => _get('clear');
+  String get importZipTitle => _get('importZipTitle');
+  String get importZipContent => _get('importZipContent');
+  String get conflictStrategy => _get('conflictStrategy');
+  String get skip => _get('skip');
+  String get skipDesc => _get('skipDesc');
+  String get replace => _get('replace');
+  String get replaceDesc => _get('replaceDesc');
+  String get renameStrategy => _get('renameStrategy');
+  String get renameStrategyDesc => _get('renameStrategyDesc');
+  String get selectZipFile => _get('selectZipFile');
+  String get exportZipTitle => _get('exportZipTitle');
+  String get exportZipContent => _get('exportZipContent');
+  String get exportOptions => _get('exportOptions');
+  String get includeMediaFiles => _get('includeMediaFiles');
+  String get dbOnly => _get('dbOnly');
+  String get includeMedia => _get('includeMedia');
+  String get importingZip => _get('importingZip');
+  String get exportingZip => _get('exportingZip');
+  String get scanningUnreferenced => _get('scanningUnreferenced');
+  String get scanComplete => _get('scanComplete');
+  String get noUnreferencedFound => _get('noUnreferencedFound');
+  String get unreferencedFilesFound => _get('unreferencedFilesFound');
+  String get deleteAll => _get('deleteAll');
+  String get deletedCount => _get('deletedCount');
+  String get dataCleared => _get('dataCleared');
+  String get clearFailed => _get('clearFailed');
+  String get scanFailed => _get('scanFailed');
+  String get importDataSuccess => _get('importDataSuccess');
+  String get sortCountMost => _get('sortCountMost');
+  String get sortCountLeast => _get('sortCountLeast');
+  String get sortTooltip => _get('sortTooltip');
+  String get subalbumNote => _get('subalbumNote');
+
+  // ─── 导入/导出/清理补充 ───
+  String get selectFile => _get('selectFile');
+  String get strategySkip => _get('strategySkip');
+  String get strategySkipDesc => _get('strategySkipDesc');
+  String get strategyReplace => _get('strategyReplace');
+  String get strategyReplaceDesc => _get('strategyReplaceDesc');
+  String get strategyRename => _get('strategyRename');
+  String get strategyRenameDesc => _get('strategyRenameDesc');
+  String get importCompleted => _get('importCompleted');
+  String get zipImportFailed => _get('zipImportFailed');
+  String get exportOptionsDesc => _get('exportOptionsDesc');
+  String get exportCompleted => _get('exportCompleted');
+  String get zipExportFailed => _get('zipExportFailed');
+  String get exportZipButton => _get('exportZipButton');
+  String get noUnreferencedFiles => _get('noUnreferencedFiles');
+  String get unreferencedFound => _get('unreferencedFound');
+  String get unreferencedDeleted => _get('unreferencedDeleted');
+  String get allDataCleared => _get('allDataCleared');
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
@@ -446,6 +507,16 @@ const Map<String, String> _zhStrings = {
   'techStackValue': 'Flutter + Rust (flutter_rust_bridge)',
   'clearedThumbnailCount': '已清理 %d 个缩略图文件', 'cleanFailed': '清理失败: %s',
   'selectLanguage': '选择语言',
+  'importData': '导入数据', 'importDataDesc': '导入功能将替换当前数据库。请确保已备份重要数据。\\n\\n选择之前导出的数据库文件（.db）进行导入。',
+  'exportData': '导出数据', 'exportDataDesc': '导出将创建当前数据库的备份副本。\\n\\n请选择保存位置。',
+  'export': '导出', 'clearDataConfirmTitle': '确认清除', 'clearDataConfirmContent': '此操作将删除所有媒体、相册、标签和笔记数据，不可恢复。是否继续？', 'clear': '清除',
+  'importZipTitle': '导入 ZIP 包', 'importZipContent': '选择包含数据库和媒体文件的 ZIP 备份包进行导入。\\n\\n支持的冲突策略：\\n- 跳过：跳过已存在的文件\\n- 替换：覆盖已存在的文件\\n- 重命名：将已存在文件重命名为 .backup',
+  'conflictStrategy': '选择冲突策略', 'skip': '跳过', 'skipDesc': '跳过已存在的文件', 'replace': '替换', 'replaceDesc': '覆盖已存在的文件', 'renameStrategy': '重命名', 'renameStrategyDesc': '重命名已存在文件为 .backup', 'selectZipFile': '选择 ZIP 文件',
+  'exportZipTitle': '导出 ZIP 包', 'exportZipContent': '导出为 ZIP 格式，包含数据库和媒体文件。\\n\\n请选择保存位置和文件名（以 .zip 结尾）。', 'exportOptions': '导出选项', 'includeMediaFiles': '是否包含媒体文件？\\n不包含仅导出数据库。', 'dbOnly': '仅数据库', 'includeMedia': '包含媒体',
+  'importingZip': '正在导入 ZIP 包...', 'exportingZip': '正在导出 ZIP 包...',
+  'scanningUnreferenced': '正在扫描未引用文件...', 'scanComplete': '扫描完成', 'noUnreferencedFound': '未发现未引用的文件，所有文件都在数据库中有记录。', 'unreferencedFilesFound': '发现 %d 个未引用文件', 'deleteAll': '全部删除', 'deletedCount': '已删除 %d 个未引用文件', 'dataCleared': '所有数据已清除', 'clearFailed': '清除失败', 'scanFailed': '扫描失败', 'importDataSuccess': '数据导入成功',
+  'sortCountMost': '媒体最多', 'sortCountLeast': '媒体最少', 'sortTooltip': '排序', 'subalbumNote': '将在当前相册下创建子相册',
+  'selectFile': '选择文件', 'strategySkip': '跳过', 'strategySkipDesc': '跳过已存在的文件', 'strategyReplace': '替换', 'strategyReplaceDesc': '覆盖已存在的文件', 'strategyRename': '重命名', 'strategyRenameDesc': '重命名已存在文件', 'importCompleted': '导入完成', 'zipImportFailed': 'ZIP 导入失败', 'exportOptionsDesc': '是否包含媒体文件？不包含仅导出数据库。', 'exportCompleted': '导出完成', 'zipExportFailed': 'ZIP 导出失败', 'exportZipButton': '导出 ZIP', 'noUnreferencedFiles': '没有未引用的文件', 'unreferencedFound': '发现 %d 个未引用文件', 'unreferencedDeleted': '已删除 %d 个未引用文件', 'allDataCleared': '所有数据已清除',
 };
 
 
@@ -576,5 +647,15 @@ const Map<String, String> _enStrings = {
   'techStackValue': 'Flutter + Rust (flutter_rust_bridge)',
   'clearedThumbnailCount': 'Cleared %d thumbnail files', 'cleanFailed': 'Clean failed: %s',
   'selectLanguage': 'Select Language',
+  'importData': 'Import Data', 'importDataDesc': 'Import will replace the current database. Make sure you have backed up important data.\\n\\nSelect a previously exported database file (.db) to import.',
+  'exportData': 'Export Data', 'exportDataDesc': 'Export will create a backup copy of the current database.\\n\\nPlease select a save location.',
+  'export': 'Export', 'clearDataConfirmTitle': 'Confirm Clear', 'clearDataConfirmContent': 'This will delete all media, albums, tags and notes. This action cannot be undone. Continue?', 'clear': 'Clear',
+  'importZipTitle': 'Import ZIP', 'importZipContent': 'Select a ZIP backup containing the database and media files to import.\\n\\nSupported conflict strategies:\\n- Skip: skip existing files\\n- Replace: overwrite existing files\\n- Rename: rename existing files to .backup',
+  'conflictStrategy': 'Select Conflict Strategy', 'skip': 'Skip', 'skipDesc': 'Skip existing files', 'replace': 'Replace', 'replaceDesc': 'Overwrite existing files', 'renameStrategy': 'Rename', 'renameStrategyDesc': 'Rename existing files to .backup', 'selectZipFile': 'Select ZIP File',
+  'exportZipTitle': 'Export ZIP', 'exportZipContent': 'Export as ZIP, including the database and media files.\\n\\nPlease select a save location and file name (ending with .zip).', 'exportOptions': 'Export Options', 'includeMediaFiles': 'Include media files?\\nIf not, only the database will be exported.', 'dbOnly': 'Database Only', 'includeMedia': 'Include Media',
+  'importingZip': 'Importing ZIP...', 'exportingZip': 'Exporting ZIP...',
+  'scanningUnreferenced': 'Scanning unreferenced files...', 'scanComplete': 'Scan Complete', 'noUnreferencedFound': 'No unreferenced files found. All files are recorded in the database.', 'unreferencedFilesFound': 'Found %d unreferenced files', 'deleteAll': 'Delete All', 'deletedCount': 'Deleted %d unreferenced files', 'dataCleared': 'All data cleared', 'clearFailed': 'Clear failed', 'scanFailed': 'Scan failed', 'importDataSuccess': 'Data imported successfully',
+  'sortCountMost': 'Most Media', 'sortCountLeast': 'Least Media', 'sortTooltip': 'Sort', 'subalbumNote': 'A sub-album will be created under the current album',
+  'selectFile': 'Select File', 'strategySkip': 'Skip', 'strategySkipDesc': 'Skip existing files', 'strategyReplace': 'Replace', 'strategyReplaceDesc': 'Overwrite existing files', 'strategyRename': 'Rename', 'strategyRenameDesc': 'Rename existing files', 'importCompleted': 'Import completed', 'zipImportFailed': 'ZIP import failed', 'exportOptionsDesc': 'Include media files? Otherwise only the database will be exported.', 'exportCompleted': 'Export completed', 'zipExportFailed': 'ZIP export failed', 'exportZipButton': 'Export ZIP', 'noUnreferencedFiles': 'No unreferenced files', 'unreferencedFound': 'Found %d unreferenced files', 'unreferencedDeleted': 'Deleted %d unreferenced files', 'allDataCleared': 'All data cleared',
 };
 

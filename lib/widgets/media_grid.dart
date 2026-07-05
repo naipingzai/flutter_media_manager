@@ -2,13 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/bloc.dart';
+import '../core/design_system/app_theme.dart';
 import '../src/rust/api/media.dart';
 import 'viewer/viewer_page.dart';
-
-/// 媒体网格展示组件
-///
-/// 规范要求（Skill-10 §2.4）：每个网格项在缩略图下方显示文件名（BodySmall）
-/// 和文件大小（LabelSmall）。为此将 childAspectRatio 调整为 0.78 以容纳文本。
 
 class MediaGrid extends StatelessWidget {
   final List<MediaItem> mediaList;
@@ -26,10 +22,9 @@ class MediaGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 1列时使用列表视图（文件管理器风格：左侧缩略图+右侧文件信息）
     if (crossAxisCount == 1) {
       return ListView.builder(
-        padding: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
         itemCount: mediaList.length,
         itemBuilder: (context, index) {
           final media = mediaList[index];
@@ -44,11 +39,11 @@ class MediaGrid extends StatelessWidget {
       );
     }
     return GridView.builder(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(AppSpacing.sm),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
-        crossAxisSpacing: 4,
-        mainAxisSpacing: 4,
+        crossAxisSpacing: AppSpacing.xs,
+        mainAxisSpacing: AppSpacing.xs,
         childAspectRatio: 0.78,
       ),
       itemCount: mediaList.length,
@@ -58,6 +53,7 @@ class MediaGrid extends StatelessWidget {
         return _MediaGridItem(
           media: media,
           isSelected: isSelected,
+          selectionMode: isSelectionMode,
           onTap: () => _onMediaTap(context, media),
           onLongPress: () => _onMediaLongPress(context, media),
         );
@@ -67,10 +63,8 @@ class MediaGrid extends StatelessWidget {
 
   void _onMediaTap(BuildContext context, MediaItem media) {
     if (isSelectionMode) {
-      // 选择模式下，点击切换选择
       context.read<MediaBloc>().add(MediaSelectEvent(media.id));
     } else {
-      // 正常浏览模式，打开详情
       _openMediaDetail(context, media);
     }
   }
@@ -96,18 +90,17 @@ class MediaGrid extends StatelessWidget {
   }
 }
 
-/// 单个媒体网格项
-///
-/// 布局：Column(缩略图 Expanded + 文件名 + 大小) + Stack（角标/时长/选择）
 class _MediaGridItem extends StatelessWidget {
   final MediaItem media;
   final bool isSelected;
+  final bool selectionMode;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
 
   const _MediaGridItem({
     required this.media,
     required this.isSelected,
+    required this.selectionMode,
     required this.onTap,
     required this.onLongPress,
   });
@@ -115,9 +108,10 @@ class _MediaGridItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     return Material(
-      color: theme.colorScheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(6),
+      color: cs.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(AppRadius.md),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
@@ -125,51 +119,33 @@ class _MediaGridItem extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 缩略图区域（占用大部分空间）
             Expanded(
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  _buildThumbnail(),
-                  // 选择遮罩
-                  if (isSelected)
-                    Container(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.25),
-                      child: Center(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primary,
-                            shape: BoxShape.circle,
-                          ),
-                          padding: const EdgeInsets.all(4),
-                          child: Icon(
-                            Icons.check,
-                            color: theme.colorScheme.onPrimary,
-                            size: 24,
-                          ),
-                        ),
-                      ),
-                    ),
-                  // 媒体类型标识（左上角）
+                  _buildThumbnail(context),
+                  if (selectionMode) _buildSelectionOverlay(cs),
                   Positioned(
-                    top: 4,
-                    left: 4,
-                    child: _buildTypeIcon(),
+                    top: AppSpacing.xs,
+                    left: AppSpacing.xs,
+                    child: _buildTypeIcon(cs),
                   ),
-                  // 视频时长标识（右下角）
-                  if (media.mediaType == MediaType.video &&
-                      media.duration != null)
+                  if (media.mediaType == MediaType.video && media.duration != null)
                     Positioned(
-                      bottom: 4,
-                      right: 4,
-                      child: _buildDurationBadge(),
+                      bottom: AppSpacing.xs,
+                      right: AppSpacing.xs,
+                      child: _buildDurationBadge(cs),
                     ),
                 ],
               ),
             ),
-            // 文件名 + 大小（缩略图下方）
             Padding(
-              padding: const EdgeInsets.fromLTRB(6, 4, 6, 4),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.sm,
+                AppSpacing.xs,
+                AppSpacing.sm,
+                AppSpacing.xs,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -182,13 +158,13 @@ class _MediaGridItem extends StatelessWidget {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(height: 1),
+                  const SizedBox(height: AppSpacing.xxs),
                   Text(
-                    _formatSize(media.size),
+                    formatFileSize(media.size),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                      color: cs.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -200,87 +176,52 @@ class _MediaGridItem extends StatelessWidget {
     );
   }
 
-  Widget _buildThumbnail() {
-    if (media.thumbnailPath.isNotEmpty) {
-      return Image.file(
-        File(media.thumbnailPath),
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return _buildFallbackIcon();
-        },
-      );
-    }
-    return _buildFallbackIcon();
+  Widget _buildThumbnail(BuildContext context) {
+    if (media.thumbnailPath.isEmpty) return _buildFallbackIcon(context);
+    return Image.file(
+      File(media.thumbnailPath),
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => _buildFallbackIcon(context),
+    );
   }
 
-  Widget _buildFallbackIcon() {
-    IconData iconData;
-    switch (media.mediaType) {
-      case MediaType.image:
-        iconData = Icons.image;
-        break;
-      case MediaType.video:
-        iconData = Icons.videocam;
-        break;
-      case MediaType.audio:
-        iconData = Icons.audiotrack;
-        break;
-      case MediaType.document:
-        iconData = Icons.description;
-        break;
-      default:
-        iconData = Icons.insert_drive_file;
-    }
+  Widget _buildFallbackIcon(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Center(
-      child: Icon(iconData, size: 32, color: Colors.grey[400]),
-    );
-  }
-
-  Widget _buildTypeIcon() {
-    IconData iconData;
-    Color iconColor;
-    switch (media.mediaType) {
-      case MediaType.image:
-        iconData = Icons.image;
-        iconColor = Colors.greenAccent;
-        break;
-      case MediaType.video:
-        iconData = Icons.videocam;
-        iconColor = Colors.redAccent;
-        break;
-      case MediaType.audio:
-        iconData = Icons.audiotrack;
-        iconColor = Colors.orangeAccent;
-        break;
-      case MediaType.document:
-        iconData = Icons.description;
-        iconColor = Colors.lightBlueAccent;
-        break;
-      default:
-        iconData = Icons.insert_drive_file;
-        iconColor = Colors.grey;
-    }
-    return Container(
-      padding: const EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.55),
-        borderRadius: BorderRadius.circular(4),
+      child: Icon(
+        _mediaIcon(media.mediaType),
+        size: AppSize.iconLarge,
+        color: cs.onSurfaceVariant,
       ),
-      child: Icon(iconData, size: 12, color: iconColor),
     );
   }
 
-  Widget _buildDurationBadge() {
+  Widget _buildTypeIcon(ColorScheme cs) {
+    final (icon, color) = _typeIconData(media.mediaType, cs);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      padding: const EdgeInsets.all(AppSpacing.xxs),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.7),
-        borderRadius: BorderRadius.circular(4),
+        color: cs.scrim.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+      ),
+      child: Icon(icon, size: AppSize.iconSmall, color: color),
+    );
+  }
+
+  Widget _buildDurationBadge(ColorScheme cs) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xxs,
+      ),
+      decoration: BoxDecoration(
+        color: cs.scrim.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Text(
-        _formatDuration(media.duration!),
-        style: const TextStyle(
-          color: Colors.white,
+        formatDuration(media.duration!),
+        style: TextStyle(
+          color: cs.onError,
           fontSize: 10,
           fontWeight: FontWeight.w500,
         ),
@@ -288,24 +229,64 @@ class _MediaGridItem extends StatelessWidget {
     );
   }
 
-  String _formatDuration(int milliseconds) {
-    final seconds = (milliseconds / 1000).floor();
-    final minutes = (seconds / 60).floor();
-    final remainingSeconds = seconds % 60;
-    return '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+  Widget _buildSelectionOverlay(ColorScheme cs) {
+    return Container(
+      color: isSelected
+          ? cs.primary.withValues(alpha: 0.25)
+          : cs.scrim.withValues(alpha: 0.05),
+      child: Center(
+        child: AnimatedSwitcher(
+          duration: AppAnimation.thumbnailScaleIn,
+          child: isSelected
+              ? Container(
+                  decoration: BoxDecoration(
+                    color: cs.primary,
+                    shape: BoxShape.circle,
+                  ),
+                  padding: const EdgeInsets.all(AppSpacing.xs),
+                  child: Icon(
+                    Icons.check,
+                    color: cs.onPrimary,
+                    size: AppSize.iconMedium,
+                  ),
+                )
+              : const SizedBox.shrink(),
+        ),
+      ),
+    );
   }
 
-  String _formatSize(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024) {
-      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  static IconData _mediaIcon(MediaType type) {
+    switch (type) {
+      case MediaType.image:
+        return Icons.image;
+      case MediaType.video:
+        return Icons.videocam;
+      case MediaType.audio:
+        return Icons.audiotrack;
+      case MediaType.document:
+        return Icons.description;
+      default:
+        return Icons.insert_drive_file;
     }
-    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
+  }
+
+  static (IconData, Color) _typeIconData(MediaType type, ColorScheme cs) {
+    switch (type) {
+      case MediaType.image:
+        return (Icons.image, cs.secondary);
+      case MediaType.video:
+        return (Icons.videocam, cs.error);
+      case MediaType.audio:
+        return (Icons.audiotrack, cs.primary);
+      case MediaType.document:
+        return (Icons.description, cs.primary);
+      default:
+        return (Icons.insert_drive_file, cs.onSurfaceVariant);
+    }
   }
 }
 
-/// 列表视图项（1列时使用，文件管理器风格：左侧缩略图 + 右侧信息）
 class _MediaListTile extends StatelessWidget {
   final MediaItem media;
   final bool isSelected;
@@ -322,77 +303,71 @@ class _MediaListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     return ListTile(
       onTap: onTap,
       onLongPress: onLongPress,
-      leading: Stack(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(4),
-              color: theme.colorScheme.surfaceContainerHighest,
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: media.thumbnailPath.isNotEmpty
-                ? Image.file(
-                    File(media.thumbnailPath),
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Icon(
-                      _getMediaIcon(media.mediaType),
-                      size: 24,
-                    ),
-                  )
-                : Icon(_getMediaIcon(media.mediaType), size: 24),
-          ),
-          if (isSelected)
-            Positioned.fill(
+      leading: SizedBox(
+        width: AppSize.touchTargetMin,
+        height: AppSize.touchTargetMin,
+        child: Stack(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               child: Container(
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Icon(
-                  Icons.check,
-                  color: theme.colorScheme.onPrimary,
-                  size: 20,
-                ),
+                width: AppSize.touchTargetMin,
+                height: AppSize.touchTargetMin,
+                color: cs.surfaceContainerHighest,
+                child: media.thumbnailPath.isNotEmpty
+                    ? Image.file(
+                        File(media.thumbnailPath),
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _buildFallbackIcon(cs),
+                      )
+                    : _buildFallbackIcon(cs),
               ),
             ),
-        ],
+            if (isSelected)
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: cs.primary.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                  ),
+                  child: Icon(
+                    Icons.check,
+                    color: cs.onPrimary,
+                    size: AppSize.iconMedium,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
-      title: Text(media.originalName, maxLines: 1, overflow: TextOverflow.ellipsis),
-      subtitle: Text(_formatSize(media.size), style: theme.textTheme.bodySmall),
+      title: Text(
+        media.originalName,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: Text(
+        formatFileSize(media.size),
+        style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+      ),
       trailing: Icon(
-        _getMediaIcon(media.mediaType),
-        size: 16,
-        color: theme.colorScheme.onSurfaceVariant,
+        _MediaGridItem._mediaIcon(media.mediaType),
+        size: AppSize.iconMedium,
+        color: cs.onSurfaceVariant,
       ),
     );
   }
 
-  IconData _getMediaIcon(MediaType type) {
-    switch (type) {
-      case MediaType.image:
-        return Icons.image;
-      case MediaType.video:
-        return Icons.videocam;
-      case MediaType.audio:
-        return Icons.audiotrack;
-      case MediaType.document:
-        return Icons.description;
-      default:
-        return Icons.insert_drive_file;
-    }
-  }
-
-  String _formatSize(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024) {
-      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-    }
-    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
+  Widget _buildFallbackIcon(ColorScheme cs) {
+    return Center(
+      child: Icon(
+        _MediaGridItem._mediaIcon(media.mediaType),
+        size: AppSize.iconMedium,
+        color: cs.onSurfaceVariant,
+      ),
+    );
   }
 }

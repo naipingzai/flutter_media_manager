@@ -63,6 +63,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return BlocBuilder<AlbumBloc, AlbumState>(
       builder: (context, state) {
         final isSelectionMode = state.selectedMediaIds.isNotEmpty;
@@ -81,12 +82,12 @@ class _AlbumScreenState extends State<AlbumScreen> {
           },
           child: Scaffold(
             appBar: AppBar(
-              title: Text(AppLocalizations.of(context).tabAlbums),
+              title: Text(loc.tabAlbums),
               actions: [
                 // 排序按钮
                 PopupMenuButton<AlbumSortMode>(
                   icon: const Icon(Icons.sort),
-                  tooltip: '排序',
+                  tooltip: loc.sortTooltip,
                   onSelected: (mode) {
                     setState(() => _sortMode = mode);
                   },
@@ -94,32 +95,32 @@ class _AlbumScreenState extends State<AlbumScreen> {
                     CheckedPopupMenuItem(
                       value: AlbumSortMode.nameAsc,
                       checked: _sortMode == AlbumSortMode.nameAsc,
-                      child: const Text('名称 A→Z'),
+                      child: Text(loc.sortNameAsc),
                     ),
                     CheckedPopupMenuItem(
                       value: AlbumSortMode.nameDesc,
                       checked: _sortMode == AlbumSortMode.nameDesc,
-                      child: const Text('名称 Z→A'),
+                      child: Text(loc.sortNameDesc),
                     ),
                     CheckedPopupMenuItem(
                       value: AlbumSortMode.dateNewest,
                       checked: _sortMode == AlbumSortMode.dateNewest,
-                      child: const Text('最新优先'),
+                      child: Text(loc.sortNewestFirst),
                     ),
                     CheckedPopupMenuItem(
                       value: AlbumSortMode.dateOldest,
                       checked: _sortMode == AlbumSortMode.dateOldest,
-                      child: const Text('最旧优先'),
+                      child: Text(loc.sortOldestFirst),
                     ),
                     CheckedPopupMenuItem(
                       value: AlbumSortMode.countMost,
                       checked: _sortMode == AlbumSortMode.countMost,
-                      child: const Text('媒体最多'),
+                      child: Text(loc.sortCountMost),
                     ),
                     CheckedPopupMenuItem(
                       value: AlbumSortMode.countLeast,
                       checked: _sortMode == AlbumSortMode.countLeast,
-                      child: const Text('媒体最少'),
+                      child: Text(loc.sortCountLeast),
                     ),
                   ],
                 ),
@@ -168,7 +169,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
                           onPressed: () => _showAddMediaDialog(context),
                           child: const Icon(Icons.add_photo_alternate),
                         ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.md),
                       FloatingActionButton(
                         heroTag: 'createAlbum',
                         onPressed: () => _showCreateAlbumDialog(context),
@@ -183,12 +184,13 @@ class _AlbumScreenState extends State<AlbumScreen> {
   }
 
   Widget _buildContent(BuildContext context, AlbumState state) {
+    final loc = AppLocalizations.of(context);
     if (state.status == AlbumStatus.loading) {
       return const Center(child: CircularProgressIndicator());
     }
 
     if (state.status == AlbumStatus.error) {
-      return Center(child: Text('${AppLocalizations.of(context).error}: ${state.errorMessage}'));
+      return Center(child: Text('${loc.error}: ${state.errorMessage}'));
     }
 
     final hasChildren = state.albums.isNotEmpty;
@@ -196,8 +198,8 @@ class _AlbumScreenState extends State<AlbumScreen> {
 
     if (!hasChildren && !hasMedia) {
       return _EmptyState(
-        message: state.isRoot ? AppLocalizations.of(context).noAlbums : AppLocalizations.of(context).noAlbums,
-        subMessage: AppLocalizations.of(context).noAlbumsDesc,
+        message: loc.noAlbums,
+        subMessage: loc.noAlbumsDesc,
       );
     }
 
@@ -244,32 +246,31 @@ class _AlbumScreenState extends State<AlbumScreen> {
   }
 
   void _showCreateAlbumDialog(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
     final state = context.read<AlbumBloc>().state;
     final nameController = TextEditingController();
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(AppLocalizations.of(context).createAlbum),
+        title: Text(loc.createAlbum),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nameController,
               decoration: InputDecoration(
-                labelText: AppLocalizations.of(context).albumName,
+                labelText: loc.albumName,
                 border: const OutlineInputBorder(),
               ),
               autofocus: true,
             ),
             if (state.currentParentId != null) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.md),
               Text(
-                AppLocalizations.of(context).createAlbum,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+                loc.subalbumNote,
+                style: AppTextStyles.caption.copyWith(color: cs.onSurfaceVariant),
               ),
             ],
           ],
@@ -277,7 +278,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text(AppLocalizations.of(context).cancel),
+            child: Text(loc.cancel),
           ),
           TextButton(
             onPressed: () {
@@ -289,7 +290,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
                 Navigator.pop(ctx);
               }
             },
-            child: Text(AppLocalizations.of(context).confirm),
+            child: Text(loc.confirm),
           ),
         ],
       ),
@@ -297,22 +298,24 @@ class _AlbumScreenState extends State<AlbumScreen> {
   }
 
   void _showDeleteDialog(BuildContext context, AlbumWithInfo album) {
+    final loc = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(AppLocalizations.of(context).deleteAlbum),
-        content: Text('${AppLocalizations.of(context).confirmDeleteAlbum}\n${album.album.name}'),
+        title: Text(loc.deleteAlbum),
+        content: Text('${loc.confirmDeleteAlbum}\n${album.album.name}'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text(AppLocalizations.of(context).cancel),
+            child: Text(loc.cancel),
           ),
           TextButton(
             onPressed: () {
               context.read<AlbumBloc>().add(AlbumDeleteEvent(album.album.id));
               Navigator.pop(ctx);
             },
-            child: Text(AppLocalizations.of(context).delete, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            child: Text(loc.delete, style: TextStyle(color: cs.error)),
           ),
         ],
       ),
@@ -348,6 +351,7 @@ class _BreadcrumbBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     return Container(
       height: 44,
@@ -359,7 +363,7 @@ class _BreadcrumbBar extends StatelessWidget {
           // Home 图标
           _BreadcrumbItem(
             icon: Icons.home_rounded,
-            label: isRoot ? AppLocalizations.of(context).tabAlbums : AppLocalizations.of(context).backToHome,
+            label: isRoot ? loc.tabAlbums : loc.backToHome,
             isActive: isRoot,
             onTap: onHomeClick,
           ),
@@ -371,8 +375,8 @@ class _BreadcrumbBar extends StatelessWidget {
 
             return [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Icon(Icons.chevron_right, size: 16, color: cs.onSurfaceVariant),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                child: Icon(Icons.chevron_right, size: AppSpacing.lg, color: cs.onSurfaceVariant),
               ),
               _BreadcrumbItem(
                 icon: isLast ? Icons.folder_open : Icons.folder,
@@ -408,19 +412,19 @@ class _BreadcrumbItem extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
             color: isActive ? cs.primaryContainer : cs.surface,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
             border: Border.all(color: cs.outlineVariant),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon, size: 14, color: isActive ? cs.onPrimaryContainer : cs.onSurfaceVariant),
-              const SizedBox(width: 4),
+              const SizedBox(width: AppSpacing.sm),
               Text(
                 label,
                 style: TextStyle(
@@ -456,12 +460,12 @@ class _AlbumGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(AppSpacing.md),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: columns,
         childAspectRatio: 1.0,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
+        crossAxisSpacing: AppSpacing.md,
+        mainAxisSpacing: AppSpacing.md,
       ),
       itemCount: albums.length,
       itemBuilder: (context, index) {
@@ -470,6 +474,7 @@ class _AlbumGrid extends StatelessWidget {
           album: album,
           onTap: () => onAlbumClick(album),
           onLongPress: () => onAlbumLongPress(album),
+          loc: AppLocalizations.of(context),
         );
       },
     );
@@ -481,11 +486,13 @@ class _AlbumCard extends StatelessWidget {
   final AlbumWithInfo album;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
+  final AppLocalizations loc;
 
   const _AlbumCard({
     required this.album,
     required this.onTap,
     required this.onLongPress,
+    required this.loc,
   });
 
   @override
@@ -517,7 +524,7 @@ class _AlbumCard extends StatelessWidget {
                         color: cs.primary,
                       ),
                       Positioned(
-                        bottom: 8,
+                        bottom: AppSpacing.md,
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
@@ -555,9 +562,9 @@ class _AlbumCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: AppSpacing.xs),
                   Text(
-                    '${album.mediaCount} ${AppLocalizations.of(context).files}',
+                    '${album.mediaCount} ${loc.files}',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: cs.onSurfaceVariant,
                     ),
@@ -584,6 +591,7 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -591,21 +599,21 @@ class _EmptyState extends StatelessWidget {
           Icon(
             Icons.folder_open,
             size: 64,
-            color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+            color: cs.onSurfaceVariant.withValues(alpha: 0.5),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           Text(
             message,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: cs.onSurfaceVariant,
+              ),
           ),
           if (subMessage != null) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.md),
             Text(
               subMessage!,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                    color: cs.onSurfaceVariant.withValues(alpha: 0.7),
                   ),
             ),
           ],
@@ -629,6 +637,8 @@ class _SelectionBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
     return BottomAppBar(
       child: Row(
         children: [
@@ -636,12 +646,12 @@ class _SelectionBottomBar extends StatelessWidget {
             icon: const Icon(Icons.close),
             onPressed: onCancel,
           ),
-          Text('${AppLocalizations.of(context).selected} $count'),
+          Text('${loc.selected} $count'),
           const Spacer(),
           IconButton(
-            icon: const Icon(Icons.remove_circle_outline),
+            icon: Icon(Icons.remove_circle_outline, color: cs.error),
             onPressed: onRemove,
-            tooltip: AppLocalizations.of(context).removeFromAlbum,
+            tooltip: loc.removeFromAlbum,
           ),
         ],
       ),
@@ -664,8 +674,7 @@ class _AlbumMediaGrid extends StatelessWidget {
     required this.selectedIds,
     required this.onTap,
     required this.onLongPress,
-    this.columns = 3
-,
+    this.columns = 3,
     this.albums,
     this.onAlbumClick,
     this.onAlbumLongPress,
@@ -673,12 +682,13 @@ class _AlbumMediaGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return GridView.builder(
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(AppSpacing.sm),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: columns,
-        crossAxisSpacing: 4,
-        mainAxisSpacing: 4,
+        crossAxisSpacing: AppSpacing.sm,
+        mainAxisSpacing: AppSpacing.sm,
         childAspectRatio: 1.0,
       ),
       itemCount: (albums?.length ?? 0) + mediaList.length,
@@ -690,6 +700,7 @@ class _AlbumMediaGrid extends StatelessWidget {
             album: album,
             onTap: () => onAlbumClick?.call(album),
             onLongPress: () => onAlbumLongPress?.call(album),
+            loc: AppLocalizations.of(context),
           );
         }
         final media = mediaList[index - albumCount];
@@ -707,12 +718,12 @@ class _AlbumMediaGrid extends StatelessWidget {
                         File(media.thumbnailPath),
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => Container(
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          color: cs.surfaceContainerHighest,
                           child: const Icon(Icons.image),
                         ),
                       )
                     : Container(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        color: cs.surfaceContainerHighest,
                         child: const Icon(Icons.image),
                       ),
               ),
@@ -720,20 +731,20 @@ class _AlbumMediaGrid extends StatelessWidget {
                 Positioned.fill(
                   child: Container(
                     color: isSelected
-                        ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
-                        : Colors.transparent,
+                    ? cs.primary.withValues(alpha: 0.3)
+                    : Colors.transparent,
                   ),
                 ),
               if (isSelectionMode)
                 Positioned(
-                  top: 4,
-                  right: 4,
+                  top: AppSpacing.sm,
+                  right: AppSpacing.sm,
                   child: Icon(
                     isSelected ? Icons.check_circle : Icons.check_circle_outline,
                     size: 24,
                     color: isSelected
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                    ? cs.primary
+                    : cs.onSurface.withValues(alpha: 0.5),
                   ),
                 ),
             ],
@@ -805,6 +816,7 @@ class _AddMediaDialogContentState extends State<_AddMediaDialogContent> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
     final items = _allMedia;
     return AlertDialog(
       title: Text(loc.addToAlbum),
@@ -824,8 +836,8 @@ class _AddMediaDialogContentState extends State<_AddMediaDialogContent> {
                       : GridView.builder(
                           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: context.read<AppBloc>().state.settings?.gridColumns ?? 3,
-                            crossAxisSpacing: 4,
-                            mainAxisSpacing: 4,
+                            crossAxisSpacing: AppSpacing.sm,
+                            mainAxisSpacing: AppSpacing.sm,
                           ),
                           itemCount: items.length,
                           itemBuilder: (ctx, index) {
@@ -849,31 +861,31 @@ class _AddMediaDialogContentState extends State<_AddMediaDialogContent> {
                                             File(media.thumbnailPath),
                                             fit: BoxFit.cover,
                                             errorBuilder: (_, __, ___) => Container(
-                                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                              color: cs.surfaceContainerHighest,
                                               child: const Icon(Icons.image),
                                             ),
                                           )
                                         : Container(
-                                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                            color: cs.surfaceContainerHighest,
                                             child: const Icon(Icons.image),
                                           ),
                                   ),
                                   if (isSelected)
                                     Positioned.fill(
                                       child: Container(
-                                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                                        color: cs.primary.withValues(alpha: 0.3),
                                       ),
                                     ),
                                   if (isSelected)
-                                    Positioned(
-                                      top: 4,
-                                      right: 4,
-                                      child: Icon(
-                                        Icons.check_circle,
-                                        size: 20,
-                                        color: Theme.of(context).colorScheme.primary,
-                                      ),
-                                    ),
+                  Positioned(
+                    top: AppSpacing.sm,
+                    right: AppSpacing.sm,
+                    child: Icon(
+                      Icons.check_circle,
+                      size: AppSpacing.lg,
+                      color: cs.primary,
+                    ),
+                  ),
                                 ],
                               ),
                             );

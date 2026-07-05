@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/bloc.dart';
 import '../core/i18n/app_localizations.dart';
+import '../core/design_system/app_theme.dart';
 import '../src/rust/api/tag.dart' as tag_api;
 import '../src/rust/api/media.dart';
 import '../widgets/viewer/viewer_page.dart';
@@ -124,7 +125,7 @@ class _TagScreenState extends State<TagScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                    Icon(Icons.error_outline, size: AppSize.iconXLarge, color: Theme.of(context).colorScheme.error),
                     const SizedBox(height: 16),
                     Text('${loc.error}: ${state.errorMessage ?? loc.unknown}'),
                     const SizedBox(height: 16),
@@ -184,7 +185,7 @@ class _TagScreenState extends State<TagScreen> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, -2)),
+          BoxShadow(color: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, -2)),
         ],
       ),
       child: SafeArea(
@@ -212,7 +213,7 @@ class _TagScreenState extends State<TagScreen> {
               ),
               const Spacer(),
               IconButton(
-                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
                 tooltip: loc.delete,
                 onPressed: _selectedMediaIds.isNotEmpty
                     ? () => _batchDeleteSelectedMedia(context)
@@ -259,11 +260,11 @@ class _TagScreenState extends State<TagScreen> {
     final cs = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
-      height: 44,
+      height: AppSize.topBarHeight,
       color: cs.surfaceContainerHighest,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
         children: [
           _TagBreadcrumbItem(
             icon: Icons.home_rounded,
@@ -273,8 +274,8 @@ class _TagScreenState extends State<TagScreen> {
           ),
           for (int i = 0; i < state.breadcrumb.length; i++) ...[
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Icon(Icons.chevron_right, size: 16, color: cs.onSurfaceVariant),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+              child: Icon(Icons.chevron_right, size: AppSize.iconSmall, color: cs.onSurfaceVariant),
             ),
             _TagBreadcrumbItem(
               icon: i == state.breadcrumb.length - 1 ? Icons.label_important : Icons.label,
@@ -293,6 +294,7 @@ class _TagScreenState extends State<TagScreen> {
   /// 内容区域 - 子标签网格 + 筛选结果
   Widget _buildContent(BuildContext context, TagState state, int gridColumns) {
     final loc = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
     final hasTags = state.tagsWithInfo.isNotEmpty;
     final hasParent = state.currentParentId != null;
 
@@ -301,11 +303,11 @@ class _TagScreenState extends State<TagScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.label, size: 64, color: Colors.grey),
-            const SizedBox(height: 12),
-            Text(loc.noTags, style: const TextStyle(fontSize: 16, color: Colors.grey)),
-            const SizedBox(height: 8),
-            Text(loc.noTagsDesc, style: const TextStyle(fontSize: 14, color: Colors.grey)),
+            Icon(Icons.label, size: AppSize.iconXxl, color: cs.onSurfaceVariant),
+            const SizedBox(height: AppSpacing.md),
+            Text(loc.noTags, style: TextStyle(fontSize: 16, color: cs.onSurfaceVariant)),
+            const SizedBox(height: AppSpacing.sm),
+            Text(loc.noTagsDesc, style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant)),
           ],
         ),
       );
@@ -923,14 +925,14 @@ class _TagBreadcrumbItem extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
             color: isActive ? cs.primaryContainer : cs.surface,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadius.full),
             border: Border.all(color: cs.outlineVariant),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 14, color: isActive ? cs.onPrimaryContainer : cs.onSurfaceVariant),
-              const SizedBox(width: 4),
+              Icon(icon, size: AppSize.iconSmall, color: isActive ? cs.onPrimaryContainer : cs.onSurfaceVariant),
+              const SizedBox(width: AppSpacing.xs),
               Text(
                 label,
                 style: TextStyle(

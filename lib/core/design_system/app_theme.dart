@@ -101,7 +101,7 @@ class AppTheme {
       ),
       dialogTheme: DialogThemeData(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.xl),
+          borderRadius: BorderRadius.circular(AppRadius.xxl),
         ),
         backgroundColor: colorScheme.surface,
       ),
@@ -189,9 +189,17 @@ class AppRadius {
   static const double sm = 4;
   static const double md = 8;
   static const double lg = 12;
-  static const double xl = 28;
-  static const double xxl = 16; // 统一卡片圆角
+  static const double xl = 16; // 统一卡片圆角
+  static const double xxl = 28; // 对话框/大卡片圆角
   static const double full = 100; // 胶囊形
+}
+
+/// 文本样式常量 - Skill-03 §3.3
+class AppTextStyles {
+  AppTextStyles._();
+
+  static const TextStyle body = TextStyle(fontSize: 14);
+  static const TextStyle caption = TextStyle(fontSize: 12);
 }
 
 /// 动画常量 - Skill-03 §4.1
