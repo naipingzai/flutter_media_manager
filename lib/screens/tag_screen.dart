@@ -972,54 +972,75 @@ class _TagCard extends StatelessWidget {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.xxl),
         side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         onLongPress: onLongPress,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: Container(
-                color: (color ?? Theme.of(context).colorScheme.primary).withValues(alpha: 0.15),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        hasChildren != 0 ? Icons.label_important : Icons.label,
-                        size: 40,
-                        color: color ?? Theme.of(context).colorScheme.primary,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final width = constraints.maxWidth;
+            final iconSize = width.clamp(64.0, 120.0) * 0.35;
+            final childSize = iconSize * 0.35;
+            final titleSize = (width * 0.09).clamp(10.0, 14.0);
+            final padding = width * 0.05;
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: Container(
+                    color: (color ?? Theme.of(context).colorScheme.primary).withValues(alpha: 0.15),
+                    child: Center(
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Icon(
+                            hasChildren != 0 ? Icons.label_important : Icons.label,
+                            size: iconSize,
+                            color: color ?? Theme.of(context).colorScheme.primary,
+                          ),
+                          if (hasChildren != 0)
+                            Positioned(
+                              bottom: width * 0.12,
+                              child: Container(
+                                padding: const EdgeInsets.all(2),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.surface,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.subdirectory_arrow_right,
+                                  size: childSize,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
-                      if (hasChildren != 0)
-                        Icon(
-                          Icons.subdirectory_arrow_right,
-                          size: 14,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              color: Theme.of(context).colorScheme.surface,
-              child: Text(
-                tag.name,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: Theme.of(context).colorScheme.onSurface,
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: padding, vertical: padding * 0.8),
+                  color: Theme.of(context).colorScheme.surface,
+                  child: Text(
+                    tag.name,
+                    style: TextStyle(
+                      fontSize: titleSize,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                  ),
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ],
+              ],
+            );
+          },
         ),
       ),
     );

@@ -1,73 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:advance_media_kb/core/design_system/app_theme.dart';
 import 'package:advance_media_kb/screens/home_screen.dart';
+import 'package:advance_media_kb/screens/search_screen.dart';
 import 'package:advance_media_kb/screens/settings_screen.dart';
 import 'package:advance_media_kb/widgets/viewer/viewer_page.dart';
 import 'package:advance_media_kb/src/rust/api/media.dart' as media_api;
 
-/// 搜索覆盖层（暂用 media_screen 内的 _SearchOverlay；预留接口）
-class SearchScreen extends StatelessWidget {
-  const SearchScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return const _SearchOverlayPlaceholder();
-  }
-}
-
-class _SearchOverlayPlaceholder extends StatelessWidget {
-  const _SearchOverlayPlaceholder();
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('搜索')),
-      body: const Center(child: Text('请使用媒体页搜索入口')),
-    );
-  }
-}
-
 /// Skill-09: 应用壳与导航规范
-/// 覆盖层路由管理器 - 所有非主页面以覆盖层形式从右侧滑入
+/// 覆盖层路由管理器 - 非主页面以卡片覆盖层/全屏覆盖层形式呈现
 
 class AppRouter {
   AppRouter._();
 
-  /// 通用覆盖层导航 - 从右侧滑入
+  /// 全屏覆盖层导航 - 从右侧滑入（媒体查看器等需要全屏的页面）
   static Future<T?> pushOverlay<T>(
     BuildContext context, {
     required Widget page,
     bool fullscreenDialog = false,
   }) {
     return Navigator.of(context).push<T>(
-      PageRouteBuilder<T>(
-        fullscreenDialog: fullscreenDialog,
-        transitionDuration: AppAnimation.overlaySlideIn,
-        reverseTransitionDuration: AppAnimation.overlaySlideOut,
-        pageBuilder: (context, animation, secondaryAnimation) => page,
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          final curvedAnimation = CurvedAnimation(
-            parent: animation,
-            curve: AppAnimation.slideInCurve,
-            reverseCurve: AppAnimation.slideOutCurve,
-          );
+      _buildFullScreenOverlayRoute(page, fullscreenDialog: fullscreenDialog),
+    );
+  }
 
-          return SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(1.0, 0.0),
-              end: Offset.zero,
-            ).animate(curvedAnimation),
-            child: FadeTransition(
-              opacity: Tween<double>(
-                begin: 0.0,
-                end: 1.0,
-              ).animate(CurvedAnimation(
-                parent: animation,
-                curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
-              )),
-              child: child,
-            ),
-          );
-        },
-      ),
+  /// 非全屏卡片覆盖层导航 - 从右侧滑入，圆角矩形
+  static Future<T?> pushCardOverlay<T>(
+    BuildContext context, {
+    required Widget page,
+  }) {
+    return Navigator.of(context).push<T>(
+      _buildCardOverlayRoute(page),
     );
   }
 
@@ -106,21 +68,21 @@ class AppRoutes {
 /// 路由生成器 - 支持覆盖层动画（Skill-09 §3）
 ///
 /// 路由表：
-/// - '/'              → HomeScreen
-/// - '/search'        → SearchOverlay
-/// - '/settings'      → SettingsScreen
-/// - '/media_viewer'  → ViewerPage（需 arguments: media + mediaList）
+/// - '/'              → HomeScreen（全屏）
+/// - '/search'        → SearchScreen（卡片覆盖层）
+/// - '/settings'      → SettingsScreen（卡片覆盖层）
+/// - '/media_viewer'  → ViewerPage（全屏覆盖层，需 arguments: media + mediaList）
 Route<dynamic>? generateRoute(RouteSettings settings) {
   switch (settings.name) {
     case AppRoutes.home:
-      return _buildOverlayRoute(const HomeScreen());
+      return _buildFullScreenOverlayRoute(const HomeScreen());
     case AppRoutes.search:
-      return _buildOverlayRoute(const SearchScreen());
+      return _buildCardOverlayRoute(const SearchScreen());
     case AppRoutes.settings:
-      return _buildOverlayRoute(const SettingsScreen());
+      return _buildCardOverlayRoute(const SettingsScreen());
     case AppRoutes.mediaViewer:
       final args = settings.arguments as Map<String, dynamic>?;
-      return _buildOverlayRoute(
+      return _buildFullScreenOverlayRoute(
         ViewerPage(
           initialMedia: args?['media'] as dynamic,
           mediaList: (args?['mediaList'] as List<dynamic>?)
@@ -134,13 +96,77 @@ Route<dynamic>? generateRoute(RouteSettings settings) {
   }
 }
 
-/// 内部辅助：构建带覆盖层动画的路由
-Route<T> _buildOverlayRoute<T>(Widget page) {
+/// 内部辅助：全屏覆盖层
+Route<T> _buildFullScreenOverlayRoute<T>(Widget page, {bool fullscreenDialog = false}) {
   return PageRouteBuilder<T>(
+    fullscreenDialog: fullscreenDialog,
     transitionDuration: AppAnimation.overlaySlideIn,
     reverseTransitionDuration: AppAnimation.overlaySlideOut,
     pageBuilder: (_, __, ___) => page,
     transitionsBuilder: (_, animation, __, child) {
+      final curved = CurvedAnimation(
+        parent: animation,
+        curve: AppAnimation.slideInCurve,
+        reverseCurve: AppAnimation.slideOutCurve,
+      );
+      return SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(1.0, 0.0),
+          end: Offset.zero,
+        ).animate(curved),
+        child: FadeTransition(
+          opacity: CurvedAnimation(
+            parent: animation,
+            curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
+          ).drive(Tween<double>(begin: 0.0, end: 1.0)),
+          child: child,
+        ),
+      );
+    },
+  );
+}
+
+/// 内部辅助：非全屏圆角卡片覆盖层
+Route<T> _buildCardOverlayRoute<T>(Widget page) {
+  const double radius = AppRadius.xxl;
+  const double margin = 12.0;
+
+  return PageRouteBuilder<T>(
+    opaque: false,
+    barrierDismissible: true,
+    transitionDuration: AppAnimation.overlaySlideIn,
+    reverseTransitionDuration: AppAnimation.overlaySlideOut,
+    pageBuilder: (context, animation, secondaryAnimation) {
+      final cs = Theme.of(context).colorScheme;
+      final mq = MediaQuery.of(context);
+      return GestureDetector(
+        onTap: () => Navigator.of(context).pop(),
+        child: Material(
+          color: cs.scrim.withValues(alpha: 0.35),
+          child: SafeArea(
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: const EdgeInsets.all(margin),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(radius),
+                  child: GestureDetector(
+                    onTap: () {},
+                    child: Container(
+                      width: mq.size.width - margin * 2,
+                      height: mq.size.height - margin * 2 - mq.padding.vertical,
+                      color: cs.surface,
+                      child: page,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
       final curved = CurvedAnimation(
         parent: animation,
         curve: AppAnimation.slideInCurve,

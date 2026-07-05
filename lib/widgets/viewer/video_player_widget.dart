@@ -176,26 +176,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
             ),
           ),
 
-          // 中央播放/暂停按钮
-          if (_showControls)
-            Center(
-              child: GestureDetector(
-                onTap: _togglePlayPause,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.4),
-                    shape: BoxShape.circle,
-                  ),
-                  padding: const EdgeInsets.all(20),
-                  child: Icon(
-                    _isPlaying ? Icons.pause : Icons.play_arrow,
-                    color: Colors.white,
-                    size: 48,
-                  ),
-                ),
-              ),
-            ),
-
           // 底部控制条
           if (_showControls)
             Positioned(
@@ -269,5 +249,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         ],
       ),
     );
+
   }
 }

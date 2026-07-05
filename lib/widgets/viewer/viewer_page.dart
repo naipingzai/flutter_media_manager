@@ -96,27 +96,34 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).padding.bottom + 80;
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      extendBodyBehindAppBar: true,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          GestureDetector(
-            onTap: _toggleOverlay,
-            behavior: HitTestBehavior.translucent,
-            child: PageView.builder(
-              controller: _pageController,
-              itemCount: widget.mediaList.length,
-              onPageChanged: _switchMedia,
-              itemBuilder: (context, index) {
-                return _buildMediaContent(widget.mediaList[index], bottomPadding);
-              },
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark.copyWith(
+        statusBarColor: Colors.white,
+        systemNavigationBarColor: Colors.white,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        extendBodyBehindAppBar: true,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            GestureDetector(
+              onTap: _toggleOverlay,
+              behavior: HitTestBehavior.translucent,
+              child: PageView.builder(
+                controller: _pageController,
+                itemCount: widget.mediaList.length,
+                onPageChanged: _switchMedia,
+                itemBuilder: (context, index) {
+                  return _buildMediaContent(widget.mediaList[index], bottomPadding);
+                },
+              ),
             ),
-          ),
-          if (_showOverlay) _buildTopOverlay(),
-          if (_showOverlay) _buildBottomActionBar(),
-        ],
+            if (_showOverlay) _buildTopOverlay(),
+            if (_showOverlay) _buildBottomActionBar(),
+          ],
+        ),
       ),
     );
   }
@@ -156,24 +163,16 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
       left: 0,
       right: 0,
       child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.black.withValues(alpha: 0.7),
-              Colors.transparent,
-            ],
-          ),
-        ),
+        color: Colors.white,
         padding: EdgeInsets.only(
           top: MediaQuery.of(context).padding.top + AppSpacing.sm,
           left: AppSpacing.sm,
           right: AppSpacing.sm,
-          bottom: AppSpacing.lg,
+          bottom: AppSpacing.md,
         ),
         child: SafeArea(
           top: false,
+          bottom: false,
           child: Row(
             children: [
               _buildTopButton(Icons.arrow_back, () => Navigator.pop(context)),
@@ -188,7 +187,7 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: Colors.black87,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
@@ -197,7 +196,7 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
                       Text(
                         '${_currentIndex + 1} / ${widget.mediaList.length}',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
+                          color: Colors.black54,
                           fontSize: 12,
                         ),
                       ),
@@ -218,7 +217,7 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
 
   Widget _buildTopButton(IconData icon, VoidCallback onTap, {String? tooltip}) {
     final btn = Material(
-      color: Colors.white.withValues(alpha: 0.12),
+      color: Colors.black.withValues(alpha: 0.08),
       borderRadius: BorderRadius.circular(AppRadius.md),
       child: InkWell(
         onTap: onTap,
@@ -227,7 +226,7 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
           width: 36,
           height: 36,
           alignment: Alignment.center,
-          child: Icon(icon, color: Colors.white, size: 20),
+          child: Icon(icon, color: Colors.black87, size: 20),
         ),
       ),
     );
@@ -243,16 +242,7 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
       left: 0,
       right: 0,
       child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.bottomCenter,
-            end: Alignment.topCenter,
-            colors: [
-              Colors.black.withValues(alpha: 0.85),
-              Colors.transparent,
-            ],
-          ),
-        ),
+        color: Colors.white,
         padding: EdgeInsets.fromLTRB(
           AppSpacing.lg,
           AppSpacing.lg,
@@ -261,6 +251,7 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
         ),
         child: SafeArea(
           top: false,
+          bottom: false,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -285,11 +276,11 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color ?? Colors.white, size: 24),
+            Icon(icon, color: color ?? Colors.black87, size: 24),
             const SizedBox(height: AppSpacing.xs),
             Text(
               label,
-              style: TextStyle(color: color ?? Colors.white, fontSize: 11),
+              style: TextStyle(color: color ?? Colors.black87, fontSize: 11),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -509,9 +500,6 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
             },
           ),
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(loc.cancel)),
-        ],
       ),
     );
   }

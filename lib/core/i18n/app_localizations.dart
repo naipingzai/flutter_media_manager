@@ -212,6 +212,9 @@ class AppLocalizations {
   String get albumFilter => _get('albumFilter');
   String get selectAlbum => _get('selectAlbum');
   String get searchMediaHint => _get('searchMediaHint');
+  String get searchHistory => _get('searchHistory');
+  String get searchResults => _get('searchResults');
+  String get clearAll => _get('clearAll');
   String get directoryNotAccessible => _get('directoryNotAccessible');
   String cannotReadDirectory(String err) =>
       _get('cannotReadDirectory').replaceAll('%s', err);
@@ -465,6 +468,9 @@ const Map<String, String> _zhStrings = {
   'matchAnyTag': '任一标签', 'matchAllTags': '所有标签',
   'albumFilter': '相册筛选', 'selectAlbum': '选择相册',
   'searchMediaHint': '搜索媒体...',
+  'searchHistory': '搜索历史',
+  'searchResults': '搜索结果',
+  'clearAll': '清空',
   'directoryNotAccessible': '目录不可访问',
   'cannotReadDirectory': '无法读取目录: %s',
   'manageAllFilesPermissionDesc': '浏览文件需要"管理所有文件"权限。\n\n请点击"去设置"，然后在应用详情中开启"允许管理所有文件"。',
@@ -606,6 +612,9 @@ const Map<String, String> _enStrings = {
   'matchAnyTag': 'Any Tag', 'matchAllTags': 'All Tags',
   'albumFilter': 'Album Filter', 'selectAlbum': 'Select Album',
   'searchMediaHint': 'Search media...',
+  'searchHistory': 'Search History',
+  'searchResults': 'Search Results',
+  'clearAll': 'Clear All',
   'directoryNotAccessible': 'Directory not accessible',
   'cannotReadDirectory': 'Cannot read directory: %s',
   'manageAllFilesPermissionDesc': 'Browsing files requires "All files access" permission.\n\nPlease tap "Go to Settings" and enable "Allow access to manage all files" in the app details.',
