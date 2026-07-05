@@ -254,8 +254,8 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildActionItem(Icons.photo_album, loc.album, _showAlbumPicker),
-              _buildActionItem(Icons.label_outline, loc.tags, _showTagManager),
+              _buildActionItem(Icons.photo_album_outlined, loc.album, _showAlbumPicker),
+              _buildActionItem(Icons.label_outlined, loc.tags, _showTagManager),
               _buildActionItem(Icons.delete_outline, loc.delete, _showDeleteConfirm, color: Colors.red),
               _buildActionItem(Icons.more_horiz, loc.more, _showMorePanel),
             ],

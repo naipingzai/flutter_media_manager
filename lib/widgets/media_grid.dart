@@ -259,30 +259,30 @@ class _MediaGridItem extends StatelessWidget {
   static IconData _mediaIcon(MediaType type) {
     switch (type) {
       case MediaType.image:
-        return Icons.image;
+        return Icons.image_outlined;
       case MediaType.video:
-        return Icons.videocam;
+        return Icons.videocam_outlined;
       case MediaType.audio:
-        return Icons.audiotrack;
+        return Icons.audiotrack_outlined;
       case MediaType.document:
-        return Icons.description;
+        return Icons.description_outlined;
       default:
-        return Icons.insert_drive_file;
+        return Icons.insert_drive_file_outlined;
     }
   }
 
   static (IconData, Color) _typeIconData(MediaType type, ColorScheme cs) {
     switch (type) {
       case MediaType.image:
-        return (Icons.image, cs.secondary);
+        return (Icons.image_outlined, cs.secondary);
       case MediaType.video:
-        return (Icons.videocam, cs.error);
+        return (Icons.videocam_outlined, cs.error);
       case MediaType.audio:
-        return (Icons.audiotrack, cs.primary);
+        return (Icons.audiotrack_outlined, cs.primary);
       case MediaType.document:
-        return (Icons.description, cs.primary);
+        return (Icons.description_outlined, cs.primary);
       default:
-        return (Icons.insert_drive_file, cs.onSurfaceVariant);
+        return (Icons.insert_drive_file_outlined, cs.onSurfaceVariant);
     }
   }
 }
