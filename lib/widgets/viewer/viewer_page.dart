@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../bloc/bloc.dart';
 import '../../core/design_system/app_theme.dart';
 import '../../core/i18n/app_localizations.dart';
@@ -195,7 +194,7 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
                     if (hasMultiple)
                       Text(
                         '${_currentIndex + 1} / ${widget.mediaList.length}',
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Colors.black54,
                           fontSize: 12,
                         ),
@@ -303,7 +302,6 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildMoreTile(Icons.edit, loc.rename, _showRenameDialog),
-            _buildMoreTile(Icons.note_add, loc.note, _showNoteEditor),
             _buildMoreTile(Icons.download, loc.exportToDownload, _exportMedia),
             _buildMoreTile(Icons.link, loc.copyPath, _copyPath),
             _buildMoreTile(Icons.info_outline, loc.details, _showFileInfoDialog),
@@ -369,42 +367,6 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
             child: Text(loc.save),
           ),
         ],
-      ),
-    );
-  }
-
-  void _showNoteEditor() {
-    final loc = AppLocalizations.of(context);
-    final controller = TextEditingController(text: _noteContent ?? '');
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
-      ),
-      builder: (sheetCtx) => Padding(
-        padding: EdgeInsets.fromLTRB(
-          AppSpacing.lg,
-          AppSpacing.sm,
-          AppSpacing.lg,
-          MediaQuery.of(sheetCtx).viewInsets.bottom + AppSpacing.lg,
-        ),
-        child: SizedBox(
-          height: MediaQuery.of(sheetCtx).size.height * 0.55,
-          child: _MarkdownNoteEditor(
-            controller: controller,
-            title: _noteContent == null ? loc.createNote : loc.editNote,
-            hint: loc.noteContentHint,
-            onSave: () async {
-              await note_api.saveNote(
-                mediaId: _currentMedia.id,
-                content: controller.text,
-              );
-              if (mounted) setState(() => _noteContent = controller.text);
-            },
-          ),
-        ),
       ),
     );
   }
@@ -738,84 +700,6 @@ class _TagManagerDialogState extends State<_TagManagerDialog> {
       ),
       actions: [
         TextButton(onPressed: () => Navigator.pop(context), child: Text(loc.close)),
-      ],
-    );
-  }
-}
-
-// ─── Markdown 笔记编辑器 ───
-class _MarkdownNoteEditor extends StatefulWidget {
-  final TextEditingController controller;
-  final String title;
-  final String hint;
-  final VoidCallback? onSave;
-
-  const _MarkdownNoteEditor({
-    required this.controller,
-    required this.title,
-    required this.hint,
-    this.onSave,
-  });
-
-  @override
-  State<_MarkdownNoteEditor> createState() => _MarkdownNoteEditorState();
-}
-
-class _MarkdownNoteEditorState extends State<_MarkdownNoteEditor> {
-  bool _preview = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(child: Text(widget.title, style: Theme.of(context).textTheme.titleMedium)),
-            TextButton.icon(
-              onPressed: () => setState(() => _preview = !_preview),
-              icon: Icon(_preview ? Icons.edit : Icons.preview),
-              label: Text(_preview ? loc.edit : loc.preview),
-            ),
-            TextButton(
-              onPressed: () {
-                widget.onSave?.call();
-                Navigator.pop(context);
-              },
-              child: Text(loc.save),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        if (_preview)
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(AppRadius.md),
-              ),
-              child: Markdown(
-                data: widget.controller.text.isEmpty ? loc.noteEmpty : widget.controller.text,
-                styleSheet: MarkdownStyleSheet(
-                  p: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-                ),
-              ),
-            ),
-          )
-        else
-          Expanded(
-            child: TextField(
-              controller: widget.controller,
-              maxLines: null,
-              expands: true,
-              decoration: InputDecoration(
-                hintText: widget.hint,
-                filled: true,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
-              ),
-            ),
-          ),
       ],
     );
   }

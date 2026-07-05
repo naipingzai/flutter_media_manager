@@ -504,93 +504,28 @@ class _AlbumCard extends StatelessWidget {
       child: Card(
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.xxl),
+          borderRadius: BorderRadius.circular(AppRadius.xl),
           side: BorderSide(color: cs.outlineVariant),
         ),
         clipBehavior: Clip.antiAlias,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final width = constraints.maxWidth;
-            final iconSize = width.clamp(64.0, 120.0) * 0.35;
-            final titleSize = (width * 0.09).clamp(10.0, 14.0);
-            final subtitleSize = (width * 0.075).clamp(9.0, 12.0);
-            final countSize = (width * 0.07).clamp(9.0, 11.0);
-
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  child: Container(
-                    color: cs.primaryContainer.withValues(alpha: 0.25),
-                    child: Center(
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Icon(
-                            Icons.folder_rounded,
-                            size: iconSize,
-                            color: cs.primary,
-                          ),
-                          Positioned(
-                            bottom: width * 0.08,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: cs.surface,
-                                borderRadius: BorderRadius.circular(AppRadius.sm),
-                              ),
-                              child: Text(
-                                '${album.mediaCount}',
-                                style: TextStyle(
-                                  fontSize: countSize,
-                                  fontWeight: FontWeight.bold,
-                                  color: cs.primary,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+        child: Container(
+          color: cs.surface,
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.md),
+              child: Text(
+                album.album.name,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: cs.onSurface,
                 ),
-                Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: width * 0.06,
-                    vertical: width * 0.05,
-                  ),
-                  color: cs.surface,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        album.album.name,
-                        style: TextStyle(
-                          fontSize: titleSize,
-                          fontWeight: FontWeight.w600,
-                          color: cs.onSurface,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                      ),
-                      SizedBox(height: width * 0.02),
-                      Text(
-                        '${album.mediaCount} ${loc.files}',
-                        style: TextStyle(
-                          fontSize: subtitleSize,
-                          color: cs.onSurfaceVariant,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            );
-          },
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
         ),
       ),
     );

@@ -176,76 +176,79 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
             ),
           ),
 
-          // 底部控制条
-          if (_showControls)
-            Positioned(
-              bottom: widget.bottomPadding,
-              left: 0,
-              right: 0,
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    colors: [
-                      Colors.black.withValues(alpha: 0.8),
-                      Colors.transparent,
-                    ],
-                  ),
+          // 底部进度条（始终显示，播放/暂停和全屏按钮随控件显隐）
+          Positioned(
+            bottom: widget.bottomPadding,
+            left: 0,
+            right: 0,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.8),
+                    Colors.transparent,
+                  ],
                 ),
-                padding: EdgeInsets.fromLTRB(
-                  16,
-                  32,
-                  16,
-                  MediaQuery.of(context).padding.bottom + 16,
-                ),
-                child: SafeArea(
-                  top: false,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        children: [
+              ),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                32,
+                16,
+                MediaQuery.of(context).padding.bottom + 16,
+              ),
+              child: SafeArea(
+                top: false,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        if (_showControls) ...[
                           _buildControlButton(
                             _isPlaying ? Icons.pause : Icons.play_arrow,
                             _togglePlayPause,
                           ),
                           const SizedBox(width: 12),
-                          Text(
-                            _formatDuration(position),
-                            style: const TextStyle(color: Colors.white, fontSize: 12),
-                          ),
-                          Expanded(
-                            child: SliderTheme(
-                              data: SliderThemeData(
-                                trackHeight: 4,
-                                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                                overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-                                activeTrackColor: Colors.white,
-                                inactiveTrackColor: Colors.white30,
-                                thumbColor: Colors.white,
-                                overlayColor: Colors.white24,
-                              ),
-                              child: Slider(
-                                value: valueMs,
-                                max: maxMs,
-                                onChanged: _seekTo,
-                              ),
+                        ],
+                        Text(
+                          _formatDuration(position),
+                          style: const TextStyle(color: Colors.white, fontSize: 12),
+                        ),
+                        Expanded(
+                          child: SliderTheme(
+                            data: SliderThemeData(
+                              trackHeight: 4,
+                              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                              overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                              activeTrackColor: Colors.white,
+                              inactiveTrackColor: Colors.white30,
+                              thumbColor: Colors.white,
+                              overlayColor: Colors.white24,
+                            ),
+                            child: Slider(
+                              value: valueMs,
+                              max: maxMs,
+                              onChanged: _seekTo,
                             ),
                           ),
-                          Text(
-                            _formatDuration(duration),
-                            style: const TextStyle(color: Colors.white, fontSize: 12),
-                          ),
+                        ),
+                        Text(
+                          _formatDuration(duration),
+                          style: const TextStyle(color: Colors.white, fontSize: 12),
+                        ),
+                        if (_showControls) ...[
                           const SizedBox(width: 12),
                           _buildControlButton(Icons.fullscreen, _toggleFullscreen),
                         ],
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),
+          ),
         ],
       ),
     );

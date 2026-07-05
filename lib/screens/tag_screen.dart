@@ -966,94 +966,41 @@ class _TagCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tag = tagInfo.tag;
-    final hasChildren = tagInfo.hasChildren;
-    final color = _parseColor(tag.color);
+    final cs = Theme.of(context).colorScheme;
 
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.xxl),
-        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        side: BorderSide(color: cs.outlineVariant),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         onLongPress: onLongPress,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final width = constraints.maxWidth;
-            final iconSize = width.clamp(64.0, 120.0) * 0.35;
-            final childSize = iconSize * 0.35;
-            final titleSize = (width * 0.09).clamp(10.0, 14.0);
-            final padding = width * 0.05;
-
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  child: Container(
-                    color: (color ?? Theme.of(context).colorScheme.primary).withValues(alpha: 0.15),
-                    child: Center(
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Icon(
-                            hasChildren != 0 ? Icons.label_important : Icons.label,
-                            size: iconSize,
-                            color: color ?? Theme.of(context).colorScheme.primary,
-                          ),
-                          if (hasChildren != 0)
-                            Positioned(
-                              bottom: width * 0.12,
-                              child: Container(
-                                padding: const EdgeInsets.all(2),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.surface,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  Icons.subdirectory_arrow_right,
-                                  size: childSize,
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
+        child: Container(
+          color: cs.surface,
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.md),
+              child: Text(
+                tag.name,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: cs.onSurface,
                 ),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: padding, vertical: padding * 0.8),
-                  color: Theme.of(context).colorScheme.surface,
-                  child: Text(
-                    tag.name,
-                    style: TextStyle(
-                      fontSize: titleSize,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ],
-            );
-          },
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
         ),
       ),
     );
   }
 
-  Color? _parseColor(String? colorString) {
-    if (colorString == null || colorString.isEmpty) return null;
-    try {
-      return Color(int.parse(colorString.replaceFirst('#', '0xFF')));
-    } catch (_) {
-      return null;
-    }
-  }
 }
 
 /// 媒体网格项（用于标签筛选结果展示）

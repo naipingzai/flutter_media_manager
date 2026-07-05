@@ -527,12 +527,12 @@ class _MediaScreenState extends State<MediaScreen> {
 
   /// 搜索
   void _showSearch(BuildContext context) {
-    AppRouter.pushCardOverlay(context, page: const SearchScreen());
+    AppRouter.pushOverlay(context, page: const SearchScreen());
   }
 
   /// 打开设置
   void _openSettings(BuildContext context) {
-    AppRouter.pushCardOverlay(context, page: const SettingsScreen());
+    AppRouter.pushOverlay(context, page: const SettingsScreen());
   }
 
   Future<void> _batchDelete(BuildContext context, Set<String> ids) async {
