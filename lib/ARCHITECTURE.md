@@ -1,113 +1,119 @@
-# AdvanceMediaKB - 项目架构
+# AdvanceMediaKB 架构文档
 
-本文档说明 Flutter 端代码的组织结构，便于快速定位 UI、业务逻辑、Rust 通信相关代码。
-
-## 顶层目录结构
+## 目录结构
 
 ```
 lib/
-├── core/                  # 框架层 - 与业务无关的通用设施
-│   ├── design_system/     # UI 设计系统（M3 主题、组件）
-│   ├── i18n/              # 国际化
-│   ├── navigation/        # 路由
-│   ├── permissions/       # 平台权限
-│   ├── utils/             # 工具函数（待添加）
-│   └── ...
-├── data/                  # 数据层 - Rust 通信（待添加）
-│   └── bridge/            # FFI 桥接
-├── features/              # 功能模块（垂直切片）
-│   ├── home/              # 主屏幕（底部导航）
-│   ├── media/             # 媒体管理
-│   ├── album/             # 相册管理
-│   ├── tag/               # 标签管理
-│   ├── note/              # 笔记功能
-│   ├── search/            # 搜索
-│   ├── settings/          # 设置
-│   └── viewer/            # 媒体查看器
-├── app/                   # 应用层（待添加）
-│   ├── app.dart           # MaterialApp
-│   └── app_router.dart    # 顶层路由
-├── src/                    # 自动生成的 FFI 桥接（不要编辑）
-│   └── rust/              # flutter_rust_bridge 生成
-└── main.dart              # 入口
+├── main.dart                       # 应用入口
+├── ARCHITECTURE.md                 # 架构文档（本文件）
+│
+├── ui/                             # 🎨 UI 层 - 纯页面和组件
+│   ├── album/                      #   相册页面
+│   │   ├── album_screen.dart
+│   │   └── widgets/
+│   ├── home/                       #   主页
+│   │   ├── home_screen.dart
+│   │   └── widgets/
+│   ├── media/                      #   媒体浏览页面
+│   │   ├── media_screen.dart
+│   │   ├── api_test_screen.dart
+│   │   └── widgets/                #     media_grid, file_browser_dialog, search_bar
+│   ├── note/                       #   笔记页面
+│   │   ├── note_edit_screen.dart
+│   │   ├── note_list_screen.dart
+│   │   └── widgets/
+│   ├── search/                     #   搜索页面
+│   │   ├── search_screen.dart
+│   │   └── widgets/                #     advanced_search_dialog
+│   ├── settings/                   #   设置页面
+│   │   ├── settings_screen.dart
+│   │   └── widgets/
+│   ├── tag/                        #   标签页面
+│   │   ├── tag_screen.dart
+│   │   └── widgets/
+│   └── viewer/                     #   媒体查看器
+│       ├── viewer_page.dart
+│       └── widgets/                #     image_viewer, video_player, audio_player
+│
+├── functionality/                  # ⚙️ 功能层 - 业务逻辑 (BLoC)
+│   ├── album/                      #   相册 BLoC
+│   │   ├── album_bloc.dart
+│   │   ├── album_event.dart
+│   │   └── album_state.dart
+│   ├── home/                       #   应用全局 BLoC
+│   │   ├── app_bloc.dart
+│   │   ├── app_event.dart
+│   │   └── app_state.dart
+│   ├── media/                      #   媒体 BLoC
+│   │   ├── media_bloc.dart
+│   │   ├── media_event.dart
+│   │   ├── media_state.dart
+│   │   └── import_state_machine.dart
+│   ├── note/                       #   笔记 BLoC
+│   │   ├── note_bloc.dart
+│   │   ├── note_event.dart
+│   │   └── note_state.dart
+│   ├── search/                     #   搜索（预留）
+│   ├── settings/                   #   设置（预留）
+│   ├── tag/                        #   标签 BLoC
+│   │   ├── tag_bloc.dart
+│   │   ├── tag_event.dart
+│   │   └── tag_state.dart
+│   └── viewer/                     #   查看器（预留）
+│
+├── bridge/                         # 🔌 桥接层 - 原生代码通信
+│   └── native/                     #   Rust FFI 桥接 (flutter_rust_bridge 生成)
+│       ├── frb_generated.dart
+│       ├── frb_generated.io.dart
+│       ├── frb_generated.web.dart
+│       └── api/                    #     各模块的 API 桥接
+│           ├── album.dart
+│           ├── media.dart
+│           ├── tag.dart
+│           ├── note.dart
+│           ├── scanner.dart
+│           ├── search.dart
+│           ├── settings.dart
+│           ├── import_export.dart
+│           └── enums.dart
+│
+├── core/                           # 🧩 核心层 - 共享工具和常量
+│   ├── design_system/              #   设计系统 (Material 3)
+│   │   ├── app_theme.dart
+│   │   └── components.dart
+│   ├── i18n/                       #   国际化
+│   │   └── app_localizations.dart
+│   ├── navigation/                 #   路由导航
+│   │   └── app_router.dart
+│   ├── permissions/                #   权限管理
+│   │   └── permission_service.dart
+│   └── utils/                      #   工具函数（预留）
+│
+├── app/                            # 📱 应用配置（预留）
+└── data/                           # 💾 数据层（预留）
+    ├── api/
+    └── models/
 ```
 
-## 功能模块标准结构
+## 架构分层
 
-每个 `features/<feature>/` 目录下采用统一的 3 层结构：
+| 层级       | 目录           | 职责                              |
+|------------|----------------|-----------------------------------|
+| UI 层      | `lib/ui/`      | 页面、组件、布局，纯展示逻辑      |
+| 功能层     | `lib/functionality/` | BLoC 业务逻辑、状态管理、事件处理 |
+| 桥接层     | `lib/bridge/`  | Flutter ↔ 原生代码（Rust/C++）通信 |
+| 核心层     | `lib/core/`    | 主题、路由、国际化、权限等共享模块 |
 
-```
-features/<feature>/
-├── bloc/                  # 业务逻辑层 - BLoC 状态管理
-│   ├── <feature>_bloc.dart        # 主 BLoC 类（包含 part of 引用）
-│   ├── <feature>_event.dart       # 事件定义（part of <feature>_bloc）
-│   └── <feature>_state.dart       # 状态定义（part of <feature>_bloc）
-├── view/                  # UI 层 - 页面/屏幕
-│   └── *_screen.dart
-└── widgets/               # 复用 UI 组件（仅该 feature 使用）
-    └── *_widget.dart 或 *_dialog.dart
-```
-
-## 跨模块引用规则
-
-- **同 feature 内**：使用相对路径 `../bloc/<file>.dart`、`../widgets/<file>.dart`
-- **跨 feature**：使用 package 路径 `package:advance_media_kb/features/<other>/bloc/<file>.dart`
-- **core/ 引用**：使用 `package:advance_media_kb/core/...`
-- **src/ FFI 引用**：使用 `package:advance_media_kb/src/rust/...`
-
-## Rust 端结构（`rust/src/`）
+## 依赖方向
 
 ```
-rust/src/
-├── lib.rs                  # 库入口
-├── frb_generated.rs        # 自动生成（不要编辑）
-├── api/                    # Rust 功能层 - 业务逻辑实现
-│   ├── mod.rs
-│   ├── media.rs            # 媒体管理功能
-│   ├── search.rs           # 搜索功能
-│   ├── tag.rs              # 标签管理
-│   ├── album.rs            # 相册管理
-│   ├── note.rs             # 笔记功能
-│   ├── settings.rs         # 设置功能
-│   ├── scanner.rs          # 文件扫描
-│   ├── import_export.rs    # 导入导出
-│   └── enums.rs            # 枚举定义
-└── db/                     # Rust 数据访问层 - SQLite 数据库
-    ├── mod.rs              # 数据库连接池、迁移
-    └── models.rs           # 数据库模型
+ui → functionality → bridge → native (Rust/C++)
+  ↘ core (共享常量/工具)
 ```
 
-## Material 3 设计系统
+## 设计原则
 
-设计令牌定义在 `lib/core/design_system/app_theme.dart`：
-- `AppTheme.lightTheme()` / `darkTheme()` - M3 主题构造
-- `ColorScheme` - 完整 M3 色板（含 tertiary、surfaceContainer 系列）
-- `TextTheme` - 完整 M3 类型尺度
-- `AppSpacing` - 4dp 网格间距
-- `AppRadius` - M3 形状系统
-- `AppAnimation` - M3 缓动动画
-- `AppSize` - 尺寸令牌
-
-## 关键设计决策
-
-1. **features/ 垂直切片**：每个功能独立目录，自包含 bloc/view/widgets
-2. **BLoC 集中管理状态**：业务规则不写在 Widget 里
-3. **Rust 通信解耦**：UI 通过 BLoC 调用，BLoC 通过 `src/rust/api/` 调用 Rust API
-4. **类型安全**：`src/rust/frb_generated.dart` 提供编译期类型检查
-5. **Material 3 一致性**：所有 UI 通过 `Theme.of(context).colorScheme` 访问颜色
-
-## 构建
-
-```bash
-# Linux x64
-./scripts/build.sh linux-x64
-
-# Android ARM64
-./scripts/build.sh android-arm64
-
-# Web
-./scripts/build.sh web
-
-# 所有支持平台
-./scripts/build.sh all
-```
+- **UI 层** 只负责渲染和用户交互，不含业务逻辑
+- **功能层** 通过 BLoC 模式管理状态，调用桥接层 API
+- **桥接层** 提供类型安全的 FFI 接口，由 flutter_rust_bridge 生成
+- **核心层** 提供跨功能模块共享的工具、主题、路由等

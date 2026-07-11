@@ -4,17 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path_provider/path_provider.dart';
-import 'src/rust/frb_generated.dart';
-import 'src/rust/api/settings.dart' as rust_settings;
+import 'bridge/native/frb_generated.dart';
+import 'bridge/native/api/settings.dart' as rust_settings;
 import 'core/design_system/app_theme.dart';
 import 'core/i18n/app_localizations.dart';
 import 'core/navigation/app_router.dart';
-import 'features/home/bloc/app_bloc.dart';
-import 'features/home/view/home_screen.dart';
-import 'features/media/bloc/media_bloc.dart';
-import 'features/album/bloc/album_bloc.dart';
-import 'features/tag/bloc/tag_bloc.dart';
-import 'features/note/bloc/note_bloc.dart';
+import 'functionality/home/app_bloc.dart';
+import 'ui/home/home_screen.dart';
+import 'functionality/media/media_bloc.dart';
+import 'functionality/album/album_bloc.dart';
+import 'functionality/tag/tag_bloc.dart';
+import 'functionality/note/note_bloc.dart';
 
 /// 全局 Rust API 实例
 late final RustLib rustLib;
