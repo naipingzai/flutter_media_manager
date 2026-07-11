@@ -53,12 +53,13 @@ Future<List<Tag>> getMediaTags({required String mediaId}) async {
       .toList();
 }
 
-Future<List<MediaItem>> getMediaByTagsAnd(
-    {required List<String> tagIds}) async {
+Future<List<MediaItem>> getMediaByTagsAnd({required List<String> tagIds}) async {
+  // FFI doesn't support complex tag queries yet, return empty
   return [];
 }
 
 Future<List<MediaItem>> getMediaByTagsOr({required List<String> tagIds}) async {
+  // FFI doesn't support complex tag queries yet, return empty
   return [];
 }
 

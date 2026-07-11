@@ -3,8 +3,14 @@ export '../models.dart';
 import '../models.dart';
 import 'note_ffi.dart';
 
-Future<List<Note>> getAllNotes() async { return []; }
-Future<Note?> getNoteByMediaId({required String mediaId}) async { return null; }
+Future<List<Note>> getAllNotes() async {
+  // C++ FFI returns notes via callback - stub for now
+  return [];
+}
+Future<Note?> getNoteByMediaId({required String mediaId}) async {
+  // C++ FFI getNoteByMediaId via callback - stub for now
+  return null;
+}
 
 Future<void> saveNote({required String mediaId, required String content}) async {
   NoteFfi.instance.saveNote(mediaId, content);
