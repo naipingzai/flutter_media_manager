@@ -9,8 +9,12 @@ import 'src/rust/api/settings.dart' as rust_settings;
 import 'core/design_system/app_theme.dart';
 import 'core/i18n/app_localizations.dart';
 import 'core/navigation/app_router.dart';
-import 'bloc/bloc.dart';
-import 'screens/home_screen.dart';
+import 'features/home/bloc/app_bloc.dart';
+import 'features/home/view/home_screen.dart';
+import 'features/media/bloc/media_bloc.dart';
+import 'features/album/bloc/album_bloc.dart';
+import 'features/tag/bloc/tag_bloc.dart';
+import 'features/note/bloc/note_bloc.dart';
 
 /// 全局 Rust API 实例
 late final RustLib rustLib;

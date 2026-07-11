@@ -1,11 +1,11 @@
 {
-    "name": "advance_media_kb",
-    "short_name": "advance_media_kb",
+    "name": "AdvanceMediaKB",
+    "short_name": "MediaKB",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FBFDF8",
+    "theme_color": "#006C4C",
+    "description": "AdvanceMediaKB - Cross-platform multimedia file management with advanced search",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
