@@ -27,9 +27,6 @@ lib/
 ├── bridge/                         # 🔌 桥接层 - 原生代码通信
 │   └── native/                     #   FFI 桥接
 │       ├── native_library.dart     #     C++ 库加载器
-│       ├── frb_generated.dart      #     Rust bridge 生成代码 (兼容层)
-│       ├── frb_generated.io.dart
-│       ├── frb_generated.web.dart
 │       └── api/                    #     API 包装
 │           ├── settings.dart       #       Rust bridge API
 │           ├── media.dart          #       Rust bridge API
