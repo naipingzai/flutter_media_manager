@@ -22,6 +22,9 @@ target_include_directories(advance_media_kb PRIVATE src ${CMAKE_CURRENT_SOURCE_D
 target_link_libraries(advance_media_kb PRIVATE sqlite3)
 target_compile_options(advance_media_kb PRIVATE -O2 -fPIC)
 
-if(NOT APPLE)
+if(NOT APPLE AND NOT ANDROID)
     target_link_libraries(advance_media_kb PRIVATE pthread dl m)
+endif()
+if(ANDROID)
+    target_link_libraries(advance_media_kb PRIVATE log)
 endif()
