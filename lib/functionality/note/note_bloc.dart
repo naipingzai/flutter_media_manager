@@ -3,7 +3,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:advance_media_kb/bridge/native/api/note.dart';
-import 'package:advance_media_kb/bridge/native/frb_generated.dart';
 import 'package:logger/logger.dart';
 import 'package:advance_media_kb/functionality/media/media_bloc.dart';
 
@@ -27,7 +26,7 @@ class NoteBloc extends Bloc<NoteEvent, NoteState> {
   ) async {
     emit(state.copyWith(status: NoteStatus.loading));
     try {
-      final notes = await RustLib.instance.api.crateApiNoteGetAllNotes();
+      final notes = await getAllNotes();
       emit(state.copyWith(
         status: NoteStatus.loaded,
         notes: notes,
@@ -47,8 +46,7 @@ class NoteBloc extends Bloc<NoteEvent, NoteState> {
   ) async {
     emit(state.copyWith(status: NoteStatus.loading));
     try {
-      final note = await RustLib.instance.api
-          .crateApiNoteGetNoteByMediaId(mediaId: event.mediaId);
+      final note = await getNoteByMediaId(mediaId: event.mediaId);
       emit(state.copyWith(
         status: NoteStatus.loaded,
         notes: note == null ? <Note>[] : <Note>[note],
@@ -67,7 +65,7 @@ class NoteBloc extends Bloc<NoteEvent, NoteState> {
     Emitter<NoteState> emit,
   ) async {
     try {
-      await RustLib.instance.api.crateApiNoteSaveNote(
+      await saveNote(
         mediaId: event.mediaId,
         content: event.content,
       );
@@ -85,7 +83,7 @@ class NoteBloc extends Bloc<NoteEvent, NoteState> {
     Emitter<NoteState> emit,
   ) async {
     try {
-      await RustLib.instance.api.crateApiNoteDeleteNote(id: event.noteId);
+      await deleteNote(id: event.noteId);
       _logger.i('删除笔记成功: ${event.noteId}');
       final updatedNotes =
           state.notes.where((note) => note.id != event.noteId).toList();

@@ -5,7 +5,6 @@ import 'package:equatable/equatable.dart';
 import 'package:advance_media_kb/bridge/native/api/media.dart';
 import 'package:advance_media_kb/bridge/native/api/enums.dart';
 import 'package:advance_media_kb/bridge/native/api/search.dart';
-import 'package:advance_media_kb/bridge/native/frb_generated.dart';
 import 'package:logger/logger.dart';
 
 part 'media_event.dart';
@@ -40,7 +39,7 @@ class MediaBloc extends Bloc<MediaEvent, MediaState> {
   ) async {
     emit(state.copyWith(status: MediaStatus.loading));
     try {
-      final mediaList = await RustLib.instance.api.crateApiMediaGetAllMedia();
+      final mediaList = await getAllMedia();
       emit(state.copyWith(
         status: MediaStatus.loaded,
         mediaList: mediaList,
@@ -70,8 +69,7 @@ class MediaBloc extends Bloc<MediaEvent, MediaState> {
     emit(
         state.copyWith(status: MediaStatus.loading, currentQuery: event.query));
     try {
-      final results = await RustLib.instance.api
-          .crateApiMediaSearchMedia(query: event.query);
+      final results = await searchMedia(query: event.query);
       emit(state.copyWith(
         status: MediaStatus.loaded,
         filteredList: results,
@@ -91,8 +89,7 @@ class MediaBloc extends Bloc<MediaEvent, MediaState> {
   ) async {
     emit(state.copyWith(status: MediaStatus.loading));
     try {
-      final results = await RustLib.instance.api
-          .crateApiMediaFilterMediaByType(mediaType: event.mediaType);
+      final results = await filterMediaByType(mediaType: event.mediaType);
       emit(state.copyWith(
         status: MediaStatus.loaded,
         filteredList: results,
@@ -118,8 +115,7 @@ class MediaBloc extends Bloc<MediaEvent, MediaState> {
   ) async {
     emit(state.copyWith(status: MediaStatus.loading));
     try {
-      final results = await RustLib.instance.api
-          .crateApiSearchSearchMediaAdvanced(filter: event.filter);
+      final results = await searchMediaAdvanced(filter: event.filter);
       emit(state.copyWith(
         status: MediaStatus.loaded,
         filteredList: results,
@@ -138,7 +134,7 @@ class MediaBloc extends Bloc<MediaEvent, MediaState> {
     Emitter<MediaState> emit,
   ) async {
     try {
-      await RustLib.instance.api.crateApiMediaDeleteMedia(id: event.mediaId);
+      await deleteMedia(id: event.mediaId);
       final updatedList =
           state.mediaList.where((m) => m.id != event.mediaId).toList();
       final updatedFiltered =
@@ -158,7 +154,7 @@ class MediaBloc extends Bloc<MediaEvent, MediaState> {
     Emitter<MediaState> emit,
   ) async {
     try {
-      await RustLib.instance.api.crateApiMediaUpdateMedia(media: event.media);
+      await updateMedia(media: event.media);
       // 刷新列表
       add(const MediaRefreshEvent());
     } catch (e) {
@@ -231,8 +227,7 @@ class MediaBloc extends Bloc<MediaEvent, MediaState> {
     Emitter<MediaState> emit,
   ) async {
     try {
-      final adjacent = await RustLib.instance.api
-          .crateApiMediaGetAdjacentMedia(id: event.mediaId);
+      final adjacent = await getAdjacentMedia(id: event.mediaId);
       emit(state.copyWith(adjacentMedia: adjacent));
     } catch (e) {
       _logger.e('加载相邻媒体失败: $e');
@@ -284,8 +279,7 @@ class MediaBloc extends Bloc<MediaEvent, MediaState> {
   ) async {
     emit(state.copyWith(status: MediaStatus.loading));
     try {
-      final results = await RustLib.instance.api
-          .crateApiMediaGetMediaByFilter(filter: event.filterMode);
+      final results = await getMediaByFilter(filter: event.filterMode);
       emit(state.copyWith(
         status: MediaStatus.loaded,
         filteredList: results,
@@ -307,8 +301,7 @@ class MediaBloc extends Bloc<MediaEvent, MediaState> {
     Emitter<MediaState> emit,
   ) async {
     try {
-      await RustLib.instance.api
-          .crateApiScannerImportSingleFile(filePath: event.filePath);
+      await importSingleFile(filePath: event.filePath);
       add(const MediaRefreshEvent());
     } catch (e) {
       _logger.e('导入文件失败: $e');

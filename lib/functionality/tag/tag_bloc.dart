@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:advance_media_kb/bridge/native/api/tag.dart';
 import 'package:advance_media_kb/bridge/native/api/media.dart';
-import 'package:advance_media_kb/bridge/native/frb_generated.dart';
 import 'package:logger/logger.dart';
 
 part 'tag_event.dart';
@@ -40,7 +39,7 @@ class TagBloc extends Bloc<TagEvent, TagState> {
   ) async {
     emit(state.copyWith(status: TagStatus.loading));
     try {
-      final tags = await RustLib.instance.api.crateApiTagGetAllTags();
+      final tags = await getAllTags();
       emit(state.copyWith(
         status: TagStatus.loaded,
         tags: tags,
@@ -60,7 +59,7 @@ class TagBloc extends Bloc<TagEvent, TagState> {
   ) async {
     emit(state.copyWith(status: TagStatus.loading));
     try {
-      final tags = await RustLib.instance.api.crateApiTagGetRootTags();
+      final tags = await getRootTags();
       emit(state.copyWith(
         status: TagStatus.loaded,
         tagsWithInfo: tags,
@@ -80,8 +79,7 @@ class TagBloc extends Bloc<TagEvent, TagState> {
   ) async {
     emit(state.copyWith(status: TagStatus.loading));
     try {
-      final tags = await RustLib.instance.api
-          .crateApiTagGetChildTags(parentId: event.parentId);
+      final tags = await getChildTags(parentId: event.parentId);
       emit(state.copyWith(
         status: TagStatus.loaded,
         tagsWithInfo: tags,
@@ -101,7 +99,7 @@ class TagBloc extends Bloc<TagEvent, TagState> {
     Emitter<TagState> emit,
   ) async {
     try {
-      final tagId = await RustLib.instance.api.crateApiTagCreateTag(
+      final tagId = await createTag(
         name: event.name,
         color: event.color,
         parentId: event.parentId,
@@ -124,7 +122,7 @@ class TagBloc extends Bloc<TagEvent, TagState> {
     Emitter<TagState> emit,
   ) async {
     try {
-      await RustLib.instance.api.crateApiTagDeleteTag(id: event.tagId);
+      await deleteTag(id: event.tagId);
       // 刷新当前列表
       if (state.currentParentId != null) {
         add(TagLoadChildrenEvent(state.currentParentId!));
@@ -142,7 +140,7 @@ class TagBloc extends Bloc<TagEvent, TagState> {
     Emitter<TagState> emit,
   ) async {
     try {
-      await RustLib.instance.api.crateApiTagRenameTag(
+      await renameTag(
         id: event.tagId,
         newName: event.newName,
       );
@@ -163,7 +161,7 @@ class TagBloc extends Bloc<TagEvent, TagState> {
     Emitter<TagState> emit,
   ) async {
     try {
-      await RustLib.instance.api.crateApiTagUpdateTagColor(
+      await updateTagColor(
         id: event.tagId,
         color: event.color,
       );
@@ -185,7 +183,7 @@ class TagBloc extends Bloc<TagEvent, TagState> {
     Emitter<TagState> emit,
   ) async {
     try {
-      await RustLib.instance.api.crateApiTagUpdateTagParent(
+      await updateTagParent(
         id: event.tagId,
         parentId: event.parentId,
       );
@@ -207,7 +205,7 @@ class TagBloc extends Bloc<TagEvent, TagState> {
     Emitter<TagState> emit,
   ) async {
     try {
-      await RustLib.instance.api.crateApiTagAddTagToMedia(
+      await addTagToMedia(
         mediaId: event.mediaId,
         tagId: event.tagId,
       );
@@ -223,7 +221,7 @@ class TagBloc extends Bloc<TagEvent, TagState> {
     Emitter<TagState> emit,
   ) async {
     try {
-      await RustLib.instance.api.crateApiTagRemoveTagFromMedia(
+      await removeTagFromMedia(
         mediaId: event.mediaId,
         tagId: event.tagId,
       );
@@ -239,8 +237,7 @@ class TagBloc extends Bloc<TagEvent, TagState> {
     Emitter<TagState> emit,
   ) async {
     try {
-      final tags = await RustLib.instance.api
-          .crateApiTagGetMediaTags(mediaId: event.mediaId);
+      final tags = await getMediaTags(mediaId: event.mediaId);
       emit(state.copyWith(mediaTags: tags));
     } catch (e) {
       _logger.e('加载媒体标签失败: $e');
@@ -253,8 +250,7 @@ class TagBloc extends Bloc<TagEvent, TagState> {
   ) async {
     emit(state.copyWith(status: TagStatus.loading));
     try {
-      final media = await RustLib.instance.api
-          .crateApiTagGetMediaByTagsAnd(tagIds: event.tagIds);
+      final media = await getMediaByTagsAnd(tagIds: event.tagIds);
       emit(state.copyWith(
         status: TagStatus.loaded,
         filteredMedia: media,
@@ -274,8 +270,7 @@ class TagBloc extends Bloc<TagEvent, TagState> {
   ) async {
     emit(state.copyWith(status: TagStatus.loading));
     try {
-      final media = await RustLib.instance.api
-          .crateApiTagGetMediaByTagsOr(tagIds: event.tagIds);
+      final media = await getMediaByTagsAnd(tagIds: event.tagIds);
       emit(state.copyWith(
         status: TagStatus.loaded,
         filteredMedia: media,

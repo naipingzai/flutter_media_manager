@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:advance_media_kb/bridge/native/api/album.dart';
 import 'package:advance_media_kb/bridge/native/api/media.dart';
-import 'package:advance_media_kb/bridge/native/frb_generated.dart';
 import 'package:logger/logger.dart';
 
 part 'album_event.dart';
@@ -39,7 +38,7 @@ class AlbumBloc extends Bloc<AlbumEvent, AlbumState> {
   ) async {
     emit(state.copyWith(status: AlbumStatus.loading));
     try {
-      final albums = await RustLib.instance.api.crateApiAlbumGetRootAlbums();
+      final albums = await getRootAlbums();
       emit(state.copyWith(
         status: AlbumStatus.loaded,
         albums: albums,
@@ -59,11 +58,9 @@ class AlbumBloc extends Bloc<AlbumEvent, AlbumState> {
   ) async {
     emit(state.copyWith(status: AlbumStatus.loading));
     try {
-      final albums = await RustLib.instance.api
-          .crateApiAlbumGetChildAlbums(parentId: event.parentId);
+      final albums = await getChildAlbums(parentId: event.parentId);
       // 同时加载该相册的媒体
-      final media = await RustLib.instance.api
-          .crateApiAlbumGetMediaByAlbum(albumId: event.parentId);
+      final media = await getMediaByAlbum(albumId: event.parentId);
       emit(state.copyWith(
         status: AlbumStatus.loaded,
         albums: albums,
@@ -85,7 +82,7 @@ class AlbumBloc extends Bloc<AlbumEvent, AlbumState> {
     Emitter<AlbumState> emit,
   ) async {
     try {
-      final albumId = await RustLib.instance.api.crateApiAlbumCreateAlbum(
+      final albumId = await createAlbum(
         name: event.name,
         parentId: event.parentId,
       );
@@ -107,7 +104,7 @@ class AlbumBloc extends Bloc<AlbumEvent, AlbumState> {
     Emitter<AlbumState> emit,
   ) async {
     try {
-      await RustLib.instance.api.crateApiAlbumDeleteAlbum(id: event.albumId);
+      await deleteAlbum(id: event.albumId);
       // 刷新当前列表
       if (state.currentParentId != null) {
         add(AlbumLoadChildrenEvent(state.currentParentId!));
@@ -125,7 +122,7 @@ class AlbumBloc extends Bloc<AlbumEvent, AlbumState> {
     Emitter<AlbumState> emit,
   ) async {
     try {
-      await RustLib.instance.api.crateApiAlbumRenameAlbum(
+      await renameAlbum(
         id: event.albumId,
         newName: event.newName,
       );
@@ -147,7 +144,7 @@ class AlbumBloc extends Bloc<AlbumEvent, AlbumState> {
     Emitter<AlbumState> emit,
   ) async {
     try {
-      await RustLib.instance.api.crateApiAlbumAddMediaToAlbum(
+      await addMediaToAlbum(
         mediaIds: event.mediaIds,
         albumId: event.albumId,
       );
@@ -163,7 +160,7 @@ class AlbumBloc extends Bloc<AlbumEvent, AlbumState> {
     Emitter<AlbumState> emit,
   ) async {
     try {
-      await RustLib.instance.api.crateApiAlbumRemoveMediaFromAlbum(
+      await removeMediaFromAlbum(
         mediaIds: event.mediaIds,
         albumId: event.albumId,
       );
@@ -179,7 +176,7 @@ class AlbumBloc extends Bloc<AlbumEvent, AlbumState> {
     Emitter<AlbumState> emit,
   ) async {
     try {
-      await RustLib.instance.api.crateApiAlbumSetAlbumCover(
+      await setAlbumCover(
         albumId: event.albumId,
         mediaId: event.mediaId,
       );
@@ -201,8 +198,7 @@ class AlbumBloc extends Bloc<AlbumEvent, AlbumState> {
     Emitter<AlbumState> emit,
   ) async {
     try {
-      final breadcrumb = await RustLib.instance.api
-          .crateApiAlbumGetAlbumBreadcrumb(albumId: event.albumId);
+      final breadcrumb = await getAlbumBreadcrumb(albumId: event.albumId);
       emit(state.copyWith(breadcrumb: breadcrumb));
     } catch (e) {
       _logger.e('加载面包屑失败: $e');
@@ -283,7 +279,7 @@ class AlbumBloc extends Bloc<AlbumEvent, AlbumState> {
   ) async {
     if (state.currentParentId == null || state.selectedMediaIds.isEmpty) return;
     try {
-      await RustLib.instance.api.crateApiAlbumRemoveMediaFromAlbum(
+      await removeMediaFromAlbum(
         mediaIds: state.selectedMediaIds.toList(),
         albumId: state.currentParentId!,
       );

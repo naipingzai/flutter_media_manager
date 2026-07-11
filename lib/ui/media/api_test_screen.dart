@@ -2,6 +2,7 @@ import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:advance_media_kb/bridge/native/api/settings.dart' as settings_api;
 import 'package:advance_media_kb/bridge/native/api/media.dart' as media_api;
+import 'package:advance_media_kb/bridge/native/api/import_export.dart' as import_export_api;
 import 'package:advance_media_kb/bridge/native/api/album.dart' as album_api;
 import 'package:advance_media_kb/bridge/native/api/tag.dart' as tag_api;
 import 'package:advance_media_kb/bridge/native/api/note.dart' as note_api;
@@ -163,7 +164,7 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
   // ===== 搜索 API 测试 =====
   Future<ApiTestResult> _testSearch() async {
     return _runTest('Search - SearchFilterDefault', () async {
-      final filter = await search_api.SearchFilter.default_();
+      final filter = await search_api.SearchFilter.default_;
       return 'filter=$filter';
     });
   }
@@ -171,7 +172,7 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
   // ===== 扫描 API 测试 =====
   Future<ApiTestResult> _testScanner() async {
     return _runTest('Scanner - GetSupportedExtensions', () async {
-      final exts = await scanner_api.getSupportedExtensions();
+      final exts = await import_export_api.getSupportedExtensions();
       return 'exts=$exts';
     });
   }
@@ -180,8 +181,8 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
   Future<ApiTestResult> _testImportExport() async {
     return _runTest('ImportExport - ExportToDownload', () async {
       // 测试空列表导出
-      final result = await import_export_api.exportToDownload(mediaIds: []);
-      return 'path=$result';
+      await import_export_api.exportToDownload(mediaIds: []);
+      return 'void';
     });
   }
 

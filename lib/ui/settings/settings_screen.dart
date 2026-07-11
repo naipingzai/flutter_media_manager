@@ -662,7 +662,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   if (!context.mounted) return;
                   Navigator.pop(context); // 关闭进度
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('${loc.importCompleted}: ${result.status}')),
+                    SnackBar(content: Text('${loc.importCompleted}: ')),
                   );
                   context.read<AppBloc>().add(const AppInitializeEvent());
                   context.read<MediaBloc>().add(const MediaLoadAllEvent());
@@ -748,7 +748,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 if (!context.mounted) return;
                 Navigator.pop(context); // 关闭进度
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('${loc.exportCompleted}: ${exportResult.status}')),
+                  SnackBar(content: Text('${loc.exportCompleted}: done')),
                 );
               } catch (e) {
                 if (!context.mounted) return;

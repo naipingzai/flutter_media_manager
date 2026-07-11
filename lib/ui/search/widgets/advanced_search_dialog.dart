@@ -8,7 +8,6 @@ import 'package:advance_media_kb/bridge/native/api/tag.dart' as tag_api;
 import 'package:advance_media_kb/bridge/native/api/album.dart' as album_api;
 import 'package:advance_media_kb/functionality/media/media_bloc.dart';
 
-
 /// 高级搜索对话框 - Material 3 组合筛选：关键词、类型、日期范围、标签、相册
 class AdvancedSearchDialog extends StatefulWidget {
   const AdvancedSearchDialog({super.key});
@@ -62,8 +61,11 @@ class _AdvancedSearchDialogState extends State<AdvancedSearchDialog> {
 
   void _search() {
     final filter = SearchFilter(
-      query: _keywordController.text.isNotEmpty ? _keywordController.text : null,
-      mediaType: _selectedMediaType,
+      query: _keywordController.text,
+      mediaType: _selectedMediaType == null
+          ? null
+          : MediaType.values.firstWhere((e) => e.name == _selectedMediaType,
+              orElse: () => MediaType.other),
       startDate: _dateRange?.start.millisecondsSinceEpoch != null
           ? _dateRange!.start.millisecondsSinceEpoch ~/ 1000
           : null,
@@ -71,8 +73,11 @@ class _AdvancedSearchDialogState extends State<AdvancedSearchDialog> {
           ? _dateRange!.end.millisecondsSinceEpoch ~/ 1000
           : null,
       albumId: _selectedAlbum?.album.id,
-      tagIds: _selectedTags.isNotEmpty ? _selectedTags.map((t) => t.id).toList() : null,
-      tagCount: _matchAllTags && _selectedTags.isNotEmpty ? _selectedTags.length : 1,
+      tagIds: _selectedTags.isNotEmpty
+          ? _selectedTags.map((t) => t.id).toList()
+          : null,
+      tagCount:
+          _matchAllTags && _selectedTags.isNotEmpty ? _selectedTags.length : 1,
     );
 
     context.read<MediaBloc>().add(MediaAdvancedSearchEvent(filter));
@@ -129,7 +134,8 @@ class _AdvancedSearchDialogState extends State<AdvancedSearchDialog> {
                           const SizedBox(height: AppSpacing.lg),
                           Text(
                             loc.loading,
-                            style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+                            style: tt.bodyMedium
+                                ?.copyWith(color: cs.onSurfaceVariant),
                           ),
                         ],
                       ),
@@ -212,7 +218,8 @@ class _AdvancedSearchDialogState extends State<AdvancedSearchDialog> {
     );
   }
 
-  Widget _buildKeywordField(AppLocalizations loc, ColorScheme cs, TextTheme tt) {
+  Widget _buildKeywordField(
+      AppLocalizations loc, ColorScheme cs, TextTheme tt) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -230,7 +237,8 @@ class _AdvancedSearchDialogState extends State<AdvancedSearchDialog> {
     );
   }
 
-  Widget _buildMediaTypeSection(AppLocalizations loc, ColorScheme cs, TextTheme tt) {
+  Widget _buildMediaTypeSection(
+      AppLocalizations loc, ColorScheme cs, TextTheme tt) {
     final types = [
       _TypeOption(loc.filterAll, null, Icons.filter_list),
       _TypeOption(loc.image, 'image', Icons.image),
@@ -272,7 +280,8 @@ class _AdvancedSearchDialogState extends State<AdvancedSearchDialog> {
     );
   }
 
-  Widget _buildDateRangeSection(AppLocalizations loc, ColorScheme cs, TextTheme tt) {
+  Widget _buildDateRangeSection(
+      AppLocalizations loc, ColorScheme cs, TextTheme tt) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -291,7 +300,9 @@ class _AdvancedSearchDialogState extends State<AdvancedSearchDialog> {
               borderRadius: BorderRadius.circular(AppRadius.md),
               border: Border.all(
                 color: _dateRange != null ? cs.primary : cs.outline,
-                width: _dateRange != null ? AppSize.borderWidthStrong : AppSize.borderWidthDefault,
+                width: _dateRange != null
+                    ? AppSize.borderWidthStrong
+                    : AppSize.borderWidthDefault,
               ),
             ),
             child: Row(
@@ -308,13 +319,16 @@ class _AdvancedSearchDialogState extends State<AdvancedSearchDialog> {
                         ? loc.selectDateRange
                         : '${_formatDate(_dateRange!.start)}  ~  ${_formatDate(_dateRange!.end)}',
                     style: tt.bodyLarge?.copyWith(
-                      color: _dateRange != null ? cs.onSurface : cs.onSurfaceVariant,
+                      color: _dateRange != null
+                          ? cs.onSurface
+                          : cs.onSurfaceVariant,
                     ),
                   ),
                 ),
                 if (_dateRange != null)
                   IconButton(
-                    icon: Icon(Icons.clear, size: 18, color: cs.onSurfaceVariant),
+                    icon:
+                        Icon(Icons.clear, size: 18, color: cs.onSurfaceVariant),
                     onPressed: () => setState(() => _dateRange = null),
                     tooltip: loc.cancel,
                   ),
@@ -379,7 +393,8 @@ class _AdvancedSearchDialogState extends State<AdvancedSearchDialog> {
           Wrap(
             spacing: AppSpacing.sm,
             runSpacing: AppSpacing.sm,
-            children: _allTags.map((tag) => _buildTagChip(tag, cs, tt)).toList(),
+            children:
+                _allTags.map((tag) => _buildTagChip(tag, cs, tt)).toList(),
           ),
         ],
       ],
@@ -403,7 +418,8 @@ class _AdvancedSearchDialogState extends State<AdvancedSearchDialog> {
     );
   }
 
-  Widget _buildAlbumSection(AppLocalizations loc, ColorScheme cs, TextTheme tt) {
+  Widget _buildAlbumSection(
+      AppLocalizations loc, ColorScheme cs, TextTheme tt) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -423,14 +439,15 @@ class _AdvancedSearchDialogState extends State<AdvancedSearchDialog> {
                 value: null,
                 child: Text(loc.filterAll),
               ),
-              ..._allAlbums.map((a) => DropdownMenuItem<album_api.AlbumWithInfo>(
-                value: a,
-                child: Text(
-                  a.album.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              )),
+              ..._allAlbums
+                  .map((a) => DropdownMenuItem<album_api.AlbumWithInfo>(
+                        value: a,
+                        child: Text(
+                          a.album.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      )),
             ],
             onChanged: (val) => setState(() => _selectedAlbum = val),
           ),

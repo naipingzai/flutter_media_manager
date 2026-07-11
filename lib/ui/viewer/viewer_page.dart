@@ -387,10 +387,10 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
   Future<void> _exportMedia() async {
     final loc = AppLocalizations.of(context);
     try {
-      final path = await exportToDownload(mediaIds: [_currentMedia.id]);
+      await exportToDownload(mediaIds: [_currentMedia.id]);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${loc.exportedTo}: $path')),
+          SnackBar(content: Text('${loc.exportedTo}: ...')),
         );
       }
     } catch (e) {

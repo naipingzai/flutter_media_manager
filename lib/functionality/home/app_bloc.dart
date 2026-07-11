@@ -3,7 +3,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:advance_media_kb/bridge/native/api/settings.dart';
-import 'package:advance_media_kb/bridge/native/frb_generated.dart';
 import 'package:logger/logger.dart';
 
 part 'app_event.dart';
@@ -28,7 +27,7 @@ class AppBloc extends Bloc<AppEvent, AppState> {
     emit(state.copyWith(status: AppStatus.initializing));
     try {
       // 加载应用设置
-      final settings = await RustLib.instance.api.crateApiSettingsGetSettings();
+      final settings = await getSettings();
       emit(state.copyWith(
         status: AppStatus.ready,
         settings: settings,
@@ -58,7 +57,7 @@ class AppBloc extends Bloc<AppEvent, AppState> {
       lastScanPath: state.settings!.lastScanPath,
     );
     try {
-      await RustLib.instance.api.crateApiSettingsSaveSettings(settings: newSettings);
+      await saveSettings(settings: newSettings);
       emit(state.copyWith(settings: newSettings));
     } catch (e) {
       _logger.e('保存主题设置失败: $e');
@@ -70,7 +69,7 @@ class AppBloc extends Bloc<AppEvent, AppState> {
     Emitter<AppState> emit,
   ) async {
     try {
-      await RustLib.instance.api.crateApiSettingsSaveSettings(settings: event.settings);
+      await saveSettings(settings: event.settings);
       emit(state.copyWith(
         settings: event.settings,
         currentLanguage: event.settings.language,
@@ -95,7 +94,7 @@ class AppBloc extends Bloc<AppEvent, AppState> {
       lastScanPath: state.settings!.lastScanPath,
     );
     try {
-      await RustLib.instance.api.crateApiSettingsSaveSettings(settings: newSettings);
+      await saveSettings(settings: newSettings);
       emit(state.copyWith(
         settings: newSettings,
         currentLanguage: event.language,
