@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:advance_media_kb/core/design_system/app_theme.dart';
-import 'package:advance_media_kb/core/i18n/app_localizations.dart';
-import 'package:advance_media_kb/bridge/native/api/media.dart';
-import 'package:advance_media_kb/bridge/native/api/note.dart' as note_api;
-import 'package:advance_media_kb/bridge/native/api/search.dart';
+import 'package:flutter_media_knowledge_base/core/design_system/app_theme.dart';
+import 'package:flutter_media_knowledge_base/core/i18n/app_localizations.dart';
+import 'package:flutter_media_knowledge_base/bridge/native/api/media.dart';
+import 'package:flutter_media_knowledge_base/bridge/native/api/note.dart' as note_api;
+import 'package:flutter_media_knowledge_base/bridge/native/api/search.dart';
 import 'widgets/advanced_search_dialog.dart';
 import '../viewer/viewer_page.dart';
 

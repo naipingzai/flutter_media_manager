@@ -2,7 +2,7 @@
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:advance_media_kb/bridge/native/api/settings.dart';
+import 'package:flutter_media_knowledge_base/bridge/native/api/settings.dart';
 import 'package:logger/logger.dart';
 
 part 'app_event.dart';

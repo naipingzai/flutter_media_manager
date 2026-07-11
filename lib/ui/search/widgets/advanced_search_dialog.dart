@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:advance_media_kb/core/design_system/app_theme.dart';
-import 'package:advance_media_kb/core/i18n/app_localizations.dart';
-import 'package:advance_media_kb/bridge/native/api/search.dart';
-import 'package:advance_media_kb/bridge/native/api/tag.dart' as tag_api;
-import 'package:advance_media_kb/bridge/native/api/album.dart' as album_api;
-import 'package:advance_media_kb/functionality/media/media_bloc.dart';
+import 'package:flutter_media_knowledge_base/core/design_system/app_theme.dart';
+import 'package:flutter_media_knowledge_base/core/i18n/app_localizations.dart';
+import 'package:flutter_media_knowledge_base/bridge/native/api/search.dart';
+import 'package:flutter_media_knowledge_base/bridge/native/api/tag.dart' as tag_api;
+import 'package:flutter_media_knowledge_base/bridge/native/api/album.dart' as album_api;
+import 'package:flutter_media_knowledge_base/functionality/media/media_bloc.dart';
 
 /// 高级搜索对话框 - Material 3 组合筛选：关键词、类型、日期范围、标签、相册
 class AdvancedSearchDialog extends StatefulWidget {

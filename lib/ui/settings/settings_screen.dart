@@ -4,16 +4,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 
-import 'package:advance_media_kb/core/i18n/app_localizations.dart';
-import 'package:advance_media_kb/core/design_system/app_theme.dart';
-import 'package:advance_media_kb/bridge/native/api/settings.dart' as native_api;
-import 'package:advance_media_kb/bridge/native/api/import_export.dart' as native_export;
-import 'package:advance_media_kb/bridge/native/api/media.dart' as media_api;
-import 'package:advance_media_kb/ui/media/api_test_screen.dart';
-import 'package:advance_media_kb/functionality/tag/tag_bloc.dart';
-import 'package:advance_media_kb/functionality/album/album_bloc.dart';
-import 'package:advance_media_kb/functionality/media/media_bloc.dart';
-import 'package:advance_media_kb/functionality/home/app_bloc.dart';
+import 'package:flutter_media_knowledge_base/core/i18n/app_localizations.dart';
+import 'package:flutter_media_knowledge_base/core/design_system/app_theme.dart';
+import 'package:flutter_media_knowledge_base/bridge/native/api/settings.dart' as native_api;
+import 'package:flutter_media_knowledge_base/bridge/native/api/import_export.dart' as native_export;
+import 'package:flutter_media_knowledge_base/bridge/native/api/media.dart' as media_api;
+import 'package:flutter_media_knowledge_base/ui/media/api_test_screen.dart';
+import 'package:flutter_media_knowledge_base/functionality/tag/tag_bloc.dart';
+import 'package:flutter_media_knowledge_base/functionality/album/album_bloc.dart';
+import 'package:flutter_media_knowledge_base/functionality/media/media_bloc.dart';
+import 'package:flutter_media_knowledge_base/functionality/home/app_bloc.dart';
 
 
 /// 设置页面

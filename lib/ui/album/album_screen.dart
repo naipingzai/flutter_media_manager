@@ -4,17 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 // album_bloc imported via bloc.dart
 // bloc imports via specific files
-import 'package:advance_media_kb/functionality/home/app_bloc.dart';
+import 'package:flutter_media_knowledge_base/functionality/home/app_bloc.dart';
 import '../../functionality/album/album_bloc.dart';
-import 'package:advance_media_kb/bridge/native/api/album.dart';
+import 'package:flutter_media_knowledge_base/bridge/native/api/album.dart';
 import 'package:logger/logger.dart';
-import 'package:advance_media_kb/core/i18n/app_localizations.dart';
-import 'package:advance_media_kb/core/design_system/app_theme.dart';
-import 'package:advance_media_kb/bridge/native/api/enums.dart';
-import 'package:advance_media_kb/bridge/native/api/media.dart';
-import 'package:advance_media_kb/bridge/native/api/media.dart' as media_api;
+import 'package:flutter_media_knowledge_base/core/i18n/app_localizations.dart';
+import 'package:flutter_media_knowledge_base/core/design_system/app_theme.dart';
+import 'package:flutter_media_knowledge_base/bridge/native/api/enums.dart';
+import 'package:flutter_media_knowledge_base/bridge/native/api/media.dart';
+import 'package:flutter_media_knowledge_base/bridge/native/api/media.dart' as media_api;
 import '../viewer/viewer_page.dart';
-import 'package:advance_media_kb/functionality/media/media_bloc.dart';
+import 'package:flutter_media_knowledge_base/functionality/media/media_bloc.dart';
 
 
 final _logger = Logger();

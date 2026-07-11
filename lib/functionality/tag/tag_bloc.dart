@@ -2,8 +2,8 @@
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:advance_media_kb/bridge/native/api/tag.dart';
-import 'package:advance_media_kb/bridge/native/api/media.dart';
+import 'package:flutter_media_knowledge_base/bridge/native/api/tag.dart';
+import 'package:flutter_media_knowledge_base/bridge/native/api/media.dart';
 import 'package:logger/logger.dart';
 
 part 'tag_event.dart';

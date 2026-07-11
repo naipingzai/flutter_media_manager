@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../functionality/home/app_bloc.dart';
-import 'package:advance_media_kb/core/i18n/app_localizations.dart';
-import 'package:advance_media_kb/ui/media/media_screen.dart';
-import 'package:advance_media_kb/ui/album/album_screen.dart';
-import 'package:advance_media_kb/ui/tag/tag_screen.dart';
+import 'package:flutter_media_knowledge_base/core/i18n/app_localizations.dart';
+import 'package:flutter_media_knowledge_base/ui/media/media_screen.dart';
+import 'package:flutter_media_knowledge_base/ui/album/album_screen.dart';
+import 'package:flutter_media_knowledge_base/ui/tag/tag_screen.dart';
 
 /// 主屏幕，包含底部导航栏（3 个 Tab：所有媒体/相册/标签）
 /// Skill-09 §1：只有 3 个主页 Tab，笔记通过详情页 Tab 使用（Skill-14）

@@ -1,14 +1,14 @@
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
-import 'package:advance_media_kb/bridge/native/api/settings.dart' as settings_api;
-import 'package:advance_media_kb/bridge/native/api/media.dart' as media_api;
-import 'package:advance_media_kb/bridge/native/api/import_export.dart' as import_export_api;
-import 'package:advance_media_kb/bridge/native/api/album.dart' as album_api;
-import 'package:advance_media_kb/bridge/native/api/tag.dart' as tag_api;
-import 'package:advance_media_kb/bridge/native/api/note.dart' as note_api;
-import 'package:advance_media_kb/bridge/native/api/search.dart' as search_api;
-import 'package:advance_media_kb/bridge/native/api/scanner.dart' as scanner_api;
-import 'package:advance_media_kb/bridge/native/api/import_export.dart' as import_export_api;
+import 'package:flutter_media_knowledge_base/bridge/native/api/settings.dart' as settings_api;
+import 'package:flutter_media_knowledge_base/bridge/native/api/media.dart' as media_api;
+import 'package:flutter_media_knowledge_base/bridge/native/api/import_export.dart' as import_export_api;
+import 'package:flutter_media_knowledge_base/bridge/native/api/album.dart' as album_api;
+import 'package:flutter_media_knowledge_base/bridge/native/api/tag.dart' as tag_api;
+import 'package:flutter_media_knowledge_base/bridge/native/api/note.dart' as note_api;
+import 'package:flutter_media_knowledge_base/bridge/native/api/search.dart' as search_api;
+import 'package:flutter_media_knowledge_base/bridge/native/api/scanner.dart' as scanner_api;
+import 'package:flutter_media_knowledge_base/bridge/native/api/import_export.dart' as import_export_api;
 
 /// API 测试结果
 class ApiTestResult {

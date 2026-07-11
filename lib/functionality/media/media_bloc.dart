@@ -2,9 +2,9 @@
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:advance_media_kb/bridge/native/api/media.dart';
-import 'package:advance_media_kb/bridge/native/api/enums.dart';
-import 'package:advance_media_kb/bridge/native/api/search.dart';
+import 'package:flutter_media_knowledge_base/bridge/native/api/media.dart';
+import 'package:flutter_media_knowledge_base/bridge/native/api/enums.dart';
+import 'package:flutter_media_knowledge_base/bridge/native/api/search.dart';
 import 'package:logger/logger.dart';
 
 part 'media_event.dart';

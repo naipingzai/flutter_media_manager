@@ -3,21 +3,21 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:advance_media_kb/core/design_system/app_theme.dart';
-import 'package:advance_media_kb/core/design_system/components.dart';
-import 'package:advance_media_kb/core/i18n/app_localizations.dart';
+import 'package:flutter_media_knowledge_base/core/design_system/app_theme.dart';
+import 'package:flutter_media_knowledge_base/core/design_system/components.dart';
+import 'package:flutter_media_knowledge_base/core/i18n/app_localizations.dart';
 import 'widgets/media_grid.dart';
 import 'widgets/file_browser_dialog.dart';
-import 'package:advance_media_kb/bridge/native/api/media.dart';
-import 'package:advance_media_kb/bridge/native/api/enums.dart';
-import 'package:advance_media_kb/bridge/native/api/scanner.dart';
-import 'package:advance_media_kb/bridge/native/api/tag.dart';
-import 'package:advance_media_kb/bridge/native/api/album.dart';
-import 'package:advance_media_kb/core/navigation/app_router.dart';
-import 'package:advance_media_kb/ui/search/search_screen.dart';
-import 'package:advance_media_kb/ui/settings/settings_screen.dart';
+import 'package:flutter_media_knowledge_base/bridge/native/api/media.dart';
+import 'package:flutter_media_knowledge_base/bridge/native/api/enums.dart';
+import 'package:flutter_media_knowledge_base/bridge/native/api/scanner.dart';
+import 'package:flutter_media_knowledge_base/bridge/native/api/tag.dart';
+import 'package:flutter_media_knowledge_base/bridge/native/api/album.dart';
+import 'package:flutter_media_knowledge_base/core/navigation/app_router.dart';
+import 'package:flutter_media_knowledge_base/ui/search/search_screen.dart';
+import 'package:flutter_media_knowledge_base/ui/settings/settings_screen.dart';
 import '../../functionality/media/media_bloc.dart';
-import 'package:advance_media_kb/functionality/home/app_bloc.dart';
+import 'package:flutter_media_knowledge_base/functionality/home/app_bloc.dart';
 
 
 class MediaScreen extends StatefulWidget {

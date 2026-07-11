@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:advance_media_kb/core/i18n/app_localizations.dart';
+import 'package:flutter_media_knowledge_base/core/i18n/app_localizations.dart';
 
 /// 文件浏览器对话框 - 返回选择的文件路径列表
 ///

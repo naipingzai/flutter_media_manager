@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:advance_media_kb/core/i18n/app_localizations.dart';
+import 'package:flutter_media_knowledge_base/core/i18n/app_localizations.dart';
 import '../../../functionality/media/media_bloc.dart';
 
 

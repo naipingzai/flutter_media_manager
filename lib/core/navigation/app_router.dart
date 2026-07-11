@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:advance_media_kb/core/design_system/app_theme.dart';
-import 'package:advance_media_kb/ui/home/home_screen.dart';
-import 'package:advance_media_kb/ui/search/search_screen.dart';
-import 'package:advance_media_kb/ui/settings/settings_screen.dart';
-import 'package:advance_media_kb/ui/viewer/viewer_page.dart';
-import 'package:advance_media_kb/bridge/native/api/media.dart' as media_api;
+import 'package:flutter_media_knowledge_base/core/design_system/app_theme.dart';
+import 'package:flutter_media_knowledge_base/ui/home/home_screen.dart';
+import 'package:flutter_media_knowledge_base/ui/search/search_screen.dart';
+import 'package:flutter_media_knowledge_base/ui/settings/settings_screen.dart';
+import 'package:flutter_media_knowledge_base/ui/viewer/viewer_page.dart';
+import 'package:flutter_media_knowledge_base/bridge/native/api/media.dart' as media_api;
 
 /// Skill-09: 应用壳与导航规范
 /// 覆盖层路由管理器 - 非主页面以卡片覆盖层/全屏覆盖层形式呈现
