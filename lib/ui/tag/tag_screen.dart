@@ -4,12 +4,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:flutter_media_knowledge_base/core/i18n/app_localizations.dart';
 import 'package:flutter_media_knowledge_base/core/design_system/app_theme.dart';
-import 'package:flutter_media_knowledge_base/bridge/native/api/tag.dart' as tag_api;
+import 'package:flutter_media_knowledge_base/core/design_system/components.dart';
+import 'package:flutter_media_knowledge_base/bridge/native/api/tag.dart'
+    as tag_api;
 import 'package:flutter_media_knowledge_base/bridge/native/api/media.dart';
 import '../viewer/viewer_page.dart';
 import '../../functionality/tag/tag_bloc.dart';
 import 'package:flutter_media_knowledge_base/functionality/home/app_bloc.dart';
-
 
 /// 标签浏览页面 - 支持无限层级、面包屑导航、网格列数控制
 class TagScreen extends StatefulWidget {
@@ -24,7 +25,8 @@ class _TagScreenState extends State<TagScreen> {
   final Set<String> _selectedMediaIds = {};
   bool _isMediaSelectionMode = false;
   List<MediaItem>? _filteredMedia;
-  int get _tagColumns => context.watch<AppBloc>().state.settings?.gridColumns ?? 3;
+  int get _tagColumns =>
+      context.watch<AppBloc>().state.settings?.gridColumns ?? 3;
 
   void _enterMediaSelection(String mediaId) {
     setState(() {
@@ -64,122 +66,129 @@ class _TagScreenState extends State<TagScreen> {
     final loc = AppLocalizations.of(context);
 
     return PopScope(
-      canPop: !_isMediaSelectionMode,
-      onPopInvoked: (didPop) {
-        if (!didPop && _isMediaSelectionMode) {
-          _clearMediaSelection();
-        }
-      },
-      child: Scaffold(
-      appBar: AppBar(
-        title: BlocBuilder<TagBloc, TagState>(
-          builder: (context, state) {
-            if (_filteredMedia != null) {
-              return Text(loc.tags);
-            }
-            if (state.currentTagId != null && state.breadcrumb.isNotEmpty) {
-              return Text(state.breadcrumb.last.name);
-            }
-            return Text(loc.tags);
-          },
-        ),
-        leading: BlocBuilder<TagBloc, TagState>(
-          builder: (context, state) {
-            if (_filteredMedia != null) {
-              return IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: _clearFilter,
-              );
-            }
-            if (state.currentParentId != null) {
-              return IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () {
-                  context.read<TagBloc>().add(const TagNavigateUpEvent());
-                },
-              );
-            }
-            return const SizedBox.shrink();
-          },
-        ),
-        actions: [
-          if (_filteredMedia != null)
-            IconButton(
-              icon: const Icon(Icons.clear_all),
-              tooltip: loc.delete,
-              onPressed: _clearFilter,
-            )
-          else
-            IconButton(
-              icon: const Icon(Icons.filter_list),
-              tooltip: loc.tags,
-              onPressed: _showTagFilterDialog,
-            ),
-        ],
-      ),
-      body: BlocBuilder<TagBloc, TagState>(
-        builder: (context, state) {
-          switch (state.status) {
-            case TagStatus.initial:
-            case TagStatus.loading:
-              return const Center(child: CircularProgressIndicator());
-            case TagStatus.error:
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.error_outline, size: AppSize.iconXLarge, color: Theme.of(context).colorScheme.error),
-                    const SizedBox(height: 16),
-                    Text('${loc.error}: ${state.errorMessage ?? loc.unknown}'),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () {
-                        if (state.currentParentId != null) {
-                          context.read<TagBloc>().add(
-                                TagLoadChildrenEvent(state.currentParentId!),
-                              );
-                        } else {
-                          context.read<TagBloc>().add(const TagLoadRootsEvent());
-                        }
-                      },
-                      child: Text(loc.retry),
-                    ),
-                  ],
-                ),
-              );
-            case TagStatus.loaded:
-              // 如果有筛选结果，显示媒体网格
-              if (_filteredMedia != null) {
-                return _buildFilteredMediaView(context, _tagColumns);
-              }
-
-              return Column(
-                children: [
-                  // 面包屑导航
-                  if (state.breadcrumb.isNotEmpty) _buildBreadcrumb(context, state),
-                  // 内容区域
-                  Expanded(child: _buildContent(context, state, _tagColumns)),
-                ],
-              );
+        canPop: !_isMediaSelectionMode,
+        onPopInvoked: (didPop) {
+          if (!didPop && _isMediaSelectionMode) {
+            _clearMediaSelection();
           }
         },
-      ),
-      floatingActionButton: _isMediaSelectionMode
-          ? const SizedBox.shrink()
-          : BlocBuilder<TagBloc, TagState>(
+        child: Scaffold(
+          appBar: AppBar(
+            title: BlocBuilder<TagBloc, TagState>(
               builder: (context, state) {
-                if (_filteredMedia != null) return const SizedBox.shrink();
-                return FloatingActionButton(
-                  onPressed: () => _showCreateTagDialog(context),
-                  tooltip: loc.createTag,
-                  child: const Icon(Icons.new_label),
-                );
+                if (_filteredMedia != null) {
+                  return Text(loc.tags);
+                }
+                if (state.currentTagId != null && state.breadcrumb.isNotEmpty) {
+                  return Text(state.breadcrumb.last.name);
+                }
+                return Text(loc.tags);
               },
             ),
-      bottomNavigationBar: _isMediaSelectionMode
-          ? _buildMediaSelectionBar(context)
-          : null,
-    ));
+            leading: BlocBuilder<TagBloc, TagState>(
+              builder: (context, state) {
+                if (_filteredMedia != null) {
+                  return IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: _clearFilter,
+                  );
+                }
+                if (state.currentParentId != null) {
+                  return IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () {
+                      context.read<TagBloc>().add(const TagNavigateUpEvent());
+                    },
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+            actions: [
+              if (_filteredMedia != null)
+                IconButton(
+                  icon: const Icon(Icons.clear_all),
+                  tooltip: loc.delete,
+                  onPressed: _clearFilter,
+                )
+              else
+                IconButton(
+                  icon: const Icon(Icons.filter_list),
+                  tooltip: loc.tags,
+                  onPressed: _showTagFilterDialog,
+                ),
+            ],
+          ),
+          body: BlocBuilder<TagBloc, TagState>(
+            builder: (context, state) {
+              switch (state.status) {
+                case TagStatus.initial:
+                case TagStatus.loading:
+                  return const Center(child: CircularProgressIndicator());
+                case TagStatus.error:
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.error_outline,
+                            size: AppSize.iconXLarge,
+                            color: Theme.of(context).colorScheme.error),
+                        const SizedBox(height: 16),
+                        Text(
+                            '${loc.error}: ${state.errorMessage ?? loc.unknown}'),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () {
+                            if (state.currentParentId != null) {
+                              context.read<TagBloc>().add(
+                                    TagLoadChildrenEvent(
+                                        state.currentParentId!),
+                                  );
+                            } else {
+                              context
+                                  .read<TagBloc>()
+                                  .add(const TagLoadRootsEvent());
+                            }
+                          },
+                          child: Text(loc.retry),
+                        ),
+                      ],
+                    ),
+                  );
+                case TagStatus.loaded:
+                  // 如果有筛选结果，显示媒体网格
+                  if (_filteredMedia != null) {
+                    return _buildFilteredMediaView(context, _tagColumns);
+                  }
+
+                  return Column(
+                    children: [
+                      // 面包屑导航
+                      if (state.breadcrumb.isNotEmpty)
+                        _buildBreadcrumb(context, state),
+                      // 内容区域
+                      Expanded(
+                          child: _buildContent(context, state, _tagColumns)),
+                    ],
+                  );
+              }
+            },
+          ),
+          floatingActionButton: _isMediaSelectionMode
+              ? const SizedBox.shrink()
+              : BlocBuilder<TagBloc, TagState>(
+                  builder: (context, state) {
+                    if (_filteredMedia != null) return const SizedBox.shrink();
+                    return FloatingActionButton(
+                      onPressed: () => _showCreateTagDialog(context),
+                      tooltip: loc.createTag,
+                      child: const Icon(Icons.new_label),
+                    );
+                  },
+                ),
+          bottomNavigationBar:
+              _isMediaSelectionMode ? _buildMediaSelectionBar(context) : null,
+        ));
   }
 
   Widget _buildMediaSelectionBar(BuildContext context) {
@@ -188,7 +197,10 @@ class _TagScreenState extends State<TagScreen> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         boxShadow: [
-          BoxShadow(color: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, -2)),
+          BoxShadow(
+              color: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.1),
+              blurRadius: 8,
+              offset: const Offset(0, -2)),
         ],
       ),
       child: SafeArea(
@@ -204,7 +216,8 @@ class _TagScreenState extends State<TagScreen> {
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.primaryContainer,
                   borderRadius: BorderRadius.circular(20),
@@ -216,7 +229,8 @@ class _TagScreenState extends State<TagScreen> {
               ),
               const Spacer(),
               IconButton(
-                icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
+                icon: Icon(Icons.delete_outline,
+                    color: Theme.of(context).colorScheme.error),
                 tooltip: loc.delete,
                 onPressed: _selectedMediaIds.isNotEmpty
                     ? () => _batchDeleteSelectedMedia(context)
@@ -235,11 +249,15 @@ class _TagScreenState extends State<TagScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(loc.confirmBatchDelete),
-        content: Text('${loc.confirmBatchDelete} (${_selectedMediaIds.length})'),
+        content:
+            Text('${loc.confirmBatchDelete} (${_selectedMediaIds.length})'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(loc.cancel)),
           TextButton(
-            style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(loc.cancel)),
+          TextButton(
+            style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error),
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(loc.delete),
           ),
@@ -252,7 +270,8 @@ class _TagScreenState extends State<TagScreen> {
     }
     _clearMediaSelection();
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${loc.success} ${_selectedMediaIds.length}')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('${loc.success} ${_selectedMediaIds.length}')));
       _executeFilter();
     }
   }
@@ -260,37 +279,25 @@ class _TagScreenState extends State<TagScreen> {
   /// 面包屑导航
   Widget _buildBreadcrumb(BuildContext context, TagState state) {
     final loc = AppLocalizations.of(context);
-    final cs = Theme.of(context).colorScheme;
-    return Container(
-      width: double.infinity,
-      height: AppSize.topBarHeight,
-      color: cs.surfaceContainerHighest,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-        children: [
-          _TagBreadcrumbItem(
-            icon: Icons.home_rounded,
-            label: loc.tabTags,
-            isActive: state.breadcrumb.isEmpty,
-            onTap: () => context.read<TagBloc>().add(const TagNavigateToRootEvent()),
-          ),
-          for (int i = 0; i < state.breadcrumb.length; i++) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-              child: Icon(Icons.chevron_right, size: AppSize.iconSmall, color: cs.onSurfaceVariant),
-            ),
-            _TagBreadcrumbItem(
-              icon: i == state.breadcrumb.length - 1 ? Icons.label_important : Icons.label,
-              label: state.breadcrumb[i].name,
-              isActive: i == state.breadcrumb.length - 1,
-              onTap: i < state.breadcrumb.length - 1
-                  ? () => context.read<TagBloc>().add(TagNavigateToEvent(state.breadcrumb[i].id))
-                  : null,
-            ),
-          ],
-        ],
-      ),
+    final nodes = <BreadcrumbNode>[
+      BreadcrumbNode(label: loc.tabTags, id: '', icon: Icons.home_rounded),
+      ...state.breadcrumb.asMap().entries.map((e) => BreadcrumbNode(
+            label: e.value.name,
+            id: e.value.id,
+            icon: e.key == state.breadcrumb.length - 1
+                ? Icons.label_important
+                : Icons.label,
+          )),
+    ];
+    return BreadcrumbBar(
+      nodes: nodes,
+      onTap: (index) {
+        if (index == 0) {
+          context.read<TagBloc>().add(const TagNavigateToRootEvent());
+        } else {
+          context.read<TagBloc>().add(TagNavigateToEvent(nodes[index].id));
+        }
+      },
     );
   }
 
@@ -306,11 +313,14 @@ class _TagScreenState extends State<TagScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.label, size: AppSize.iconXxl, color: cs.onSurfaceVariant),
+            Icon(Icons.label,
+                size: AppSize.iconXxl, color: cs.onSurfaceVariant),
             const SizedBox(height: AppSpacing.md),
-            Text(loc.noTags, style: TextStyle(fontSize: 16, color: cs.onSurfaceVariant)),
+            Text(loc.noTags,
+                style: TextStyle(fontSize: 16, color: cs.onSurfaceVariant)),
             const SizedBox(height: AppSpacing.sm),
-            Text(loc.noTagsDesc, style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant)),
+            Text(loc.noTagsDesc,
+                style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant)),
           ],
         ),
       );
@@ -366,11 +376,14 @@ class _TagScreenState extends State<TagScreen> {
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: Row(
         children: [
-          Icon(Icons.filter_list, size: 16, color: Theme.of(context).colorScheme.primary),
+          Icon(Icons.filter_list,
+              size: 16, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 8),
           Text(
             '${_selectedTagIds.length} ${loc.tags} · ${_filteredMedia!.length}',
-            style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            style: TextStyle(
+                fontSize: 13,
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ],
       ),
@@ -382,7 +395,9 @@ class _TagScreenState extends State<TagScreen> {
           filterInfoBar,
           Expanded(
             child: Center(
-              child: Text(loc.noResults, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              child: Text(loc.noResults,
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
             ),
           ),
         ],
@@ -416,7 +431,8 @@ class _TagScreenState extends State<TagScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => ViewerPage(initialMedia: media, mediaList: _filteredMedia!),
+                        builder: (_) => ViewerPage(
+                            initialMedia: media, mediaList: _filteredMedia!),
                       ),
                     );
                   }
@@ -474,7 +490,8 @@ class _TagScreenState extends State<TagScreen> {
               onPressed: () {
                 final name = nameController.text.trim();
                 if (name.isNotEmpty) {
-                  final currentParentId = context.read<TagBloc>().state.currentParentId;
+                  final currentParentId =
+                      context.read<TagBloc>().state.currentParentId;
                   context.read<TagBloc>().add(
                         TagCreateEvent(
                           name,
@@ -518,8 +535,10 @@ class _TagScreenState extends State<TagScreen> {
               },
             ),
             ListTile(
-              leading: Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
-              title: Text(loc.delete, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              leading: Icon(Icons.delete,
+                  color: Theme.of(context).colorScheme.error),
+              title: Text(loc.delete,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error)),
               onTap: () {
                 Navigator.pop(ctx);
                 _confirmDeleteTag(context, tagInfo);
@@ -556,7 +575,8 @@ class _TagScreenState extends State<TagScreen> {
                   const SizedBox(height: 16),
                   Align(
                     alignment: Alignment.centerLeft,
-                    child: Text(loc.selectTagColor, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    child: Text(loc.selectTagColor,
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
                   ),
                   const SizedBox(height: 8),
                   Wrap(
@@ -570,17 +590,22 @@ class _TagScreenState extends State<TagScreen> {
                           width: 32,
                           height: 32,
                           decoration: BoxDecoration(
-                            color: Color(int.parse(color.replaceFirst('#', '0xFF'))),
+                            color: Color(
+                                int.parse(color.replaceFirst('#', '0xFF'))),
                             shape: BoxShape.circle,
                             border: isSelected
                                 ? Border.all(color: Colors.white, width: 3)
                                 : null,
                             boxShadow: isSelected
-                                ? [BoxShadow(color: Colors.black26, blurRadius: 4)]
+                                ? [
+                                    BoxShadow(
+                                        color: Colors.black26, blurRadius: 4)
+                                  ]
                                 : null,
                           ),
                           child: isSelected
-                              ? const Icon(Icons.check, color: Colors.white, size: 18)
+                              ? const Icon(Icons.check,
+                                  color: Colors.white, size: 18)
                               : null,
                         ),
                       );
@@ -598,7 +623,8 @@ class _TagScreenState extends State<TagScreen> {
                     final name = controller.text.trim();
                     if (name.isNotEmpty) {
                       context.read<TagBloc>().add(
-                            TagCreateEvent(name, color: selectedColor, parentId: parentId),
+                            TagCreateEvent(name,
+                                color: selectedColor, parentId: parentId),
                           );
                       Navigator.pop(ctx);
                     }
@@ -617,7 +643,8 @@ class _TagScreenState extends State<TagScreen> {
   static Set<String> _collectDescendantIds(
       List<tag_api.Tag> allTags, String rootId) {
     final result = <String>{rootId};
-    final children = allTags.where((t) => t.parentId == rootId).map((t) => t.id).toList();
+    final children =
+        allTags.where((t) => t.parentId == rootId).map((t) => t.id).toList();
     for (final childId in children) {
       result.addAll(_collectDescendantIds(allTags, childId));
     }
@@ -687,17 +714,23 @@ class _TagScreenState extends State<TagScreen> {
                               width: 32,
                               height: 32,
                               decoration: BoxDecoration(
-                                color: Color(int.parse(color.replaceFirst('#', '0xFF'))),
+                                color: Color(
+                                    int.parse(color.replaceFirst('#', '0xFF'))),
                                 shape: BoxShape.circle,
                                 border: isSelected
                                     ? Border.all(color: Colors.white, width: 3)
                                     : null,
                                 boxShadow: isSelected
-                                    ? [BoxShadow(color: Colors.black26, blurRadius: 4)]
+                                    ? [
+                                        BoxShadow(
+                                            color: Colors.black26,
+                                            blurRadius: 4)
+                                      ]
                                     : null,
                               ),
                               child: isSelected
-                                  ? const Icon(Icons.check, color: Colors.white, size: 18)
+                                  ? const Icon(Icons.check,
+                                      color: Colors.white, size: 18)
                                   : null,
                             ),
                           );
@@ -715,7 +748,8 @@ class _TagScreenState extends State<TagScreen> {
                         isExpanded: true,
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          contentPadding:
+                              EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         ),
                         items: [
                           DropdownMenuItem<String?>(
@@ -729,7 +763,8 @@ class _TagScreenState extends State<TagScreen> {
                                     child: Text(t.name),
                                   )),
                         ],
-                        onChanged: (val) => setState(() => selectedParentId = val),
+                        onChanged: (val) =>
+                            setState(() => selectedParentId = val),
                       ),
                     ],
                   ),
@@ -774,9 +809,11 @@ class _TagScreenState extends State<TagScreen> {
         title: Text(loc.confirmBatchDelete),
         content: Text('${loc.confirmBatchDelete}\n${tagInfo.tag.name}'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(loc.cancel)),
           TextButton(
-            style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
+              onPressed: () => Navigator.pop(ctx), child: Text(loc.cancel)),
+          TextButton(
+            style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error),
             onPressed: () {
               context.read<TagBloc>().add(TagDeleteEvent(tagInfo.tag.id));
               Navigator.pop(ctx);
@@ -822,7 +859,8 @@ class _TagScreenState extends State<TagScreen> {
   Future<void> _executeFilter() async {
     try {
       List<MediaItem> results;
-      results = await tag_api.getMediaByTagsOr(tagIds: _selectedTagIds.toList());
+      results =
+          await tag_api.getMediaByTagsOr(tagIds: _selectedTagIds.toList());
       if (mounted) {
         setState(() => _filteredMedia = results);
       }
@@ -891,7 +929,10 @@ class _TagBreadcrumbItem extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: AppSize.iconSmall, color: isActive ? cs.onPrimaryContainer : cs.onSurfaceVariant),
+              Icon(icon,
+                  size: AppSize.iconSmall,
+                  color:
+                      isActive ? cs.onPrimaryContainer : cs.onSurfaceVariant),
               const SizedBox(width: AppSpacing.xs),
               Text(
                 label,
@@ -942,7 +983,8 @@ class _TagCard extends StatelessWidget {
           color: cs.surface,
           child: Center(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.md),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm, vertical: AppSpacing.md),
               child: Text(
                 tag.name,
                 style: TextStyle(
@@ -960,7 +1002,6 @@ class _TagCard extends StatelessWidget {
       ),
     );
   }
-
 }
 
 /// 媒体网格项（用于标签筛选结果展示）
@@ -1001,7 +1042,10 @@ class _MediaGridItem extends StatelessWidget {
               Positioned.fill(
                 child: Container(
                   color: isSelected
-                      ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
+                      ? Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withValues(alpha: 0.3)
                       : Colors.transparent,
                 ),
               ),
@@ -1014,7 +1058,10 @@ class _MediaGridItem extends StatelessWidget {
                   size: 24,
                   color: isSelected
                       ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                      : Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.5),
                 ),
               ),
             if (media.mediaType != MediaType.image && !isSelectionMode)
@@ -1022,7 +1069,8 @@ class _MediaGridItem extends StatelessWidget {
                 bottom: 4,
                 right: 4,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: Colors.black54,
                     borderRadius: BorderRadius.circular(4),

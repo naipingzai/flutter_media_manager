@@ -1,6 +1,150 @@
 import 'package:flutter/material.dart';
 import 'app_theme.dart';
-import '../i18n/app_localizations.dart';
+import '../i18n/app_localizations.dart' hide AppLocalizations;
+
+/// Material 3 横向滚动面包屑导航栏
+class BreadcrumbBar extends StatelessWidget {
+  final List<BreadcrumbNode> nodes;
+  final ValueChanged<int>? onTap;
+
+  const BreadcrumbBar({
+    super.key,
+    required this.nodes,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    return Container(
+      height: AppSize.chipHeight + AppSpacing.sm * 2,
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerLow,
+        border: Border(
+          bottom: BorderSide(color: cs.outlineVariant, width: 0.5),
+        ),
+      ),
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+        itemCount: nodes.length * 2 - 1,
+        separatorBuilder: (_, __) => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+          child:
+              Icon(Icons.chevron_right, size: 16, color: cs.onSurfaceVariant),
+        ),
+        itemBuilder: (context, index) {
+          if (index.isOdd) return const SizedBox.shrink();
+          final nodeIndex = index ~/ 2;
+          final node = nodes[nodeIndex];
+          final isLast = nodeIndex == nodes.length - 1;
+
+          return InkWell(
+            onTap: isLast ? null : () => onTap?.call(nodeIndex),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    node.icon ??
+                        (nodeIndex == 0
+                            ? Icons.home_rounded
+                            : Icons.label_rounded),
+                    size: 16,
+                    color: isLast ? cs.primary : cs.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(
+                    node.label,
+                    style: tt.labelMedium?.copyWith(
+                      color: isLast ? cs.primary : cs.onSurfaceVariant,
+                      fontWeight: isLast ? FontWeight.w600 : FontWeight.w400,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class BreadcrumbNode {
+  final String label;
+  final String id;
+  final IconData? icon;
+  const BreadcrumbNode({required this.label, required this.id, this.icon});
+}
+
+/// Material 3 空状态组件
+class EmptyState extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final Widget? action;
+
+  const EmptyState({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    this.action,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xxl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.xl),
+              decoration: BoxDecoration(
+                color: cs.surfaceContainerHighest,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon,
+                  size: AppSize.iconXLarge, color: cs.onSurfaceVariant),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              title,
+              style: tt.titleMedium?.copyWith(color: cs.onSurfaceVariant),
+              textAlign: TextAlign.center,
+            ),
+            if (subtitle != null) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                subtitle!,
+                style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                textAlign: TextAlign.center,
+              ),
+            ],
+            if (action != null) ...[
+              const SizedBox(height: AppSpacing.lg),
+              action!,
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 /// Skill-03 §5.1 - 可复用 MediaItemCard
 /// 显示缩略图、选中态、文件名、文件大小
@@ -86,12 +230,11 @@ class MediaItemCard extends StatelessWidget {
                           color: isSelected
                               ? colorScheme.primary
                               : colorScheme.outline,
-                          width: isSelected
-                              ? AppSize.borderWidthSelected
-                              : 1,
+                          width: isSelected ? AppSize.borderWidthSelected : 1,
                         ),
                         color: isSelected
-                            ? colorScheme.primary.withValues(alpha: AppSize.overlayOpacity)
+                            ? colorScheme.primary
+                                .withValues(alpha: AppSize.overlayOpacity)
                             : null,
                       ),
                     ),
@@ -130,8 +273,8 @@ class MediaItemCard extends StatelessWidget {
                 Text(
                   fileSize,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                   maxLines: 1,
                 ),
               ],
@@ -165,7 +308,8 @@ class MediaItemCard extends StatelessWidget {
     return Container(
       color: colorScheme.surfaceContainerHighest,
       child: Center(
-        child: Icon(icon, size: AppSize.iconLarge, color: colorScheme.onSurfaceVariant),
+        child: Icon(icon,
+            size: AppSize.iconLarge, color: colorScheme.onSurfaceVariant),
       ),
     );
   }
@@ -202,7 +346,8 @@ class BreadcrumbNav extends StatelessWidget {
             children: [
               if (index > 0)
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
                   child: Icon(
                     Icons.chevron_right,
                     size: 16,
@@ -319,8 +464,8 @@ class _CollapsiblePanelState extends State<CollapsiblePanel>
                   child: Text(
                     widget.title,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                          fontWeight: FontWeight.w600,
+                        ),
                   ),
                 ),
                 if (widget.action != null) widget.action!,
@@ -345,61 +490,6 @@ class _CollapsiblePanelState extends State<CollapsiblePanel>
           ),
         ),
       ],
-    );
-  }
-}
-
-/// 空状态组件
-class EmptyState extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String? subtitle;
-  final Widget? action;
-
-  const EmptyState({
-    super.key,
-    required this.icon,
-    required this.title,
-    this.subtitle,
-    this.action,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xxl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: AppSize.iconXxl, color: colorScheme.onSurfaceVariant),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            if (subtitle != null) ...[
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                subtitle!,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-            if (action != null) ...[
-              const SizedBox(height: AppSpacing.lg),
-              action!,
-            ],
-          ],
-        ),
-      ),
     );
   }
 }
@@ -462,10 +552,10 @@ class AlbumCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
-                  '$mediaCount ${AppLocalizations.of(context).files}',
+                  '$mediaCount files',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                 ),
               ],
             ),
@@ -480,7 +570,8 @@ class AlbumCard extends StatelessWidget {
 class UIHelper {
   UIHelper._();
 
-  static void showSnackBar(BuildContext context, String message, {SnackBarAction? action}) {
+  static void showSnackBar(BuildContext context, String message,
+      {SnackBarAction? action}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), action: action),
     );
@@ -493,9 +584,8 @@ class UIHelper {
     String? confirmLabel,
     String? cancelLabel,
   }) async {
-    final loc = AppLocalizations.of(context);
-    final effectiveConfirm = confirmLabel ?? loc.confirm;
-    final effectiveCancel = cancelLabel ?? loc.cancel;
+    final effectiveConfirm = confirmLabel ?? 'Confirm';
+    final effectiveCancel = cancelLabel ?? 'Cancel';
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
