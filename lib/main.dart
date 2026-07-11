@@ -5,7 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path_provider/path_provider.dart';
 import 'bridge/native/native_library.dart';
-import 'bridge/native/api/settings.dart' as rust_settings;
+import 'bridge/native/api/settings.dart' as native_api;
 import 'core/design_system/app_theme.dart';
 import 'core/i18n/app_localizations.dart';
 import 'core/navigation/app_router.dart';
@@ -148,11 +148,11 @@ class AdvanceMediaKBApp extends StatelessWidget {
     );
   }
 
-  ThemeMode _mapThemeMode(rust_settings.ThemeMode? mode) {
+  ThemeMode _mapThemeMode(native_api.ThemeMode? mode) {
     switch (mode) {
-      case rust_settings.ThemeMode.light:
+      case native_api.ThemeMode.light:
         return ThemeMode.light;
-      case rust_settings.ThemeMode.dark:
+      case native_api.ThemeMode.dark:
         return ThemeMode.dark;
       default:
         return ThemeMode.system;

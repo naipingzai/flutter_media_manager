@@ -6,8 +6,8 @@ import 'package:path_provider/path_provider.dart';
 
 import 'package:advance_media_kb/core/i18n/app_localizations.dart';
 import 'package:advance_media_kb/core/design_system/app_theme.dart';
-import 'package:advance_media_kb/bridge/native/api/settings.dart' as rust_settings;
-import 'package:advance_media_kb/bridge/native/api/import_export.dart' as rust_import_export;
+import 'package:advance_media_kb/bridge/native/api/settings.dart' as native_api;
+import 'package:advance_media_kb/bridge/native/api/import_export.dart' as native_export;
 import 'package:advance_media_kb/bridge/native/api/media.dart' as media_api;
 import 'package:advance_media_kb/ui/media/api_test_screen.dart';
 import 'package:advance_media_kb/functionality/tag/tag_bloc.dart';
@@ -25,7 +25,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  rust_settings.StorageStats? _stats;
+  native_api.StorageStats? _stats;
   bool _loadingStats = false;
 
   @override
@@ -37,7 +37,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _loadStats() async {
     setState(() => _loadingStats = true);
     try {
-      final stats = await rust_settings.getStorageStats();
+      final stats = await native_api.getStorageStats();
       if (mounted) setState(() => _stats = stats);
     } catch (_) {
       // 忽略加载失败
@@ -214,7 +214,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _clearThumbnailCache(BuildContext context) async {
     final loc = AppLocalizations.of(context);
     try {
-      final deleted = await rust_settings.clearThumbnailCache();
+      final deleted = await native_api.clearThumbnailCache();
       await _loadStats();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -228,12 +228,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  String _themeModeLabel(rust_settings.ThemeMode mode) {
+  String _themeModeLabel(native_api.ThemeMode mode) {
     final loc = AppLocalizations.of(context);
     switch (mode) {
-      case rust_settings.ThemeMode.light:
+      case native_api.ThemeMode.light:
         return loc.themeLight;
-      case rust_settings.ThemeMode.dark:
+      case native_api.ThemeMode.dark:
         return loc.themeDark;
       default:
         return loc.themeSystem;
@@ -253,7 +253,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showLanguageDialog(
-      BuildContext context, rust_settings.AppSettings settings) {
+      BuildContext context, native_api.AppSettings settings) {
     final loc = AppLocalizations.of(context);
     showDialog(
       context: context,
@@ -292,14 +292,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _changeLanguage(
     BuildContext outerCtx,
     BuildContext dialogCtx,
-    rust_settings.AppSettings settings,
+    native_api.AppSettings settings,
     String? value,
   ) {
     if (value == null || value == settings.language) {
       Navigator.pop(dialogCtx);
       return;
     }
-    final newSettings = rust_settings.AppSettings(
+    final newSettings = native_api.AppSettings(
       themeMode: settings.themeMode,
       gridColumns: settings.gridColumns,
       albumGridColumns: settings.albumGridColumns,
@@ -320,7 +320,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showThemeModeDialog(
-      BuildContext context, rust_settings.AppSettings settings) {
+      BuildContext context, native_api.AppSettings settings) {
     final loc = AppLocalizations.of(context);
     showDialog(
       context: context,
@@ -330,9 +330,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              RadioListTile<rust_settings.ThemeMode>(
+              RadioListTile<native_api.ThemeMode>(
                 title: Text(loc.themeSystem),
-                value: rust_settings.ThemeMode.system,
+                value: native_api.ThemeMode.system,
                 groupValue: settings.themeMode,
                 onChanged: (value) {
                   if (value != null) {
@@ -343,9 +343,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   }
                 },
               ),
-              RadioListTile<rust_settings.ThemeMode>(
+              RadioListTile<native_api.ThemeMode>(
                 title: Text(loc.themeLight),
-                value: rust_settings.ThemeMode.light,
+                value: native_api.ThemeMode.light,
                 groupValue: settings.themeMode,
                 onChanged: (value) {
                   if (value != null) {
@@ -356,9 +356,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   }
                 },
               ),
-              RadioListTile<rust_settings.ThemeMode>(
+              RadioListTile<native_api.ThemeMode>(
                 title: Text(loc.themeDark),
-                value: rust_settings.ThemeMode.dark,
+                value: native_api.ThemeMode.dark,
                 groupValue: settings.themeMode,
                 onChanged: (value) {
                   if (value != null) {
@@ -377,7 +377,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showThumbnailQualityDialog(
-      BuildContext context, rust_settings.AppSettings settings) {
+      BuildContext context, native_api.AppSettings settings) {
     final loc = AppLocalizations.of(context);
     final qualities = [50, 60, 70, 80, 85, 90, 95, 100];
     showDialog(
@@ -394,7 +394,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 groupValue: settings.thumbnailQuality,
                 onChanged: (value) {
                   if (value != null) {
-                    final newSettings = rust_settings.AppSettings(
+                    final newSettings = native_api.AppSettings(
                       themeMode: settings.themeMode,
                       gridColumns: settings.gridColumns,
                       albumGridColumns: settings.albumGridColumns,
@@ -418,7 +418,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showGridColumnsDialog(
-      BuildContext context, rust_settings.AppSettings settings) {
+      BuildContext context, native_api.AppSettings settings) {
     final loc = AppLocalizations.of(context);
     showDialog(
       context: context,
@@ -434,7 +434,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 groupValue: settings.gridColumns,
                 onChanged: (value) {
                   if (value != null) {
-                    final newSettings = rust_settings.AppSettings(
+                    final newSettings = native_api.AppSettings(
                       themeMode: settings.themeMode,
                       gridColumns: value,
                       albumGridColumns: value,
@@ -480,7 +480,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 if (result != null && result.files.single.path != null) {
                   final path = result.files.single.path!;
                   try {
-                    await rust_settings.importData(importPath: path);
+                    await native_api.importData(importPath: path);
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text(loc.importDataSuccess)),
@@ -530,7 +530,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   final exportPath =
                       '$result/advance_media_kb_backup.db';
                   try {
-                    await rust_settings.exportData(
+                    await native_api.exportData(
                         exportPath: exportPath);
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -607,7 +607,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 final path = result.files.single.path!;
                 // 显示冲突策略选择
                 if (!context.mounted) return;
-                final strategy = await showDialog<rust_import_export.ConflictStrategy>(
+                final strategy = await showDialog<native_export.ConflictStrategy>(
                   context: context,
                   builder: (ctx) => AlertDialog(
                     title: Text(loc.conflictStrategy),
@@ -618,19 +618,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           title: Text(loc.strategySkip),
                           subtitle: Text(loc.strategySkipDesc),
                           leading: const Icon(Icons.skip_next),
-                          onTap: () => Navigator.pop(ctx, rust_import_export.ConflictStrategy.skip),
+                          onTap: () => Navigator.pop(ctx, native_export.ConflictStrategy.skip),
                         ),
                         ListTile(
                           title: Text(loc.strategyReplace),
                           subtitle: Text(loc.strategyReplaceDesc),
                           leading: const Icon(Icons.swap_horiz),
-                          onTap: () => Navigator.pop(ctx, rust_import_export.ConflictStrategy.replace),
+                          onTap: () => Navigator.pop(ctx, native_export.ConflictStrategy.replace),
                         ),
                         ListTile(
                           title: Text(loc.strategyRename),
                           subtitle: Text(loc.strategyRenameDesc),
                           leading: const Icon(Icons.drive_file_rename_outline),
-                          onTap: () => Navigator.pop(ctx, rust_import_export.ConflictStrategy.rename),
+                          onTap: () => Navigator.pop(ctx, native_export.ConflictStrategy.rename),
                         ),
                       ],
                     ),
@@ -655,7 +655,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 );
 
                 try {
-                  final result = await rust_import_export.importPackage(
+                  final result = await native_export.importPackage(
                     packagePath: path,
                     conflictStrategy: strategy,
                   );
@@ -741,7 +741,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               );
 
               try {
-                final exportResult = await rust_import_export.exportPackage(
+                final exportResult = await native_export.exportPackage(
                   exportPath: result,
                   includeMedia: includeMedia,
                 );
@@ -895,7 +895,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _clearAllData(BuildContext context) async {
     final loc = AppLocalizations.of(context);
     try {
-      await rust_settings.deleteAllData();
+      await native_api.deleteAllData();
       await _loadStats();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
