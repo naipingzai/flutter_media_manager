@@ -87,27 +87,24 @@ set_target_properties(${BINARY_NAME}
 )
 
 
-# === Rust library build ===
-set(RUST_CRATE_DIR "${CMAKE_SOURCE_DIR}/../rust")
-set(RUST_LIB_NAME "libadvance_media_kb.so")
-set(RUST_LIB_DIR "${CMAKE_BINARY_DIR}/rust_build")
+# === C++ native library build ===
+set(NATIVE_DIR "${CMAKE_SOURCE_DIR}/../native")
+set(NATIVE_LIB_NAME "libadvance_media_kb.so")
+set(NATIVE_LIB_DIR "${CMAKE_BINARY_DIR}/native_build")
 
-# Use pre-built Rust library if available, otherwise build with cargo
-if(EXISTS "${RUST_LIB_DIR}/${RUST_LIB_NAME}")
-  message(STATUS "Using pre-built Rust library: ${RUST_LIB_DIR}/${RUST_LIB_NAME}")
-  add_custom_target(rust_build ALL DEPENDS "${RUST_LIB_DIR}/${RUST_LIB_NAME}")
+# Use pre-built native library if available, otherwise build with cmake
+if(EXISTS "${NATIVE_LIB_DIR}/${NATIVE_LIB_NAME}")
+  message(STATUS "Using pre-built C++ library: ${NATIVE_LIB_DIR}/${NATIVE_LIB_NAME}")
+  add_custom_target(native_build ALL DEPENDS "${NATIVE_LIB_DIR}/${NATIVE_LIB_NAME}")
 else()
-  # Build the Rust shared library using cargo
   add_custom_command(
-    OUTPUT "${RUST_LIB_DIR}/${RUST_LIB_NAME}"
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${RUST_LIB_DIR}"
-    COMMAND cargo build --release --manifest-path "${RUST_CRATE_DIR}/Cargo.toml" --target-dir "${CMAKE_BINARY_DIR}/cargo_target"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      "${CMAKE_BINARY_DIR}/cargo_target/release/${RUST_LIB_NAME}"
-      "${RUST_LIB_DIR}/${RUST_LIB_NAME}"
-    COMMENT "Building Rust library..."
+    OUTPUT "${NATIVE_LIB_DIR}/${NATIVE_LIB_NAME}"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${NATIVE_LIB_DIR}"
+    COMMAND ${CMAKE_COMMAND} -S "${NATIVE_DIR}" -B "${NATIVE_LIB_DIR}" -DCMAKE_BUILD_TYPE=Release
+    COMMAND ${CMAKE_COMMAND} --build "${NATIVE_LIB_DIR}" -- -j4
+    COMMENT "Building C++ native library..."
   )
-  add_custom_target(rust_build ALL DEPENDS "${RUST_LIB_DIR}/${RUST_LIB_NAME}")
+  add_custom_target(native_build ALL DEPENDS "${NATIVE_LIB_DIR}/${NATIVE_LIB_NAME}")
 endif()
 
 # Generated plugin build rules, which manage building the plugins and adding
@@ -161,8 +158,8 @@ install(CODE "
 install(DIRECTORY "${PROJECT_BUILD_DIR}/${FLUTTER_ASSET_DIR_NAME}"
   DESTINATION "${INSTALL_BUNDLE_DATA_DIR}" COMPONENT Runtime)
 
-# Install the Rust shared library
-install(FILES "${RUST_LIB_DIR}/${RUST_LIB_NAME}"
+# Install the C++ native shared library
+install(FILES "${NATIVE_LIB_DIR}/${NATIVE_LIB_NAME}"
   DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
   COMPONENT Runtime)
 
