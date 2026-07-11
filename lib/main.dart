@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path_provider/path_provider.dart';
-import 'bridge/native/frb_generated.dart';
+import 'bridge/native/native_library.dart';
 import 'bridge/native/api/settings.dart' as rust_settings;
 import 'core/design_system/app_theme.dart';
 import 'core/i18n/app_localizations.dart';
@@ -16,11 +16,9 @@ import 'functionality/album/album_bloc.dart';
 import 'functionality/tag/tag_bloc.dart';
 import 'functionality/note/note_bloc.dart';
 
-/// 全局 Rust API 实例
-late final RustLib rustLib;
+late final NativeLibrary nativeLib;
 
 void _log(String msg) {
-  // 使用 print 确保在 release 模式下也能看到日志
   // ignore: avoid_print
   print('MAIN: $msg');
   developer.log(msg);
@@ -30,28 +28,13 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   _log('Flutter binding initialized');
 
-  // 初始化 Rust FFI 桥接
-  // 注意：由于手动修改了 MediaType 枚举，跳过 codegen hash 检查
   try {
-    _log('Starting RustLib.init()...');
-    await RustLib.init(forceSameCodegenVersion: false);
-    rustLib = RustLib.instance;
-    _log('RustLib.init() completed successfully');
-  } catch (e, stackTrace) {
-    _log('RustLib.init() FAILED: $e');
-    _log('Stack trace: $stackTrace');
-    // 即使 Rust 初始化失败，也尝试运行 APP（使用降级模式）
-    runApp(ErrorApp(error: 'Rust 初始化失败: $e'));
-    return;
-  }
-
-  // 初始化数据库（调用 Rust 的 init_app）
-  try {
+    _log('Initializing native library...');
+    nativeLib = NativeLibrary.instance;
     _log('Getting application documents directory...');
     final appDir = await getApplicationDocumentsDirectory();
     _log('App dir: ${appDir.path}');
-    
-    // 在 Android 上，尝试使用外部存储目录（更可靠）
+
     String targetDir = appDir.path;
     if (Platform.isAndroid) {
       final externalDir = await getExternalStorageDirectory();
@@ -60,14 +43,17 @@ Future<void> main() async {
         _log('Using external dir: $targetDir');
       }
     }
-    
-    _log('Calling init_app()...');
-    await rust_settings.initApp(appDir: targetDir);
-    _log('init_app() completed successfully');
+
+    _log('Calling native init...');
+    final result = nativeLib.init(targetDir);
+    if (result != 0) {
+      throw Exception('Native init failed with code: $result');
+    }
+    _log('Native init completed successfully');
   } catch (e, stackTrace) {
-    _log('init_app() FAILED: $e');
+    _log('Native init FAILED: $e');
     _log('Stack trace: $stackTrace');
-    runApp(ErrorApp(error: '数据库初始化失败: $e'));
+    runApp(ErrorApp(error: '初始化失败: $e'));
     return;
   }
 
@@ -75,7 +61,6 @@ Future<void> main() async {
   runApp(const AdvanceMediaKBApp());
 }
 
-/// 错误页面（当 Rust 初始化失败时显示）
 class ErrorApp extends StatelessWidget {
   final String error;
   const ErrorApp({super.key, required this.error});
@@ -88,25 +73,25 @@ class ErrorApp extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.all(24.0),
             child: SingleChildScrollView(
-        child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.error_outline, color: Colors.red, size: 64),
-                const SizedBox(height: 16),
-                const Text(
-                  '媒体知识库 启动失败',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                SelectableText(
-                  error,
-                  style: const TextStyle(fontSize: 12, color: Colors.red),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red, size: 64),
+                  const SizedBox(height: 16),
+                  const Text(
+                    '媒体知识库 启动失败',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  SelectableText(
+                    error,
+                    style: const TextStyle(fontSize: 12, color: Colors.red),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
         ),
       ),
     );
@@ -174,7 +159,6 @@ class AdvanceMediaKBApp extends StatelessWidget {
     }
   }
 
-  /// 根据设置中的语言配置解析 Locale
   Locale _resolveLocale(String? language) {
     switch (language) {
       case 'zh':
@@ -182,7 +166,6 @@ class AdvanceMediaKBApp extends StatelessWidget {
       case 'en':
         return const Locale('en');
       default:
-        // 跟随系统语言
         final systemLocale = WidgetsBinding.instance.platformDispatcher.locale;
         if (['zh', 'en'].contains(systemLocale.languageCode)) {
           return Locale(systemLocale.languageCode);
