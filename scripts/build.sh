@@ -50,6 +50,8 @@ RUST_LIB_NAME="advance_media_kb"
 RUST_SO="lib${RUST_LIB_NAME}.so"
 RUST_DLL="${RUST_LIB_NAME}.dll"
 RUST_DYLIB="lib${RUST_LIB_NAME}.dylib"
+CPP_NATIVE_DIR="native"
+CPP_BUILD_DIR="native/build"
 OUT_DIR="out"
 
 # NDK 配置
@@ -213,6 +215,52 @@ build_rust_lib() {
     ok "Rust 库构建完成: $rust_target"
 }
 
+# 构建 C++ 原生库
+build_cpp_lib() {
+    local target="${1:-linux-x64}"
+    info "构建 C++ 原生库: $target"
+
+    case "$target" in
+        linux-x64)
+            mkdir -p "$CPP_BUILD_DIR"
+            cmake -S "$CPP_NATIVE_DIR" -B "$CPP_BUILD_DIR" -DCMAKE_BUILD_TYPE=Release
+            cmake --build "$CPP_BUILD_DIR" -- -j$(nproc)
+            ok "C++ 库构建完成 (Linux x64)"
+            ;;
+        android-arm64)
+            if [ -z "$ANDROID_NDK_HOME" ] && [ -z "$NDK_BASE" ]; then
+                err "未设置 ANDROID_NDK_HOME 或 NDK_BASE"; return 1
+            fi
+            local ndk_root="${ANDROID_NDK_HOME:-/usr/lib/android-sdk/ndk/27.0.12077973}"
+            mkdir -p "$CPP_BUILD_DIR/android-arm64"
+            cmake -S "$CPP_NATIVE_DIR" -B "$CPP_BUILD_DIR/android-arm64" \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_TOOLCHAIN_FILE="$ndk_root/build/cmake/android.toolchain.cmake" \
+                -DANDROID_ABI=arm64-v8a \
+                -DANDROID_PLATFORM=android-21
+            cmake --build "$CPP_BUILD_DIR/android-arm64" -- -j$(nproc)
+            ok "C++ 库构建完成 (Android ARM64)"
+            ;;
+        android-x64)
+            if [ -z "$ANDROID_NDK_HOME" ] && [ -z "$NDK_BASE" ]; then
+                err "未设置 ANDROID_NDK_HOME 或 NDK_BASE"; return 1
+            fi
+            local ndk_root="${ANDROID_NDK_HOME:-/usr/lib/android-sdk/ndk/27.0.12077973}"
+            mkdir -p "$CPP_BUILD_DIR/android-x64"
+            cmake -S "$CPP_NATIVE_DIR" -B "$CPP_BUILD_DIR/android-x64" \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_TOOLCHAIN_FILE="$ndk_root/build/cmake/android.toolchain.cmake" \
+                -DANDROID_ABI=x86_64 \
+                -DANDROID_PLATFORM=android-21
+            cmake --build "$CPP_BUILD_DIR/android-x64" -- -j$(nproc)
+            ok "C++ 库构建完成 (Android x64)"
+            ;;
+        web)
+            info "Web 平台不需要 C++ 库"
+            ;;
+    esac
+}
+
 # 获取 Rust 库路径
 get_rust_lib_path() {
     local rust_target="$1"
@@ -337,6 +385,14 @@ build_target() {
             mkdir -p "$dest"
             cp "$(get_rust_lib_path "$rust_triple")/$RUST_SO" "$dest/"
             ok "预置 Rust 库到: $dest/$RUST_SO"
+
+            # 构建 C++ 原生库
+            build_cpp_lib "linux-x64"
+            # 拷贝 C++ 库到 Rust 同目录（供 Dart FFI 加载）
+            if [ -f "$CPP_BUILD_DIR/$RUST_SO" ]; then
+                cp "$CPP_BUILD_DIR/$RUST_SO" "$dest/"
+                ok "预置 C++ 库到: $dest/$RUST_SO"
+            fi
 
             # 构建 Flutter
             flutter build linux --release
