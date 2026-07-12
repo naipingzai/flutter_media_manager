@@ -1,7 +1,11 @@
+/// 文件坐标: lib/core/design_system/app_theme.dart
+/// 作用:     Material 3 设计系统常量与主题工厂
+/// 说明:     定义间距、尺寸、圆角、动画、色板、文本样式和完整 ThemeData。
+
 import 'package:flutter/material.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 
-/// 间距常量 - Material 3 4dp 网格
+/// 第 4 行: 间距常量 - Material 3 4dp 网格
 class AppSpacing {
   AppSpacing._();
 
@@ -138,7 +142,8 @@ class AppAnimation {
 
 /// 视频时长格式化 (兼容 BigInt/int)
 String formatDuration(Object milliseconds) {
-  final ms = (milliseconds is BigInt) ? milliseconds.toInt() : milliseconds as int;
+  final ms =
+      (milliseconds is BigInt) ? milliseconds.toInt() : milliseconds as int;
   final seconds = (ms / 1000).round();
   final minutes = seconds ~/ 60;
   final remainingSeconds = seconds % 60;
@@ -150,7 +155,8 @@ String formatFileSize(Object bytes) {
   final b = (bytes is BigInt) ? bytes.toInt() : bytes as int;
   if (b < 1024) return '$b B';
   if (b < 1024 * 1024) return '${(b / 1024).toStringAsFixed(1)} KB';
-  if (b < 1024 * 1024 * 1024) return '${(b / (1024 * 1024)).toStringAsFixed(1)} MB';
+  if (b < 1024 * 1024 * 1024)
+    return '${(b / (1024 * 1024)).toStringAsFixed(1)} MB';
   return '${(b / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
 }
 
@@ -309,7 +315,6 @@ class AppTheme {
     );
   }
 
-
   // ─── 完整 Typography（Material 3 类型尺度） ───
   static TextTheme textTheme(ColorScheme cs) {
     final base = Typography.material2021(platform: TargetPlatform.android);
@@ -360,8 +365,10 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.xxl),
         ),
-        titleTextStyle: tt.headlineSmall?.copyWith(color: colorScheme.onSurface),
-        contentTextStyle: tt.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+        titleTextStyle:
+            tt.headlineSmall?.copyWith(color: colorScheme.onSurface),
+        contentTextStyle:
+            tt.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
       ),
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: colorScheme.surfaceContainerLow,
@@ -372,7 +379,8 @@ class AppTheme {
         showDragHandle: true,
         dragHandleColor: colorScheme.onSurfaceVariant,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
         ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
@@ -382,8 +390,10 @@ class AppTheme {
         focusElevation: 3,
         hoverElevation: 4,
         highlightElevation: 4,
-        extendedTextStyle: tt.labelLarge?.copyWith(color: colorScheme.onPrimaryContainer),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
+        extendedTextStyle:
+            tt.labelLarge?.copyWith(color: colorScheme.onPrimaryContainer),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg)),
       ),
       chipTheme: ChipThemeData(
         backgroundColor: colorScheme.surfaceContainerLow,
@@ -391,7 +401,8 @@ class AppTheme {
         secondarySelectedColor: colorScheme.secondaryContainer,
         disabledColor: colorScheme.surfaceContainerLow.withValues(alpha: 0.38),
         labelStyle: tt.labelLarge?.copyWith(color: colorScheme.onSurface),
-        secondaryLabelStyle: tt.labelLarge?.copyWith(color: colorScheme.onSecondaryContainer),
+        secondaryLabelStyle:
+            tt.labelLarge?.copyWith(color: colorScheme.onSecondaryContainer),
         iconTheme: IconThemeData(color: colorScheme.onSurfaceVariant),
         deleteIconColor: colorScheme.onSurfaceVariant,
         checkmarkColor: colorScheme.onSecondaryContainer,
@@ -409,10 +420,12 @@ class AppTheme {
         iconColor: colorScheme.onSurfaceVariant,
         textColor: colorScheme.onSurface,
         titleTextStyle: tt.bodyLarge?.copyWith(color: colorScheme.onSurface),
-        subtitleTextStyle: tt.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+        subtitleTextStyle:
+            tt.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         minVerticalPadding: 8,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.full)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.full)),
         tileColor: Colors.transparent,
         selectedTileColor: colorScheme.secondaryContainer,
         selectedColor: colorScheme.onSecondaryContainer,
@@ -427,13 +440,15 @@ class AppTheme {
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return IconThemeData(color: colorScheme.onSecondaryContainer, size: 24);
+            return IconThemeData(
+                color: colorScheme.onSecondaryContainer, size: 24);
           }
           return IconThemeData(color: colorScheme.onSurfaceVariant, size: 24);
         }),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return tt.labelMedium?.copyWith(color: colorScheme.onSurface, fontWeight: FontWeight.w600);
+            return tt.labelMedium?.copyWith(
+                color: colorScheme.onSurface, fontWeight: FontWeight.w600);
           }
           return tt.labelMedium?.copyWith(color: colorScheme.onSurfaceVariant);
         }),
@@ -455,17 +470,21 @@ class AppTheme {
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         backgroundColor: colorScheme.inverseSurface,
-        contentTextStyle: tt.bodyMedium?.copyWith(color: colorScheme.onInverseSurface),
+        contentTextStyle:
+            tt.bodyMedium?.copyWith(color: colorScheme.onInverseSurface),
         actionTextColor: colorScheme.inversePrimary,
-        disabledActionTextColor: colorScheme.onInverseSurface.withValues(alpha: 0.38),
+        disabledActionTextColor:
+            colorScheme.onInverseSurface.withValues(alpha: 0.38),
         elevation: 3,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.sm)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.sm)),
         insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: colorScheme.surfaceContainerHighest,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         labelStyle: tt.bodyLarge?.copyWith(color: colorScheme.onSurfaceVariant),
         floatingLabelStyle: tt.bodyLarge?.copyWith(color: colorScheme.primary),
         hintStyle: tt.bodyLarge?.copyWith(color: colorScheme.onSurfaceVariant),
@@ -498,11 +517,13 @@ class AppTheme {
         thumbColor: colorScheme.primary,
         overlayColor: colorScheme.primary.withValues(alpha: 0.12),
         valueIndicatorColor: colorScheme.primary,
-        valueIndicatorTextStyle: tt.labelMedium?.copyWith(color: colorScheme.onPrimary),
+        valueIndicatorTextStyle:
+            tt.labelMedium?.copyWith(color: colorScheme.onPrimary),
       ),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return colorScheme.onPrimary;
+          if (states.contains(WidgetState.selected))
+            return colorScheme.onPrimary;
           return colorScheme.outline;
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
@@ -550,9 +571,11 @@ class AppTheme {
           }),
           textStyle: WidgetStateProperty.all(tt.labelLarge),
           shape: WidgetStateProperty.all(
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.full)),
+            RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.full)),
           ),
-          padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+          padding: WidgetStateProperty.all(
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
@@ -571,9 +594,11 @@ class AppTheme {
           }),
           textStyle: WidgetStateProperty.all(tt.labelLarge),
           shape: WidgetStateProperty.all(
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.full)),
+            RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.full)),
           ),
-          padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 24, vertical: 10)),
+          padding: WidgetStateProperty.all(
+              const EdgeInsets.symmetric(horizontal: 24, vertical: 10)),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -587,14 +612,17 @@ class AppTheme {
           textStyle: WidgetStateProperty.all(tt.labelLarge),
           side: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.disabled)) {
-              return BorderSide(color: colorScheme.onSurface.withValues(alpha: 0.12));
+              return BorderSide(
+                  color: colorScheme.onSurface.withValues(alpha: 0.12));
             }
             return BorderSide(color: colorScheme.outline);
           }),
           shape: WidgetStateProperty.all(
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.full)),
+            RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.full)),
           ),
-          padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 24, vertical: 10)),
+          padding: WidgetStateProperty.all(
+              const EdgeInsets.symmetric(horizontal: 24, vertical: 10)),
         ),
       ),
       navigationDrawerTheme: NavigationDrawerThemeData(
@@ -606,7 +634,9 @@ class AppTheme {
         ),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return tt.labelLarge?.copyWith(color: colorScheme.onSecondaryContainer, fontWeight: FontWeight.w600);
+            return tt.labelLarge?.copyWith(
+                color: colorScheme.onSecondaryContainer,
+                fontWeight: FontWeight.w600);
           }
           return tt.labelLarge?.copyWith(color: colorScheme.onSurfaceVariant);
         }),
@@ -630,17 +660,23 @@ class AppTheme {
         color: colorScheme.surfaceContainer,
         surfaceTintColor: colorScheme.surfaceTint,
         elevation: 3,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.sm)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.sm)),
         textStyle: tt.bodyMedium?.copyWith(color: colorScheme.onSurface),
-        labelTextStyle: WidgetStateProperty.all(tt.bodyMedium?.copyWith(color: colorScheme.onSurface)),
+        labelTextStyle: WidgetStateProperty.all(
+            tt.bodyMedium?.copyWith(color: colorScheme.onSurface)),
       ),
       searchBarTheme: SearchBarThemeData(
-        backgroundColor: WidgetStateProperty.all(colorScheme.surfaceContainerHigh),
+        backgroundColor:
+            WidgetStateProperty.all(colorScheme.surfaceContainerHigh),
         surfaceTintColor: WidgetStateProperty.all(colorScheme.surfaceTint),
         elevation: WidgetStateProperty.all(0),
-        textStyle: WidgetStateProperty.all(tt.bodyLarge?.copyWith(color: colorScheme.onSurface)),
-        hintStyle: WidgetStateProperty.all(tt.bodyLarge?.copyWith(color: colorScheme.onSurfaceVariant)),
-        padding: WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 16)),
+        textStyle: WidgetStateProperty.all(
+            tt.bodyLarge?.copyWith(color: colorScheme.onSurface)),
+        hintStyle: WidgetStateProperty.all(
+            tt.bodyLarge?.copyWith(color: colorScheme.onSurfaceVariant)),
+        padding:
+            WidgetStateProperty.all(const EdgeInsets.symmetric(horizontal: 16)),
         shape: WidgetStateProperty.all(
           RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.full),
@@ -653,23 +689,27 @@ class AppTheme {
         backgroundColor: colorScheme.surface,
         surfaceTintColor: colorScheme.surfaceTint,
         elevation: 3,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.xxl)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.xxl)),
         headerTextStyle: tt.labelLarge?.copyWith(color: colorScheme.onSurface),
       ),
       segmentedButtonTheme: SegmentedButtonThemeData(
         style: ButtonStyle(
           backgroundColor: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.selected)) return colorScheme.secondaryContainer;
+            if (states.contains(WidgetState.selected))
+              return colorScheme.secondaryContainer;
             return Colors.transparent;
           }),
           foregroundColor: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.selected)) return colorScheme.onSecondaryContainer;
+            if (states.contains(WidgetState.selected))
+              return colorScheme.onSecondaryContainer;
             return colorScheme.onSurface;
           }),
           textStyle: WidgetStateProperty.all(tt.labelLarge),
           side: WidgetStateProperty.all(BorderSide(color: colorScheme.outline)),
           shape: WidgetStateProperty.all(
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.full)),
+            RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.full)),
           ),
         ),
       ),

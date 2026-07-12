@@ -59,7 +59,8 @@ Future<bool> _ensureStoragePermission(BuildContext context) async {
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         title: Text(AppLocalizations.of(context).needStoragePermission),
-        content: Text(AppLocalizations.of(context).manageAllFilesPermissionDesc),
+        content:
+            Text(AppLocalizations.of(context).manageAllFilesPermissionDesc),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -146,7 +147,8 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
     // 自动滚动面包屑到末尾
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_breadcrumbScrollController.hasClients) {
-        _breadcrumbScrollController.jumpTo(_breadcrumbScrollController.position.maxScrollExtent);
+        _breadcrumbScrollController
+            .jumpTo(_breadcrumbScrollController.position.maxScrollExtent);
       }
     });
   }
@@ -175,16 +177,20 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
 
       for (final e in entities) {
         try {
-          if (e is Directory) dirs.add(e);
+          if (e is Directory)
+            dirs.add(e);
           else if (e is File) fils.add(e);
         } catch (_) {}
       }
 
       if (_sortBy == 'name') {
-        dirs.sort((a, b) => a.path.toLowerCase().compareTo(b.path.toLowerCase()));
-        fils.sort((a, b) => a.path.toLowerCase().compareTo(b.path.toLowerCase()));
+        dirs.sort(
+            (a, b) => a.path.toLowerCase().compareTo(b.path.toLowerCase()));
+        fils.sort(
+            (a, b) => a.path.toLowerCase().compareTo(b.path.toLowerCase()));
       } else {
-        dirs.sort((a, b) => a.path.toLowerCase().compareTo(b.path.toLowerCase()));
+        dirs.sort(
+            (a, b) => a.path.toLowerCase().compareTo(b.path.toLowerCase()));
         fils.sort((a, b) {
           final ea = a.path.split('.').last.toLowerCase();
           final eb = b.path.split('.').last.toLowerCase();
@@ -212,11 +218,15 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
   IconData _icon(FileSystemEntity e) {
     if (e is Directory) return Icons.folder;
     final ext = _ext(e.path);
-    if (['jpg','jpeg','png','gif','webp','bmp','heic','heif'].contains(ext)) return Icons.image;
-    if (['mp4','mkv','avi','mov','webm','flv'].contains(ext)) return Icons.videocam;
-    if (['mp3','wav','flac','aac','ogg'].contains(ext)) return Icons.audiotrack;
-    if (['pdf','doc','docx','txt','md','epub'].contains(ext)) return Icons.description;
-    if (['zip','rar','7z','tar','gz'].contains(ext)) return Icons.archive;
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic', 'heif']
+        .contains(ext)) return Icons.image;
+    if (['mp4', 'mkv', 'avi', 'mov', 'webm', 'flv'].contains(ext))
+      return Icons.videocam;
+    if (['mp3', 'wav', 'flac', 'aac', 'ogg'].contains(ext))
+      return Icons.audiotrack;
+    if (['pdf', 'doc', 'docx', 'txt', 'md', 'epub'].contains(ext))
+      return Icons.description;
+    if (['zip', 'rar', '7z', 'tar', 'gz'].contains(ext)) return Icons.archive;
     return Icons.insert_drive_file;
   }
 
@@ -231,25 +241,35 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
       final isLast = i == parts.length - 1;
       chips.add(Padding(
         padding: const EdgeInsets.symmetric(horizontal: 2),
-        child: Icon(Icons.chevron_right, size: 14, color: isLast ? Theme.of(context).colorScheme.primary : Colors.grey),
+        child: Icon(Icons.chevron_right,
+            size: 14,
+            color:
+                isLast ? Theme.of(context).colorScheme.primary : Colors.grey),
       ));
       chips.add(
         InkWell(
-          onTap: isLast ? null : () => _navigateTo(p, AppLocalizations.of(context)),
+          onTap: isLast
+              ? null
+              : () => _navigateTo(p, AppLocalizations.of(context)),
           borderRadius: BorderRadius.circular(16),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: isLast ? Theme.of(context).colorScheme.primaryContainer : Theme.of(context).colorScheme.surface,
+              color: isLast
+                  ? Theme.of(context).colorScheme.primaryContainer
+                  : Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+              border: Border.all(
+                  color: Theme.of(context).colorScheme.outlineVariant),
             ),
             child: Text(
               parts[i],
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: isLast ? FontWeight.bold : FontWeight.w500,
-                color: isLast ? Theme.of(context).colorScheme.onPrimaryContainer : Theme.of(context).colorScheme.onSurface,
+                color: isLast
+                    ? Theme.of(context).colorScheme.onPrimaryContainer
+                    : Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ),
@@ -275,7 +295,8 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Chip(
-                avatar: Icon(Icons.check, size: 16, color: theme.colorScheme.onPrimaryContainer),
+                avatar: Icon(Icons.check,
+                    size: 16, color: theme.colorScheme.onPrimaryContainer),
                 label: Text('${_selected.length}'),
                 backgroundColor: theme.colorScheme.primaryContainer,
               ),
@@ -287,19 +308,26 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
               _loadDir(_currentPath, AppLocalizations.of(context));
             },
             itemBuilder: (_) => [
-              PopupMenuItem(value: 'name', child: Row(children: [
-                if (_sortBy == 'name') const Icon(Icons.check, size: 18),
-                const SizedBox(width: 8), Text(AppLocalizations.of(context).sortByName),
-              ])),
-              PopupMenuItem(value: 'type', child: Row(children: [
-                if (_sortBy == 'type') const Icon(Icons.check, size: 18),
-                const SizedBox(width: 8), Text(AppLocalizations.of(context).sortByType),
-              ])),
+              PopupMenuItem(
+                  value: 'name',
+                  child: Row(children: [
+                    if (_sortBy == 'name') const Icon(Icons.check, size: 18),
+                    const SizedBox(width: 8),
+                    Text(AppLocalizations.of(context).sortByName),
+                  ])),
+              PopupMenuItem(
+                  value: 'type',
+                  child: Row(children: [
+                    if (_sortBy == 'type') const Icon(Icons.check, size: 18),
+                    const SizedBox(width: 8),
+                    Text(AppLocalizations.of(context).sortByType),
+                  ])),
             ],
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () => _loadDir(_currentPath, AppLocalizations.of(context)),
+            onPressed: () =>
+                _loadDir(_currentPath, AppLocalizations.of(context)),
           ),
         ],
         shape: const RoundedRectangleBorder(
@@ -311,7 +339,8 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
           // 面包屑导航栏
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            color: theme.colorScheme.surfaceContainerHighest
+                .withValues(alpha: 0.3),
             child: SingleChildScrollView(
               controller: _breadcrumbScrollController,
               scrollDirection: Axis.horizontal,
@@ -321,7 +350,8 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
                     icon: Icons.home,
                     label: AppLocalizations.of(context).internalStorage,
                     isActive: _pathHistory.length <= 1,
-                    onTap: () => _navigateTo(_homePath, AppLocalizations.of(context)),
+                    onTap: () =>
+                        _navigateTo(_homePath, AppLocalizations.of(context)),
                   ),
                   ..._breadcrumbs(),
                   if (_pathHistory.length > 1) ...[
@@ -357,11 +387,14 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
                 flex: 2,
                 child: FilledButton.icon(
                   icon: const Icon(Icons.file_upload, size: 18),
-                  onPressed: _selected.isEmpty ? null : () {
-                    final paths = _selected.toList();
-                    Navigator.pop(context, paths);
-                  },
-                  label: Text(AppLocalizations.of(context).importSelectedWithCount(_selected.length)),
+                  onPressed: _selected.isEmpty
+                      ? null
+                      : () {
+                          final paths = _selected.toList();
+                          Navigator.pop(context, paths);
+                        },
+                  label: Text(AppLocalizations.of(context)
+                      .importSelectedWithCount(_selected.length)),
                 ),
               ),
             ],
@@ -387,7 +420,8 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
               Text(_error!, textAlign: TextAlign.center),
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: () => _navigateTo(_homePath, AppLocalizations.of(context)),
+                onPressed: () =>
+                    _navigateTo(_homePath, AppLocalizations.of(context)),
                 child: Text(AppLocalizations.of(context).backToHome),
               ),
             ],
@@ -402,7 +436,8 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
           children: [
             const Icon(Icons.folder_off, size: 64, color: Colors.grey),
             const SizedBox(height: 16),
-            Text(AppLocalizations.of(context).noFiles, style: const TextStyle(fontSize: 16, color: Colors.grey)),
+            Text(AppLocalizations.of(context).noFiles,
+                style: const TextStyle(fontSize: 16, color: Colors.grey)),
           ],
         ),
       );
@@ -418,17 +453,33 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
         final sel = _selected.contains(path);
 
         return ListTile(
-          leading: Icon(_icon(e), color: isDir ? Colors.amber.shade700 : (sel ? theme.colorScheme.primary : Colors.grey), size: 28),
-          title: Text(name, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14)),
-          subtitle: isDir ? null : Text(_ext(path).toUpperCase(), style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
-          trailing: isDir ? const Icon(Icons.chevron_right) : Icon(sel ? Icons.check_circle : Icons.circle_outlined, color: sel ? theme.colorScheme.primary : Colors.grey.shade400),
+          leading: Icon(_icon(e),
+              color: isDir
+                  ? Colors.amber.shade700
+                  : (sel ? theme.colorScheme.primary : Colors.grey),
+              size: 28),
+          title: Text(name,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 14)),
+          subtitle: isDir
+              ? null
+              : Text(_ext(path).toUpperCase(),
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+          trailing: isDir
+              ? const Icon(Icons.chevron_right)
+              : Icon(sel ? Icons.check_circle : Icons.circle_outlined,
+                  color:
+                      sel ? theme.colorScheme.primary : Colors.grey.shade400),
           selected: sel,
           onTap: () {
             if (isDir) {
               _navigateTo(path, AppLocalizations.of(context));
             } else {
               setState(() {
-                if (sel) _selected.remove(path); else _selected.add(path);
+                if (sel)
+                  _selected.remove(path);
+                else
+                  _selected.add(path);
               });
             }
           },
@@ -502,7 +553,8 @@ class _DirectoryPickerPageState extends State<DirectoryPickerPage> {
     _loadDir(path, loc);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_breadcrumbScrollController.hasClients) {
-        _breadcrumbScrollController.jumpTo(_breadcrumbScrollController.position.maxScrollExtent);
+        _breadcrumbScrollController
+            .jumpTo(_breadcrumbScrollController.position.maxScrollExtent);
       }
     });
   }
@@ -557,25 +609,35 @@ class _DirectoryPickerPageState extends State<DirectoryPickerPage> {
       final isLast = i == parts.length - 1;
       chips.add(Padding(
         padding: const EdgeInsets.symmetric(horizontal: 2),
-        child: Icon(Icons.chevron_right, size: 14, color: isLast ? Theme.of(context).colorScheme.primary : Colors.grey),
+        child: Icon(Icons.chevron_right,
+            size: 14,
+            color:
+                isLast ? Theme.of(context).colorScheme.primary : Colors.grey),
       ));
       chips.add(
         InkWell(
-          onTap: isLast ? null : () => _navigateTo(p, AppLocalizations.of(context)),
+          onTap: isLast
+              ? null
+              : () => _navigateTo(p, AppLocalizations.of(context)),
           borderRadius: BorderRadius.circular(16),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: isLast ? Theme.of(context).colorScheme.primaryContainer : Theme.of(context).colorScheme.surface,
+              color: isLast
+                  ? Theme.of(context).colorScheme.primaryContainer
+                  : Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+              border: Border.all(
+                  color: Theme.of(context).colorScheme.outlineVariant),
             ),
             child: Text(
               parts[i],
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: isLast ? FontWeight.bold : FontWeight.w500,
-                color: isLast ? Theme.of(context).colorScheme.onPrimaryContainer : Theme.of(context).colorScheme.onSurface,
+                color: isLast
+                    ? Theme.of(context).colorScheme.onPrimaryContainer
+                    : Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ),
@@ -605,7 +667,8 @@ class _DirectoryPickerPageState extends State<DirectoryPickerPage> {
           // 面包屑导航栏
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            color: theme.colorScheme.surfaceContainerHighest
+                .withValues(alpha: 0.3),
             child: SingleChildScrollView(
               controller: _breadcrumbScrollController,
               scrollDirection: Axis.horizontal,
@@ -615,7 +678,8 @@ class _DirectoryPickerPageState extends State<DirectoryPickerPage> {
                     icon: Icons.home,
                     label: AppLocalizations.of(context).internalStorage,
                     isActive: _pathHistory.length <= 1,
-                    onTap: () => _navigateTo(_homePath, AppLocalizations.of(context)),
+                    onTap: () =>
+                        _navigateTo(_homePath, AppLocalizations.of(context)),
                   ),
                   ..._breadcrumbs(),
                   if (_pathHistory.length > 1) ...[
@@ -673,7 +737,8 @@ class _DirectoryPickerPageState extends State<DirectoryPickerPage> {
               Text(_error!, textAlign: TextAlign.center),
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: () => _navigateTo(_homePath, AppLocalizations.of(context)),
+                onPressed: () =>
+                    _navigateTo(_homePath, AppLocalizations.of(context)),
                 child: Text(AppLocalizations.of(context).backToHome),
               ),
             ],
@@ -688,7 +753,8 @@ class _DirectoryPickerPageState extends State<DirectoryPickerPage> {
           children: [
             const Icon(Icons.folder_off, size: 64, color: Colors.grey),
             const SizedBox(height: 16),
-            Text(AppLocalizations.of(context).noSubfolders, style: const TextStyle(fontSize: 16, color: Colors.grey)),
+            Text(AppLocalizations.of(context).noSubfolders,
+                style: const TextStyle(fontSize: 16, color: Colors.grey)),
           ],
         ),
       );
@@ -701,7 +767,9 @@ class _DirectoryPickerPageState extends State<DirectoryPickerPage> {
         final name = dir.path.split('/').last;
         return ListTile(
           leading: Icon(Icons.folder, color: Colors.amber.shade700, size: 28),
-          title: Text(name, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14)),
+          title: Text(name,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 14)),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => _navigateTo(dir.path, AppLocalizations.of(context)),
         );
@@ -742,7 +810,10 @@ class _BreadcrumbChip extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 14, color: isActive ? cs.onPrimaryContainer : cs.onSurfaceVariant),
+              Icon(icon,
+                  size: 14,
+                  color:
+                      isActive ? cs.onPrimaryContainer : cs.onSurfaceVariant),
               const SizedBox(width: 4),
               Text(
                 label,

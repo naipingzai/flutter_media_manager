@@ -1,17 +1,57 @@
-# advance_media_kb
+# Flutter Media Knowledge Base
 
-A new Flutter project.
+跨平台多媒体文件管理应用（Flutter + C++ FFI + SQLite3）。
 
-## Getting Started
+支持 Linux 桌面和 Android 移动端。使用 C++ 原生层通过 SQLite3 管理本地数据库，并通过 Dart FFI 与 Flutter 交互。
 
-This project is a starting point for a Flutter application.
+## 主要功能
 
-A few resources to get you started if this is your first Flutter project:
+- 多媒体文件导入与管理
+- 相册管理
+- 标签层级管理
+- 富文本笔记
+- 高级搜索与过滤
+- 图片、视频、音频预览
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## 技术栈
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- **Flutter 3.x** / Dart 3.x
+- **C++ 17** 原生层
+- **SQLite3** 单文件数据库
+- **Dart FFI** 调用原生库
+- **BLoC** 状态管理
+- **Material 3** 设计系统
+
+## 快速构建
+
+```bash
+# Linux 桌面
+./scripts/build.sh linux-x64
+
+# Android APK
+./scripts/build.sh android-arm64
+```
+
+更多详细说明请查看 [BUILD.md](BUILD.md)。
+
+## 项目目录
+
+```text
+lib/
+├── bridge/native/    # Dart FFI 桥接
+├── core/             # 主题、导航、国际化、权限
+├── functionality/    # BLoC 状态管理
+├── ui/               # 页面和 Widget
+main.dart
+
+native/
+├── src/
+│   ├── db/database.h      # C++ 数据模型与数据库接口
+│   ├── db/database.cpp    # SQLite3 实现
+│   └── ffi_bridge.cpp     # C ABI 导出层
+└── third_party/sqlite3.c  # SQLite3 单文件合并
+```
+
+## 许可证
+
+MIT

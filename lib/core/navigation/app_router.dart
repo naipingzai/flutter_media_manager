@@ -4,7 +4,8 @@ import 'package:flutter_media_knowledge_base/ui/home/home_screen.dart';
 import 'package:flutter_media_knowledge_base/ui/search/search_screen.dart';
 import 'package:flutter_media_knowledge_base/ui/settings/settings_screen.dart';
 import 'package:flutter_media_knowledge_base/ui/viewer/viewer_page.dart';
-import 'package:flutter_media_knowledge_base/bridge/native/api/media.dart' as media_api;
+import 'package:flutter_media_knowledge_base/bridge/native/api/media.dart'
+    as media_api;
 
 /// Skill-09: 应用壳与导航规范
 /// 覆盖层路由管理器 - 非主页面以卡片覆盖层/全屏覆盖层形式呈现
@@ -97,7 +98,8 @@ Route<dynamic>? generateRoute(RouteSettings settings) {
 }
 
 /// 内部辅助：全屏覆盖层
-Route<T> _buildFullScreenOverlayRoute<T>(Widget page, {bool fullscreenDialog = false}) {
+Route<T> _buildFullScreenOverlayRoute<T>(Widget page,
+    {bool fullscreenDialog = false}) {
   return PageRouteBuilder<T>(
     fullscreenDialog: fullscreenDialog,
     transitionDuration: AppAnimation.overlaySlideIn,

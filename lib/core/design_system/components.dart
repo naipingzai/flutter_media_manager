@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'app_theme.dart';
 import '../i18n/app_localizations.dart' hide AppLocalizations;
 
-/// Material 3 横向滚动面包屑导航栏
-class BreadcrumbBar extends StatelessWidget {
+/// Material 3 横向滚动面包屑导航栏 - 自动滚动到最新层级
+class BreadcrumbBar extends StatefulWidget {
   final List<BreadcrumbNode> nodes;
   final ValueChanged<int>? onTap;
 
@@ -14,62 +14,116 @@ class BreadcrumbBar extends StatelessWidget {
   });
 
   @override
+  State<BreadcrumbBar> createState() => _BreadcrumbBarState();
+}
+
+class _BreadcrumbBarState extends State<BreadcrumbBar> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void didUpdateWidget(BreadcrumbBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.nodes.length != oldWidget.nodes.length) {
+      // 层级变化时自动滚动到末尾
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToEnd();
+      });
+    }
+  }
+
+  void _scrollToEnd() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
     return Container(
-      height: AppSize.chipHeight + AppSpacing.sm * 2,
+      height: 44,
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
         border: Border(
           bottom: BorderSide(color: cs.outlineVariant, width: 0.5),
         ),
       ),
-      child: ListView.separated(
+      child: ListView.builder(
+        controller: _scrollController,
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
-        itemCount: nodes.length * 2 - 1,
-        separatorBuilder: (_, __) => Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-          child:
-              Icon(Icons.chevron_right, size: 16, color: cs.onSurfaceVariant),
-        ),
+            horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+        itemCount: widget.nodes.length * 2 - 1,
         itemBuilder: (context, index) {
-          if (index.isOdd) return const SizedBox.shrink();
+          if (index.isOdd) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxs),
+              child: Icon(Icons.chevron_right,
+                  size: 18, color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
+            );
+          }
           final nodeIndex = index ~/ 2;
-          final node = nodes[nodeIndex];
-          final isLast = nodeIndex == nodes.length - 1;
+          final node = widget.nodes[nodeIndex];
+          final isLast = nodeIndex == widget.nodes.length - 1;
+          final isFirst = nodeIndex == 0;
 
-          return InkWell(
-            onTap: isLast ? null : () => onTap?.call(nodeIndex),
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    node.icon ??
-                        (nodeIndex == 0
-                            ? Icons.home_rounded
-                            : Icons.label_rounded),
-                    size: 16,
-                    color: isLast ? cs.primary : cs.onSurfaceVariant,
+          return Center(
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: isLast ? null : () => widget.onTap?.call(nodeIndex),
+                borderRadius: BorderRadius.circular(AppRadius.full),
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isFirst ? AppSpacing.sm : AppSpacing.sm,
+                    vertical: AppSpacing.xs,
                   ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Text(
-                    node.label,
-                    style: tt.labelMedium?.copyWith(
-                      color: isLast ? cs.primary : cs.onSurfaceVariant,
-                      fontWeight: isLast ? FontWeight.w600 : FontWeight.w400,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  decoration: isLast
+                      ? BoxDecoration(
+                          color: cs.primaryContainer,
+                          borderRadius: BorderRadius.circular(AppRadius.full),
+                        )
+                      : null,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isFirst)
+                        Padding(
+                          padding: const EdgeInsets.only(right: AppSpacing.xs),
+                          child: Icon(
+                            node.icon ?? Icons.home_rounded,
+                            size: 16,
+                            color: isLast
+                                ? cs.onPrimaryContainer
+                                : cs.onSurfaceVariant,
+                          ),
+                        ),
+                      Text(
+                        node.label,
+                        style: tt.labelMedium?.copyWith(
+                          color: isLast
+                              ? cs.onPrimaryContainer
+                              : cs.onSurfaceVariant,
+                          fontWeight:
+                              isLast ? FontWeight.w600 : FontWeight.w400,
+                        ),
+                        maxLines: 1,
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           );

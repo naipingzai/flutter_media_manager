@@ -345,14 +345,10 @@ class _TagScreenState extends State<TagScreen> {
                   return _TagCard(
                     tagInfo: tagInfo,
                     onTap: () {
-                      if (tagInfo.hasChildren != 0) {
-                        context.read<TagBloc>().add(
-                              TagNavigateToEvent(tagInfo.tag.id),
-                            );
-                      } else {
-                        // 没有子标签，显示该标签关联的媒体
-                        _showTagMedia(context, tagInfo.tag.id);
-                      }
+                      // 点击标签：先尝试进入子标签，如果没有子标签则显示关联媒体
+                      context.read<TagBloc>().add(
+                            TagNavigateToEvent(tagInfo.tag.id),
+                          );
                     },
                     onLongPress: () => _showTagActions(context, tagInfo),
                   );

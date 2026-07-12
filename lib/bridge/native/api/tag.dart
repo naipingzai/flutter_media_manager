@@ -12,11 +12,28 @@ Future<List<Tag>> getAllTags() async {
 }
 
 Future<List<TagWithInfo>> getRootTags() async {
-  return [];
+  return TagFfi.instance
+      .getRootTags()
+      .map((d) => TagWithInfo(
+            tag: Tag(id: d.id, name: d.name, color: d.color, createdAt: 0),
+            mediaCount: 0,
+          ))
+      .toList();
 }
 
 Future<List<TagWithInfo>> getChildTags({required String parentId}) async {
-  return [];
+  return TagFfi.instance
+      .getChildTags(parentId)
+      .map((d) => TagWithInfo(
+            tag: Tag(
+                id: d.id,
+                name: d.name,
+                color: d.color,
+                parentId: parentId,
+                createdAt: 0),
+            mediaCount: 0,
+          ))
+      .toList();
 }
 
 Future<String> createTag(
@@ -32,9 +49,13 @@ Future<void> renameTag({required String id, required String newName}) async {
   TagFfi.instance.renameTag(id, newName);
 }
 
-Future<void> updateTagColor(
-    {required String id, required String color}) async {}
-Future<void> updateTagParent({required String id, String? parentId}) async {}
+Future<void> updateTagColor({required String id, required String color}) async {
+  TagFfi.instance.updateTagColor(id, color);
+}
+
+Future<void> updateTagParent({required String id, String? parentId}) async {
+  TagFfi.instance.updateTagParent(id, parentId);
+}
 
 Future<void> addTagToMedia(
     {required String mediaId, required String tagId}) async {
@@ -53,16 +74,47 @@ Future<List<Tag>> getMediaTags({required String mediaId}) async {
       .toList();
 }
 
-Future<List<MediaItem>> getMediaByTagsAnd({required List<String> tagIds}) async {
-  // FFI doesn't support complex tag queries yet, return empty
+Future<List<MediaItem>> getMediaByTagsAnd(
+    {required List<String> tagIds}) async {
   return [];
 }
 
 Future<List<MediaItem>> getMediaByTagsOr({required List<String> tagIds}) async {
-  // FFI doesn't support complex tag queries yet, return empty
-  return [];
+  final items = TagFfi.instance.getMediaByTagsOr(tagIds);
+  return items.map((d) {
+    MediaType mt;
+    switch (d.type) {
+      case 'image':
+        mt = MediaType.image;
+        break;
+      case 'video':
+        mt = MediaType.video;
+        break;
+      case 'audio':
+        mt = MediaType.audio;
+        break;
+      case 'document':
+        mt = MediaType.document;
+        break;
+      default:
+        mt = MediaType.other;
+    }
+    return MediaItem(
+      id: d.id,
+      originalName: d.name,
+      storageName: '',
+      filePath: d.path,
+      thumbnailPath: d.thumbPath,
+      mediaType: mt,
+      mimeType: '',
+      size: d.size,
+      sha256Hash: '',
+      createdAt: 0,
+      updatedAt: 0,
+    );
+  }).toList();
 }
 
 Future<List<MediaItem>> getMediaByTag({required String tagId}) async {
-  return getMediaByTagsAnd(tagIds: [tagId]);
+  return getMediaByTagsOr(tagIds: [tagId]);
 }

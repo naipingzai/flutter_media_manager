@@ -19,7 +19,6 @@ import 'package:flutter_media_knowledge_base/ui/settings/settings_screen.dart';
 import '../../functionality/media/media_bloc.dart';
 import 'package:flutter_media_knowledge_base/functionality/home/app_bloc.dart';
 
-
 class MediaScreen extends StatefulWidget {
   const MediaScreen({super.key});
   @override
@@ -42,7 +41,9 @@ class _MediaScreenState extends State<MediaScreen> {
           onPopInvoked: (didPop) {
             if (!didPop && state.isSelectionMode) {
               context.read<MediaBloc>().add(const MediaClearSelectionEvent());
-              context.read<MediaBloc>().add(const MediaToggleSelectionModeEvent());
+              context
+                  .read<MediaBloc>()
+                  .add(const MediaToggleSelectionModeEvent());
             }
           },
           child: Scaffold(
@@ -58,19 +59,33 @@ class _MediaScreenState extends State<MediaScreen> {
                   tooltip: AppLocalizations.of(context).sort,
                   onSelected: (val) {
                     final parts = val.split(':');
-                    final field = SortField.values.firstWhere((f) => f.name == parts[0]);
-                    final order = SortOrder.values.firstWhere((o) => o.name == parts[1]);
+                    final field =
+                        SortField.values.firstWhere((f) => f.name == parts[0]);
+                    final order =
+                        SortOrder.values.firstWhere((o) => o.name == parts[1]);
                     context.read<MediaBloc>().add(MediaSortEvent(field, order));
                   },
                   itemBuilder: (_) {
                     final loc = AppLocalizations.of(context);
                     return [
-                      PopupMenuItem(value: 'date:descending', child: Text(loc.sortNewestFirst)),
-                      PopupMenuItem(value: 'date:ascending', child: Text(loc.sortOldestFirst)),
-                      PopupMenuItem(value: 'name:ascending', child: Text(loc.sortNameAsc)),
-                      PopupMenuItem(value: 'name:descending', child: Text(loc.sortNameDesc)),
-                      PopupMenuItem(value: 'size:descending', child: Text(loc.sortSizeDesc)),
-                      PopupMenuItem(value: 'size:ascending', child: Text(loc.sortSizeAsc)),
+                      PopupMenuItem(
+                          value: 'date:descending',
+                          child: Text(loc.sortNewestFirst)),
+                      PopupMenuItem(
+                          value: 'date:ascending',
+                          child: Text(loc.sortOldestFirst)),
+                      PopupMenuItem(
+                          value: 'name:ascending',
+                          child: Text(loc.sortNameAsc)),
+                      PopupMenuItem(
+                          value: 'name:descending',
+                          child: Text(loc.sortNameDesc)),
+                      PopupMenuItem(
+                          value: 'size:descending',
+                          child: Text(loc.sortSizeDesc)),
+                      PopupMenuItem(
+                          value: 'size:ascending',
+                          child: Text(loc.sortSizeAsc)),
                     ];
                   },
                 ),
@@ -113,7 +128,8 @@ class _MediaScreenState extends State<MediaScreen> {
   /// 将“全部/图片/视频/有标签/无标签/有相册/无相册”收敛到右上角按钮。
   Widget _buildFilterMenuButton(BuildContext context, MediaState state) {
     final loc = AppLocalizations.of(context);
-    final isFiltered = state.currentFilter != null || state.currentFilterMode != null;
+    final isFiltered =
+        state.currentFilter != null || state.currentFilterMode != null;
 
     return PopupMenuButton<String>(
       icon: Badge(
@@ -122,7 +138,8 @@ class _MediaScreenState extends State<MediaScreen> {
         child: const Icon(Icons.filter_list),
       ),
       tooltip: loc.filter,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg)),
       position: PopupMenuPosition.under,
       onSelected: (value) {
         final bloc = context.read<MediaBloc>();
@@ -141,13 +158,15 @@ class _MediaScreenState extends State<MediaScreen> {
             bloc.add(const MediaFilterByFilterModeEvent(FilterMode.withTags));
             break;
           case 'withoutTags':
-            bloc.add(const MediaFilterByFilterModeEvent(FilterMode.withoutTags));
+            bloc.add(
+                const MediaFilterByFilterModeEvent(FilterMode.withoutTags));
             break;
           case 'withAlbums':
             bloc.add(const MediaFilterByFilterModeEvent(FilterMode.withAlbums));
             break;
           case 'withoutAlbums':
-            bloc.add(const MediaFilterByFilterModeEvent(FilterMode.withoutAlbums));
+            bloc.add(
+                const MediaFilterByFilterModeEvent(FilterMode.withoutAlbums));
             break;
         }
       },
@@ -155,7 +174,8 @@ class _MediaScreenState extends State<MediaScreen> {
         return [
           CheckedPopupMenuItem(
             value: 'all',
-            checked: state.currentFilter == null && state.currentFilterMode == null,
+            checked:
+                state.currentFilter == null && state.currentFilterMode == null,
             child: Text(loc.filterAll),
           ),
           const PopupMenuDivider(),
@@ -195,7 +215,6 @@ class _MediaScreenState extends State<MediaScreen> {
     );
   }
 
-
   /// 判断当前过滤结果是否已全部选中
   bool _isAllSelected(MediaState state) {
     if (state.filteredList.isEmpty) return false;
@@ -214,9 +233,12 @@ class _MediaScreenState extends State<MediaScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline, size: AppSize.iconXLarge, color: Theme.of(context).colorScheme.error),
+              Icon(Icons.error_outline,
+                  size: AppSize.iconXLarge,
+                  color: Theme.of(context).colorScheme.error),
               const SizedBox(height: AppSpacing.md),
-              Text('${AppLocalizations.of(context).error}: ${state.errorMessage ?? AppLocalizations.of(context).unknown}',
+              Text(
+                  '${AppLocalizations.of(context).error}: ${state.errorMessage ?? AppLocalizations.of(context).unknown}',
                   textAlign: TextAlign.center),
               const SizedBox(height: AppSpacing.md),
               ElevatedButton(
@@ -235,7 +257,8 @@ class _MediaScreenState extends State<MediaScreen> {
           mediaList: state.filteredList,
           selectedIds: state.selectedMediaIds,
           isSelectionMode: state.isSelectionMode,
-          crossAxisCount: context.read<AppBloc>().state.settings?.gridColumns ?? 3,
+          crossAxisCount:
+              context.watch<AppBloc>().state.settings?.gridColumns ?? 3,
         );
     }
   }
@@ -263,26 +286,35 @@ class _MediaScreenState extends State<MediaScreen> {
       decoration: BoxDecoration(
         color: cs.surface,
         boxShadow: [
-          BoxShadow(color: cs.scrim.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, -2)),
+          BoxShadow(
+              color: cs.scrim.withValues(alpha: 0.1),
+              blurRadius: 8,
+              offset: const Offset(0, -2)),
         ],
       ),
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
           child: Row(
             children: [
               IconButton(
                 icon: const Icon(Icons.close),
                 tooltip: loc.cancel,
                 onPressed: () {
-                  context.read<MediaBloc>().add(const MediaClearSelectionEvent());
-                  context.read<MediaBloc>().add(const MediaToggleSelectionModeEvent());
+                  context
+                      .read<MediaBloc>()
+                      .add(const MediaClearSelectionEvent());
+                  context
+                      .read<MediaBloc>()
+                      .add(const MediaToggleSelectionModeEvent());
                 },
               ),
               const SizedBox(width: AppSpacing.sm),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: cs.primaryContainer,
                   borderRadius: BorderRadius.circular(AppRadius.full),
@@ -294,12 +326,10 @@ class _MediaScreenState extends State<MediaScreen> {
               ),
               const Spacer(),
               IconButton(
-                icon: Icon(_isAllSelected(state)
-                    ? Icons.deselect
-                    : Icons.select_all),
-                tooltip: _isAllSelected(state)
-                    ? loc.deselectAll
-                    : loc.selectAll,
+                icon: Icon(
+                    _isAllSelected(state) ? Icons.deselect : Icons.select_all),
+                tooltip:
+                    _isAllSelected(state) ? loc.deselectAll : loc.selectAll,
                 onPressed: state.filteredList.isEmpty
                     ? null
                     : () => context
@@ -309,17 +339,23 @@ class _MediaScreenState extends State<MediaScreen> {
               IconButton(
                 icon: Icon(Icons.delete_outline, color: cs.error),
                 tooltip: loc.delete,
-                onPressed: selectedCount > 0 ? () => _batchDelete(context, state.selectedMediaIds) : null,
+                onPressed: selectedCount > 0
+                    ? () => _batchDelete(context, state.selectedMediaIds)
+                    : null,
               ),
               IconButton(
                 icon: const Icon(Icons.label_outline),
                 tooltip: loc.addTag,
-                onPressed: selectedCount > 0 ? () => _batchAddTags(context, state.selectedMediaIds) : null,
+                onPressed: selectedCount > 0
+                    ? () => _batchAddTags(context, state.selectedMediaIds)
+                    : null,
               ),
               IconButton(
                 icon: const Icon(Icons.photo_album_outlined),
                 tooltip: loc.addToAlbum,
-                onPressed: selectedCount > 0 ? () => _batchAddToAlbum(context, state.selectedMediaIds) : null,
+                onPressed: selectedCount > 0
+                    ? () => _batchAddToAlbum(context, state.selectedMediaIds)
+                    : null,
               ),
             ],
           ),
@@ -345,9 +381,11 @@ class _MediaScreenState extends State<MediaScreen> {
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: Row(
                 children: [
-                  Icon(Icons.file_download, color: Theme.of(ctx).colorScheme.primary),
+                  Icon(Icons.file_download,
+                      color: Theme.of(ctx).colorScheme.primary),
                   const SizedBox(width: 12),
-                  Text(loc.importMedia, style: Theme.of(ctx).textTheme.titleMedium),
+                  Text(loc.importMedia,
+                      style: Theme.of(ctx).textTheme.titleMedium),
                 ],
               ),
             ),
@@ -395,14 +433,36 @@ class _MediaScreenState extends State<MediaScreen> {
     // 递归扫描目录中的媒体文件
     final mediaFiles = <File>[];
     final mediaExtensions = {
-      'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic', 'heif',
-      'mp4', 'mkv', 'avi', 'mov', 'webm', 'flv',
-      'mp3', 'wav', 'flac', 'aac', 'ogg',
-      'pdf', 'doc', 'docx', 'txt', 'md', 'epub',
+      'jpg',
+      'jpeg',
+      'png',
+      'gif',
+      'webp',
+      'bmp',
+      'heic',
+      'heif',
+      'mp4',
+      'mkv',
+      'avi',
+      'mov',
+      'webm',
+      'flv',
+      'mp3',
+      'wav',
+      'flac',
+      'aac',
+      'ogg',
+      'pdf',
+      'doc',
+      'docx',
+      'txt',
+      'md',
+      'epub',
     };
 
     try {
-      await for (final entity in dir.list(recursive: true).where((e) => e is File)) {
+      await for (final entity
+          in dir.list(recursive: true).where((e) => e is File)) {
         final ext = entity.path.split('.').last.toLowerCase();
         if (mediaExtensions.contains(ext)) {
           mediaFiles.add(entity as File);
@@ -447,7 +507,9 @@ class _MediaScreenState extends State<MediaScreen> {
     }
 
     if (!context.mounted) return;
-    try { Navigator.pop(context); } catch (_) {}
+    try {
+      Navigator.pop(context);
+    } catch (_) {}
 
     context.read<MediaBloc>().add(const MediaLoadAllEvent());
 
@@ -460,7 +522,9 @@ class _MediaScreenState extends State<MediaScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('✅ ${AppLocalizations.of(context).success}: $successCount'),
-            if (failCount > 0) Text('❌ ${AppLocalizations.of(context).importFailed}: $failCount', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            if (failCount > 0)
+              Text('❌ ${AppLocalizations.of(context).importFailed}: $failCount',
+                  style: TextStyle(color: Theme.of(context).colorScheme.error)),
           ],
         ),
         actions: [
@@ -502,7 +566,9 @@ class _MediaScreenState extends State<MediaScreen> {
     }
 
     if (!context.mounted) return;
-    try { Navigator.pop(context); } catch (_) {}
+    try {
+      Navigator.pop(context);
+    } catch (_) {}
 
     context.read<MediaBloc>().add(const MediaLoadAllEvent());
 
@@ -515,7 +581,9 @@ class _MediaScreenState extends State<MediaScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('✅ ${AppLocalizations.of(context).success}: $successCount'),
-            if (failCount > 0) Text('❌ ${AppLocalizations.of(context).importFailed}: $failCount', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            if (failCount > 0)
+              Text('❌ ${AppLocalizations.of(context).importFailed}: $failCount',
+                  style: TextStyle(color: Theme.of(context).colorScheme.error)),
           ],
         ),
         actions: [
@@ -550,7 +618,8 @@ class _MediaScreenState extends State<MediaScreen> {
                     onPressed: () => Navigator.pop(ctx, false),
                     child: Text(loc.cancel)),
                 TextButton(
-                  style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
+                  style: TextButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.error),
                   onPressed: () => Navigator.pop(ctx, true),
                   child: Text(loc.delete),
                 ),
@@ -563,7 +632,8 @@ class _MediaScreenState extends State<MediaScreen> {
     context.read<MediaBloc>().add(const MediaClearSelectionEvent());
     context.read<MediaBloc>().add(const MediaToggleSelectionModeEvent());
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${loc.success} ${ids.length}')));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('${loc.success} ${ids.length}')));
   }
 
   Future<void> _batchAddTags(BuildContext context, Set<String> mediaIds) async {
@@ -573,7 +643,8 @@ class _MediaScreenState extends State<MediaScreen> {
       if (!context.mounted) return;
       final result = await showDialog<Set<String>>(
           context: context,
-          builder: (ctx) => _TagSelectionDialog(tags: tags, preselectedIds: <String>{}));
+          builder: (ctx) =>
+              _TagSelectionDialog(tags: tags, preselectedIds: <String>{}));
       if (result == null || result.isEmpty) return;
       int successCount = 0;
       for (final mediaId in mediaIds) {
@@ -588,8 +659,8 @@ class _MediaScreenState extends State<MediaScreen> {
         if (ok) successCount++;
       }
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${loc.addTag} $successCount')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('${loc.addTag} $successCount')));
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context)
@@ -597,16 +668,16 @@ class _MediaScreenState extends State<MediaScreen> {
     }
   }
 
-  Future<void> _batchAddToAlbum(BuildContext context, Set<String> mediaIds) async {
+  Future<void> _batchAddToAlbum(
+      BuildContext context, Set<String> mediaIds) async {
     final loc = AppLocalizations.of(context);
     try {
-      final albums = await getRootAlbums();
       if (!context.mounted) return;
       final selectedAlbum = await showDialog<String>(
-          context: context,
-          builder: (ctx) => _AddToAlbumDialog(albums: albums));
+          context: context, builder: (ctx) => const _AddToAlbumDialog());
       if (selectedAlbum == null) return;
-      await addMediaToAlbum(mediaIds: mediaIds.toList(), albumId: selectedAlbum);
+      await addMediaToAlbum(
+          mediaIds: mediaIds.toList(), albumId: selectedAlbum);
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('${loc.addToAlbum} ${mediaIds.length}')));
@@ -618,38 +689,158 @@ class _MediaScreenState extends State<MediaScreen> {
   }
 }
 
+/// 添加到相册对话框 - 支持子相册导航
+class _AddToAlbumDialog extends StatefulWidget {
+  const _AddToAlbumDialog();
 
-/// 添加到相册对话框
-class _AddToAlbumDialog extends StatelessWidget {
-  final List<dynamic> albums;
-  const _AddToAlbumDialog({required this.albums});
+  @override
+  State<_AddToAlbumDialog> createState() => _AddToAlbumDialogState();
+}
+
+class _AddToAlbumDialogState extends State<_AddToAlbumDialog> {
+  List<AlbumWithInfo> _albums = [];
+  bool _loading = true;
+  String? _currentParentId;
+  String _currentParentName = '';
+  final List<MapEntry<String?, String>> _history = []; // parentId, name
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAlbums();
+  }
+
+  Future<void> _loadAlbums() async {
+    setState(() => _loading = true);
+    List<AlbumWithInfo> albums;
+    if (_currentParentId == null) {
+      albums = await getRootAlbums();
+    } else {
+      albums = await getChildAlbums(parentId: _currentParentId!);
+    }
+    setState(() {
+      _albums = albums;
+      _loading = false;
+    });
+  }
+
+  void _navigateTo(String albumId, String albumName) {
+    _history.add(MapEntry(_currentParentId, _currentParentName));
+    _currentParentId = albumId;
+    _currentParentName = albumName;
+    _loadAlbums();
+  }
+
+  void _navigateBack() {
+    if (_history.isNotEmpty) {
+      final prev = _history.removeLast();
+      _currentParentId = prev.key;
+      _currentParentName = prev.value;
+      _loadAlbums();
+    }
+  }
+
+  void _navigateToRoot() {
+    _history.clear();
+    _currentParentId = null;
+    _currentParentName = '';
+    _loadAlbums();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return AlertDialog(
-      title: Text(AppLocalizations.of(context).addToAlbum),
+      title: Row(
+        children: [
+          if (_currentParentId != null)
+            IconButton(
+              icon: const Icon(Icons.arrow_back, size: 20),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              onPressed: _navigateBack,
+            ),
+          if (_currentParentId != null) const SizedBox(width: 4),
+          Expanded(
+            child: Text(
+              _currentParentId == null ? loc.addToAlbum : _currentParentName,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
       content: SizedBox(
         width: double.maxFinite,
-        child: albums.isEmpty
-            ? Text(AppLocalizations.of(context).noAlbums)
-            : ListView.builder(
-                shrinkWrap: true,
-                itemCount: albums.length,
-                itemBuilder: (ctx, index) {
-                  final info = albums[index];
-                  return ListTile(
-                    leading: const Icon(Icons.photo_album),
-                    title: Text(info.album.name),
-                    subtitle: Text('${info.mediaCount} ${AppLocalizations.of(context).files}'),
-                    onTap: () => Navigator.pop(ctx, info.album.id),
-                  );
-                },
+        height: 400,
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : Column(
+                children: [
+                  // 面包屑
+                  if (_history.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          InkWell(
+                            onTap: _navigateToRoot,
+                            child: Text(
+                              loc.tabAlbums,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                          ..._history.skip(1).map((e) => Row(
+                                children: [
+                                  const Icon(Icons.chevron_right, size: 14),
+                                  Text(e.value,
+                                      style: const TextStyle(fontSize: 12)),
+                                ],
+                              )),
+                        ],
+                      ),
+                    ),
+                  const Divider(height: 1),
+                  Expanded(
+                    child: _albums.isEmpty
+                        ? Center(child: Text(loc.noAlbums))
+                        : ListView.builder(
+                            itemCount: _albums.length,
+                            itemBuilder: (ctx, index) {
+                              final info = _albums[index];
+                              return ListTile(
+                                leading: const Icon(Icons.photo_album),
+                                title: Text(info.album.name),
+                                subtitle:
+                                    Text('${info.mediaCount} ${loc.files}'),
+                                trailing: const Icon(Icons.chevron_right),
+                                onTap: () {
+                                  _navigateTo(info.album.id, info.album.name);
+                                },
+                                onLongPress: () {
+                                  // 长按直接选中该相册
+                                  Navigator.pop(ctx, info.album.id);
+                                },
+                              );
+                            },
+                          ),
+                  ),
+                ],
               ),
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(AppLocalizations.of(context).cancel)),
+          onPressed: () => Navigator.pop(context),
+          child: Text(loc.cancel),
+        ),
+        // 在子相册层级时显示"选择当前相册"按钮
+        if (_currentParentId != null)
+          FilledButton(
+            onPressed: () => Navigator.pop(context, _currentParentId),
+            child: Text(loc.addToAlbum),
+          ),
       ],
     );
   }
@@ -669,7 +860,9 @@ class _ImportProgressDialog extends StatelessWidget {
           Text('${AppLocalizations.of(context).importing} ($totalCount)'),
           const SizedBox(height: 8),
           Text(AppLocalizations.of(context).loading,
-              style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant)),
         ],
       ),
     );
@@ -710,7 +903,9 @@ class _TagSelectionDialogState extends State<_TagSelectionDialog> {
                   return ListTile(
                     leading: Icon(
                       isSelected ? Icons.check_circle : Icons.circle_outlined,
-                      color: isSelected ? Theme.of(context).colorScheme.primary : null,
+                      color: isSelected
+                          ? Theme.of(context).colorScheme.primary
+                          : null,
                     ),
                     title: Text(tag.name),
                     onTap: () {
@@ -736,6 +931,5 @@ class _TagSelectionDialogState extends State<_TagSelectionDialog> {
         ),
       ],
     );
-
   }
 }

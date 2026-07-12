@@ -1,8 +1,20 @@
+////////////////////////////////////////////////////////////////////////
+// 文件坐标: lib/bridge/native/models.dart
+// 作用:     Dart 侧共享数据模型
+// 说明:     被 C++ FFI 桥接层和 BLoC 状态管理层共同使用的不可变数据类。
+//           替代了旧 Rust 自动生成的桥接模型。
+////////////////////////////////////////////////////////////////////////
+
+// --------------------------------------------------------------------
 /// Shared data models used by both C++ FFI and BLoC layers.
 /// These replace the auto-generated Rust bridge models.
 
+// --------------------------------------------------------------------
+// 与 C++ 侧字符串 "image", "video", "audio", "document", "other" 对应
 enum MediaType { image, video, audio, document, other }
 
+// --------------------------------------------------------------------
+// 用于 UI 筛选选项：全部、类型、是否有标签/相册等
 enum FilterMode {
   all,
   image,
@@ -16,8 +28,11 @@ enum FilterMode {
   withoutAlbums
 }
 
+// --------------------------------------------------------------------
+// 与 C++ 侧 theme_mode 0/1/2 对应
 enum ThemeMode { system, light, dark }
 
+// --------------------------------------------------------------------
 class MediaItem {
   final String id;
   final String originalName;
@@ -51,6 +66,8 @@ class MediaItem {
     required this.updatedAt,
   });
 
+  // ----------------------------------------------------------------
+  // 创建副本并选择性替换部分字段，保持不可变性
   MediaItem copyWith(
       {String? originalName,
       String? thumbnailPath,
@@ -77,12 +94,15 @@ class MediaItem {
   }
 }
 
+// --------------------------------------------------------------------
+// 用于图片/视频查看器的上一项/下一项
 class AdjacentMedia {
   final MediaItem? previous;
   final MediaItem? next;
   const AdjacentMedia({this.previous, this.next});
 }
 
+// --------------------------------------------------------------------
 class Album {
   final String id;
   final String name;
@@ -101,6 +121,7 @@ class Album {
   });
 }
 
+// --------------------------------------------------------------------
 class AlbumWithInfo {
   final Album album;
   final int mediaCount;
@@ -113,12 +134,14 @@ class AlbumWithInfo {
   });
 }
 
+// --------------------------------------------------------------------
 class BreadcrumbItem {
   final String id;
   final String name;
   const BreadcrumbItem({required this.id, required this.name});
 }
 
+// --------------------------------------------------------------------
 class Tag {
   final String id;
   final String name;
@@ -135,21 +158,26 @@ class Tag {
   });
 }
 
+// --------------------------------------------------------------------
 class TagWithInfo {
   final Tag tag;
   final int mediaCount;
   const TagWithInfo({required this.tag, this.mediaCount = 0});
+
   bool get hasChildren => tag.parentId == null;
 }
 
+// --------------------------------------------------------------------
 class TagBreadcrumb {
   final String id;
   final String name;
   const TagBreadcrumb({required this.id, required this.name});
 }
 
+// --------------------------------------------------------------------
 enum ConflictStrategy { skip, replace, rename }
 
+// --------------------------------------------------------------------
 class Note {
   final String id;
   final String mediaId;
@@ -166,6 +194,7 @@ class Note {
   });
 }
 
+// --------------------------------------------------------------------
 class AppSettings {
   final ThemeMode themeMode;
   final int gridColumns;
@@ -186,6 +215,7 @@ class AppSettings {
   });
 }
 
+// --------------------------------------------------------------------
 class StorageStats {
   final int totalMediaCount;
   final int totalSize;
@@ -200,6 +230,7 @@ class StorageStats {
   });
 }
 
+// --------------------------------------------------------------------
 class SearchFilter {
   final String query;
   final MediaType? mediaType;

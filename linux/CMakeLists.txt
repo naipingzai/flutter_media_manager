@@ -13,6 +13,11 @@ set(APPLICATION_ID "com.advancemediakb.advance_media_kb")
 # versions of CMake.
 cmake_policy(SET CMP0063 NEW)
 
+# Disable LTO to avoid snap Flutter SDK linker incompatibility with system GCC 15
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fno-lto")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fno-lto")
+
 # Load bundled libraries from the lib/ directory relative to the binary.
 set(CMAKE_INSTALL_RPATH "$ORIGIN/lib")
 
@@ -100,7 +105,7 @@ else()
   add_custom_command(
     OUTPUT "${NATIVE_LIB_DIR}/${NATIVE_LIB_NAME}"
     COMMAND ${CMAKE_COMMAND} -E make_directory "${NATIVE_LIB_DIR}"
-    COMMAND ${CMAKE_COMMAND} -S "${NATIVE_DIR}" -B "${NATIVE_LIB_DIR}" -DCMAKE_BUILD_TYPE=Release
+    COMMAND ${CMAKE_COMMAND} -S "${NATIVE_DIR}" -B "${NATIVE_LIB_DIR}" -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS="-fno-lto" -DCMAKE_CXX_FLAGS="-fno-lto" -DCMAKE_SHARED_LINKER_FLAGS="-fno-lto"
     COMMAND ${CMAKE_COMMAND} --build "${NATIVE_LIB_DIR}" -- -j4
     COMMENT "Building C++ native library..."
   )

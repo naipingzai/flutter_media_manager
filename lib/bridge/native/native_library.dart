@@ -1,11 +1,32 @@
+////////////////////////////////////////////////////////////////////////
+// 文件坐标: lib/bridge/native/native_library.dart
+// 作用:     Dart FFI 原生库加载器与 C ABI 函数签名声明
+// 说明:     定义所有 C++ 导出函数的 Dart 类型签名，并提供单例类
+//           NativeLibrary 用于动态加载 .so / .dll / .dylib 并调用函数。
+////////////////////////////////////////////////////////////////////////
+
+// --------------------------------------------------------------------
 import 'dart:ffi';
+
+// --------------------------------------------------------------------
+// 用于判断 Platform.isLinux / isAndroid 等
 import 'dart:io';
+
+// --------------------------------------------------------------------
+// 提供 Pointer<Utf8>、toNativeUtf8()、calloc.free() 等工具
 import 'package:ffi/ffi.dart';
 
-// C ABI function signatures
+// --------------------------------------------------------------------
+// 每对 typedef 包含 Native（C 侧）和 Dart（Dart 侧）签名
+
+// --------------------------------------------------------------------
+// C 侧: int amkb_init(const char* appDir)
+// 返回 Int32（0 成功），参数为 UTF-8 字符串指针
 typedef AmkbInitNative = Int32 Function(Pointer<Utf8> appDir);
 typedef AmkbInitDart = int Function(Pointer<Utf8> appDir);
 
+// --------------------------------------------------------------------
+// 回调参数: id, name, type, size, path, thumb
 typedef AmkbGetAllMediaNative = Int32 Function(
     Pointer<NativeFunction<MediaCallback>> cb);
 typedef AmkbGetAllMediaDart = int Function(
@@ -13,57 +34,68 @@ typedef AmkbGetAllMediaDart = int Function(
 typedef MediaCallback = Void Function(Pointer<Utf8> id, Pointer<Utf8> name,
     Pointer<Utf8> type, Int64 size, Pointer<Utf8> path, Pointer<Utf8> thumb);
 
+// --------------------------------------------------------------------
 typedef AmkbSearchMediaNative = Int32 Function(
     Pointer<Utf8> query, Pointer<NativeFunction<MediaCallback>> cb);
 typedef AmkbSearchMediaDart = int Function(
     Pointer<Utf8> query, Pointer<NativeFunction<MediaCallback>> cb);
 
+// --------------------------------------------------------------------
 typedef AmkbFilterMediaByTypeNative = Int32 Function(
     Pointer<Utf8> type, Pointer<NativeFunction<MediaCallback>> cb);
 typedef AmkbFilterMediaByTypeDart = int Function(
     Pointer<Utf8> type, Pointer<NativeFunction<MediaCallback>> cb);
 
+// --------------------------------------------------------------------
 typedef AmkbDeleteMediaNative = Int32 Function(Pointer<Utf8> id);
 typedef AmkbDeleteMediaDart = int Function(Pointer<Utf8> id);
 
+// --------------------------------------------------------------------
 typedef AmkbImportSingleFileNative = Int32 Function(Pointer<Utf8> path);
 typedef AmkbImportSingleFileDart = int Function(Pointer<Utf8> path);
 
+// --------------------------------------------------------------------
 typedef AmkbScanDirectoryNative = Int32 Function(
     Pointer<Utf8> dir, Pointer<Utf8> appDir);
 typedef AmkbScanDirectoryDart = int Function(
     Pointer<Utf8> dir, Pointer<Utf8> appDir);
 
+// --------------------------------------------------------------------
 typedef AlbumCallback = Void Function(
     Pointer<Utf8> id, Pointer<Utf8> name, Int32 mediaCount);
 typedef AmkbGetRootAlbumsNative = Int32 Function(
     Pointer<NativeFunction<AlbumCallback>> cb);
 typedef AmkbGetRootAlbumsDart = int Function(
     Pointer<NativeFunction<AlbumCallback>> cb);
-
 typedef AmkbGetChildAlbumsNative = Int32 Function(
     Pointer<Utf8> parentId, Pointer<NativeFunction<AlbumCallback>> cb);
 typedef AmkbGetChildAlbumsDart = int Function(
     Pointer<Utf8> parentId, Pointer<NativeFunction<AlbumCallback>> cb);
 
+// --------------------------------------------------------------------
+// 返回 Pointer<Utf8>，指向新相册 ID 字符串
 typedef AmkbCreateAlbumNative = Pointer<Utf8> Function(
     Pointer<Utf8> name, Pointer<Utf8> parentId);
 typedef AmkbCreateAlbumDart = Pointer<Utf8> Function(
     Pointer<Utf8> name, Pointer<Utf8> parentId);
 
+// --------------------------------------------------------------------
 typedef AmkbDeleteAlbumNative = Int32 Function(Pointer<Utf8> id);
 typedef AmkbDeleteAlbumDart = int Function(Pointer<Utf8> id);
 
+// --------------------------------------------------------------------
 typedef AmkbRenameAlbumNative = Int32 Function(
     Pointer<Utf8> id, Pointer<Utf8> name);
 typedef AmkbRenameAlbumDart = int Function(
     Pointer<Utf8> id, Pointer<Utf8> name);
 
+// --------------------------------------------------------------------
 typedef AmkbGetMediaByAlbumNative = Int32 Function(
     Pointer<Utf8> albumId, Pointer<NativeFunction<MediaCallback>> cb);
 typedef AmkbGetMediaByAlbumDart = int Function(
     Pointer<Utf8> albumId, Pointer<NativeFunction<MediaCallback>> cb);
 
+// --------------------------------------------------------------------
 typedef TagCallback = Void Function(
     Pointer<Utf8> id, Pointer<Utf8> name, Pointer<Utf8> color);
 typedef AmkbGetAllTagsNative = Int32 Function(
@@ -71,59 +103,75 @@ typedef AmkbGetAllTagsNative = Int32 Function(
 typedef AmkbGetAllTagsDart = int Function(
     Pointer<NativeFunction<TagCallback>> cb);
 
+// --------------------------------------------------------------------
 typedef AmkbCreateTagNative = Pointer<Utf8> Function(
     Pointer<Utf8> name, Pointer<Utf8> color, Pointer<Utf8> parentId);
 typedef AmkbCreateTagDart = Pointer<Utf8> Function(
     Pointer<Utf8> name, Pointer<Utf8> color, Pointer<Utf8> parentId);
 
+// --------------------------------------------------------------------
 typedef AmkbDeleteTagNative = Int32 Function(Pointer<Utf8> id);
 typedef AmkbDeleteTagDart = int Function(Pointer<Utf8> id);
 
+// --------------------------------------------------------------------
 typedef AmkbRenameTagNative = Int32 Function(
     Pointer<Utf8> id, Pointer<Utf8> name);
 typedef AmkbRenameTagDart = int Function(Pointer<Utf8> id, Pointer<Utf8> name);
 
+// --------------------------------------------------------------------
 typedef AmkbAddTagToMediaNative = Int32 Function(
     Pointer<Utf8> mediaId, Pointer<Utf8> tagId);
 typedef AmkbAddTagToMediaDart = int Function(
     Pointer<Utf8> mediaId, Pointer<Utf8> tagId);
 
+// --------------------------------------------------------------------
 typedef AmkbRemoveTagFromMediaNative = Int32 Function(
     Pointer<Utf8> mediaId, Pointer<Utf8> tagId);
 typedef AmkbRemoveTagFromMediaDart = int Function(
     Pointer<Utf8> mediaId, Pointer<Utf8> tagId);
 
+// --------------------------------------------------------------------
 typedef AmkbGetMediaTagsNative = Int32 Function(
     Pointer<Utf8> mediaId, Pointer<NativeFunction<TagCallback>> cb);
 typedef AmkbGetMediaTagsDart = int Function(
     Pointer<Utf8> mediaId, Pointer<NativeFunction<TagCallback>> cb);
 
+// --------------------------------------------------------------------
 typedef AmkbSaveNoteNative = Int32 Function(
     Pointer<Utf8> mediaId, Pointer<Utf8> content);
 typedef AmkbSaveNoteDart = int Function(
     Pointer<Utf8> mediaId, Pointer<Utf8> content);
 
+// --------------------------------------------------------------------
 typedef AmkbDeleteNoteNative = Int32 Function(Pointer<Utf8> id);
 typedef AmkbDeleteNoteDart = int Function(Pointer<Utf8> id);
 
+// --------------------------------------------------------------------
 typedef AmkbDeleteAllDataNative = Int32 Function();
 typedef AmkbDeleteAllDataDart = int Function();
 
+// --------------------------------------------------------------------
 typedef AmkbExportDataNative = Int32 Function(Pointer<Utf8> path);
 typedef AmkbExportDataDart = int Function(Pointer<Utf8> path);
 
+// --------------------------------------------------------------------
 typedef AmkbImportDataNative = Int32 Function(Pointer<Utf8> path);
 typedef AmkbImportDataDart = int Function(Pointer<Utf8> path);
 
+// --------------------------------------------------------------------
+// 7 个 int/string 参数: theme, grid, album_grid, thumb, lang, dyn_color, last_scan
 typedef AmkbSaveSettingsNative = Int32 Function(
     Int32, Int32, Int32, Int32, Pointer<Utf8>, Int32, Pointer<Utf8>);
 typedef AmkbSaveSettingsDart = int Function(
     int, int, int, int, Pointer<Utf8>, int, Pointer<Utf8>);
 
-/// Singleton wrapper around the C++ native library
+// --------------------------------------------------------------------
+// 封装原生动态库加载和常用函数调用
 class NativeLibrary {
   static NativeLibrary? _instance;
+
   late final DynamicLibrary _lib;
+
   bool _initialized = false;
 
   NativeLibrary._() {
@@ -137,12 +185,17 @@ class NativeLibrary {
 
   DynamicLibrary _loadLibrary() {
     if (Platform.isLinux) {
+      // 加载 libadvance_media_kb.so
       return DynamicLibrary.open('libadvance_media_kb.so');
-    } else if (Platform.isAndroid) {
+    }
+    else if (Platform.isAndroid) {
+      // Android 的 .so 已打包到 jniLibs，同名加载
       return DynamicLibrary.open('libadvance_media_kb.so');
-    } else if (Platform.isWindows) {
+    }
+    else if (Platform.isWindows) {
       return DynamicLibrary.open('advance_media_kb.dll');
-    } else if (Platform.isMacOS) {
+    }
+    else if (Platform.isMacOS) {
       return DynamicLibrary.open('libadvance_media_kb.dylib');
     }
     throw UnsupportedError('Platform not supported');
@@ -150,13 +203,18 @@ class NativeLibrary {
 
   bool get isInitialized => _initialized;
 
-  /// Initialize the native database
+  // ------------------------------------------------------------------
   int init(String appDir) {
     final path = appDir.toNativeUtf8();
+
     final fn = _lib.lookupFunction<AmkbInitNative, AmkbInitDart>('amkb_init');
+
     final result = fn(path);
+
     calloc.free(path);
+
     if (result == 0) _initialized = true;
+
     return result;
   }
 }

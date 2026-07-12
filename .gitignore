@@ -23,7 +23,6 @@ migrate_working_dir/
 
 # Flutter/Dart/Pub related
 **/doc/api/
-**/ios/Flutter/.last_build_id
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
@@ -41,13 +40,11 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
-/rust/target/
 *.jpg
 *.so
 android/app/src/main/jniLibs/
-build/
 .gradle/
-out/
 out/
 .idea/
 *.iml
+out/

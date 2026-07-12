@@ -11,7 +11,8 @@ part 'album_state.dart';
 
 final _logger = Logger();
 
-/// 相册管理 Bloc
+/// 第 14 行: 相册管理 BLoC
+/// 负责处理相册的加载、创建、删除、重命名、媒体操作和导航状态
 class AlbumBloc extends Bloc<AlbumEvent, AlbumState> {
   AlbumBloc() : super(const AlbumState()) {
     on<AlbumLoadEvent>(_onLoadRoots);
@@ -59,7 +60,6 @@ class AlbumBloc extends Bloc<AlbumEvent, AlbumState> {
     emit(state.copyWith(status: AlbumStatus.loading));
     try {
       final albums = await getChildAlbums(parentId: event.parentId);
-      // 同时加载该相册的媒体
       final media = await getMediaByAlbum(albumId: event.parentId);
       emit(state.copyWith(
         status: AlbumStatus.loaded,
@@ -87,7 +87,6 @@ class AlbumBloc extends Bloc<AlbumEvent, AlbumState> {
         parentId: event.parentId,
       );
       _logger.i('创建相册成功: $albumId');
-      // 刷新当前列表
       if (event.parentId != null) {
         add(AlbumLoadChildrenEvent(event.parentId!));
       } else {
@@ -105,7 +104,6 @@ class AlbumBloc extends Bloc<AlbumEvent, AlbumState> {
   ) async {
     try {
       await deleteAlbum(id: event.albumId);
-      // 刷新当前列表
       if (state.currentParentId != null) {
         add(AlbumLoadChildrenEvent(state.currentParentId!));
       } else {
@@ -127,7 +125,6 @@ class AlbumBloc extends Bloc<AlbumEvent, AlbumState> {
         newName: event.newName,
       );
       _logger.i('重命名相册成功: ${event.newName}');
-      // 刷新当前列表
       if (state.currentParentId != null) {
         add(AlbumLoadChildrenEvent(state.currentParentId!));
       } else {
@@ -181,7 +178,6 @@ class AlbumBloc extends Bloc<AlbumEvent, AlbumState> {
         mediaId: event.mediaId,
       );
       _logger.i('设置相册封面成功');
-      // 刷新当前列表
       if (state.currentParentId != null) {
         add(AlbumLoadChildrenEvent(state.currentParentId!));
       } else {
@@ -231,7 +227,6 @@ class AlbumBloc extends Bloc<AlbumEvent, AlbumState> {
       add(AlbumLoadChildrenEvent(parentId));
       add(AlbumLoadBreadcrumbEvent(parentId));
     } else {
-      // 回到根
       emit(state.copyWith(
         clearNavigation: true,
         breadcrumb: [],
@@ -284,7 +279,6 @@ class AlbumBloc extends Bloc<AlbumEvent, AlbumState> {
         albumId: state.currentParentId!,
       );
       _logger.i('从相册移除 ${state.selectedMediaIds.length} 个媒体成功');
-      // 刷新
       add(AlbumLoadChildrenEvent(state.currentParentId!));
     } catch (e) {
       _logger.e('从相册移除媒体失败: $e');

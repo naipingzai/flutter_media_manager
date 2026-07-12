@@ -9,6 +9,7 @@ import 'bridge/native/api/settings.dart' as native_api;
 import 'core/design_system/app_theme.dart';
 import 'core/i18n/app_localizations.dart';
 import 'core/navigation/app_router.dart';
+
 import 'functionality/home/app_bloc.dart';
 import 'ui/home/home_screen.dart';
 import 'functionality/media/media_bloc.dart';
@@ -19,7 +20,6 @@ import 'functionality/note/note_bloc.dart';
 late final NativeLibrary nativeLib;
 
 void _log(String msg) {
-  // ignore: avoid_print
   print('MAIN: $msg');
   developer.log(msg);
 }
@@ -30,12 +30,17 @@ Future<void> main() async {
 
   try {
     _log('Initializing native library...');
+
     nativeLib = NativeLibrary.instance;
+
     _log('Getting application documents directory...');
+
     final appDir = await getApplicationDocumentsDirectory();
+
     _log('App dir: ${appDir.path}');
 
     String targetDir = appDir.path;
+
     if (Platform.isAndroid) {
       final externalDir = await getExternalStorageDirectory();
       if (externalDir != null) {
@@ -45,24 +50,29 @@ Future<void> main() async {
     }
 
     _log('Calling native init...');
+
     final result = nativeLib.init(targetDir);
     if (result != 0) {
       throw Exception('Native init failed with code: $result');
     }
+
     _log('Native init completed successfully');
   } catch (e, stackTrace) {
     _log('Native init FAILED: $e');
     _log('Stack trace: $stackTrace');
+
     runApp(ErrorApp(error: '初始化失败: $e'));
     return;
   }
 
   developer.log('MAIN: Calling runApp()');
-  runApp(const AdvanceMediaKBApp());
+
+  runApp(const FlutterMediaDB());
 }
 
 class ErrorApp extends StatelessWidget {
   final String error;
+
   const ErrorApp({super.key, required this.error});
 
   @override
@@ -98,49 +108,53 @@ class ErrorApp extends StatelessWidget {
   }
 }
 
-class AdvanceMediaKBApp extends StatelessWidget {
-  const AdvanceMediaKBApp({super.key});
+// --------------------------------------------------------------------
+class FlutterMediaDB extends StatelessWidget {
+  const FlutterMediaDB({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
+        // 创建时立即发送初始化事件
         BlocProvider<AppBloc>(
           create: (context) => AppBloc()..add(const AppInitializeEvent()),
         ),
-        BlocProvider<MediaBloc>(
-          create: (context) => MediaBloc(),
-        ),
-        BlocProvider<AlbumBloc>(
-          create: (context) => AlbumBloc(),
-        ),
-        BlocProvider<TagBloc>(
-          create: (context) => TagBloc(),
-        ),
-        BlocProvider<NoteBloc>(
-          create: (context) => NoteBloc(),
-        ),
+        BlocProvider<MediaBloc>(create: (context) => MediaBloc()),
+        BlocProvider<AlbumBloc>(create: (context) => AlbumBloc()),
+        BlocProvider<TagBloc>(create: (context) => TagBloc()),
+        BlocProvider<NoteBloc>(create: (context) => NoteBloc()),
       ],
+
       child: BlocBuilder<AppBloc, AppState>(
         builder: (context, state) {
           return MaterialApp(
             title: 'AdvanceMediaKB',
+
             debugShowCheckedModeBanner: false,
+
             locale: _resolveLocale(state.settings?.language),
+
             localizationsDelegates: const [
-              AppLocalizations.delegate,
+              AppLocalizations.delegate, // 自定义本地化
               GlobalMaterialLocalizations.delegate,
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
             ],
+
             supportedLocales: const [
-              Locale('zh'),
-              Locale('en'),
+              Locale('zh'), // 中文
+              Locale('en'), // 英文
             ],
+
             theme: AppTheme.lightTheme(),
+
             darkTheme: AppTheme.darkTheme(),
+
             themeMode: _mapThemeMode(state.settings?.themeMode),
+
             onGenerateRoute: (settings) => generateRoute(settings),
+
             home: const HomeScreen(),
           );
         },
@@ -148,6 +162,7 @@ class AdvanceMediaKBApp extends StatelessWidget {
     );
   }
 
+  // ------------------------------------------------------------------
   ThemeMode _mapThemeMode(native_api.ThemeMode? mode) {
     switch (mode) {
       case native_api.ThemeMode.light:
@@ -159,6 +174,7 @@ class AdvanceMediaKBApp extends StatelessWidget {
     }
   }
 
+  // ------------------------------------------------------------------
   Locale _resolveLocale(String? language) {
     switch (language) {
       case 'zh':
