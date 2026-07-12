@@ -10,12 +10,10 @@ import 'package:flutter_media_knowledge_base/bridge/native/api/album.dart';
 import 'package:logger/logger.dart';
 import 'package:flutter_media_knowledge_base/core/i18n/app_localizations.dart';
 import 'package:flutter_media_knowledge_base/core/design_system/app_theme.dart';
-import 'package:flutter_media_knowledge_base/bridge/native/api/enums.dart';
 import 'package:flutter_media_knowledge_base/bridge/native/api/media.dart';
-import 'package:flutter_media_knowledge_base/bridge/native/api/media.dart' as media_api;
+import 'package:flutter_media_knowledge_base/bridge/native/api/media.dart'
+    as media_api;
 import '../viewer/viewer_page.dart';
-import 'package:flutter_media_knowledge_base/functionality/media/media_bloc.dart';
-
 
 final _logger = Logger();
 
@@ -27,7 +25,14 @@ class AlbumScreen extends StatefulWidget {
   State<AlbumScreen> createState() => _AlbumScreenState();
 }
 
-enum AlbumSortMode { nameAsc, nameDesc, dateNewest, dateOldest, countMost, countLeast }
+enum AlbumSortMode {
+  nameAsc,
+  nameDesc,
+  dateNewest,
+  dateOldest,
+  countMost,
+  countLeast
+}
 
 class _AlbumScreenState extends State<AlbumScreen> {
   AlbumSortMode _sortMode = AlbumSortMode.dateNewest;
@@ -135,10 +140,14 @@ class _AlbumScreenState extends State<AlbumScreen> {
                   breadcrumb: state.breadcrumb,
                   isRoot: state.isRoot,
                   onHomeClick: () {
-                    context.read<AlbumBloc>().add(const AlbumNavigateToRootEvent());
+                    context
+                        .read<AlbumBloc>()
+                        .add(const AlbumNavigateToRootEvent());
                   },
                   onAlbumClick: (item) {
-                    context.read<AlbumBloc>().add(AlbumNavigateToEvent(item.id));
+                    context
+                        .read<AlbumBloc>()
+                        .add(AlbumNavigateToEvent(item.id));
                   },
                 ),
                 // 内容区
@@ -152,10 +161,14 @@ class _AlbumScreenState extends State<AlbumScreen> {
                 ? _SelectionBottomBar(
                     count: state.selectedMediaIds.length,
                     onCancel: () {
-                      context.read<AlbumBloc>().add(const AlbumClearSelectionEvent());
+                      context
+                          .read<AlbumBloc>()
+                          .add(const AlbumClearSelectionEvent());
                     },
                     onRemove: () {
-                      context.read<AlbumBloc>().add(const AlbumRemoveSelectedMediaEvent());
+                      context
+                          .read<AlbumBloc>()
+                          .add(const AlbumRemoveSelectedMediaEvent());
                     },
                   )
                 : null,
@@ -225,13 +238,16 @@ class _AlbumScreenState extends State<AlbumScreen> {
       albums: hasChildren ? _sortAlbums(state.albums) : null,
       onTap: (media) {
         if (state.selectedMediaIds.isNotEmpty) {
-          context.read<AlbumBloc>().add(AlbumToggleMediaSelectionEvent(media.id));
+          context
+              .read<AlbumBloc>()
+              .add(AlbumToggleMediaSelectionEvent(media.id));
         } else {
           // 正常模式：单击打开查看器
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => ViewerPage(initialMedia: media, mediaList: state.albumMedia),
+              builder: (_) =>
+                  ViewerPage(initialMedia: media, mediaList: state.albumMedia),
             ),
           );
         }
@@ -272,7 +288,8 @@ class _AlbumScreenState extends State<AlbumScreen> {
               const SizedBox(height: AppSpacing.md),
               Text(
                 loc.subalbumNote,
-                style: AppTextStyles.caption.copyWith(color: cs.onSurfaceVariant),
+                style:
+                    AppTextStyles.caption.copyWith(color: cs.onSurfaceVariant),
               ),
             ],
           ],
@@ -287,8 +304,8 @@ class _AlbumScreenState extends State<AlbumScreen> {
               final name = nameController.text.trim();
               if (name.isNotEmpty) {
                 context.read<AlbumBloc>().add(
-                  AlbumCreateEvent(name, parentId: state.currentParentId),
-                );
+                      AlbumCreateEvent(name, parentId: state.currentParentId),
+                    );
                 Navigator.pop(ctx);
               }
             },
@@ -378,7 +395,8 @@ class _BreadcrumbBar extends StatelessWidget {
             return [
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                child: Icon(Icons.chevron_right, size: AppSpacing.lg, color: cs.onSurfaceVariant),
+                child: Icon(Icons.chevron_right,
+                    size: AppSpacing.lg, color: cs.onSurfaceVariant),
               ),
               _BreadcrumbItem(
                 icon: isLast ? Icons.folder_open : Icons.folder,
@@ -425,7 +443,10 @@ class _BreadcrumbItem extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 14, color: isActive ? cs.onPrimaryContainer : cs.onSurfaceVariant),
+              Icon(icon,
+                  size: 14,
+                  color:
+                      isActive ? cs.onPrimaryContainer : cs.onSurfaceVariant),
               const SizedBox(width: AppSpacing.sm),
               Text(
                 label,
@@ -514,7 +535,8 @@ class _AlbumCard extends StatelessWidget {
           color: cs.surface,
           child: Center(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.md),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm, vertical: AppSpacing.md),
               child: Text(
                 album.album.name,
                 style: TextStyle(
@@ -556,9 +578,9 @@ class _EmptyState extends StatelessWidget {
           const SizedBox(height: AppSpacing.lg),
           Text(
             message,
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: cs.onSurfaceVariant,
-              ),
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: cs.onSurfaceVariant,
+                ),
           ),
           if (subMessage != null) ...[
             const SizedBox(height: AppSpacing.md),
@@ -683,8 +705,8 @@ class _AlbumMediaGrid extends StatelessWidget {
                 Positioned.fill(
                   child: Container(
                     color: isSelected
-                    ? cs.primary.withValues(alpha: 0.3)
-                    : Colors.transparent,
+                        ? cs.primary.withValues(alpha: 0.3)
+                        : Colors.transparent,
                   ),
                 ),
               if (isSelectionMode)
@@ -692,11 +714,13 @@ class _AlbumMediaGrid extends StatelessWidget {
                   top: AppSpacing.sm,
                   right: AppSpacing.sm,
                   child: Icon(
-                    isSelected ? Icons.check_circle : Icons.check_circle_outline,
+                    isSelected
+                        ? Icons.check_circle
+                        : Icons.check_circle_outline,
                     size: 24,
                     color: isSelected
-                    ? cs.primary
-                    : cs.onSurface.withValues(alpha: 0.5),
+                        ? cs.primary
+                        : cs.onSurface.withValues(alpha: 0.5),
                   ),
                 ),
             ],
@@ -735,22 +759,28 @@ class _AddMediaDialogContentState extends State<_AddMediaDialogContent> {
       List<MediaItem> results;
       switch (_filter) {
         case 'image':
-          results = await media_api.filterMediaByType(mediaType: MediaType.image);
+          results =
+              await media_api.filterMediaByType(mediaType: MediaType.image);
           break;
         case 'video':
-          results = await media_api.filterMediaByType(mediaType: MediaType.video);
+          results =
+              await media_api.filterMediaByType(mediaType: MediaType.video);
           break;
         case 'withTags':
-          results = await media_api.getMediaByFilter(filter: FilterMode.withTags);
+          results =
+              await media_api.getMediaByFilter(filter: FilterMode.withTags);
           break;
         case 'withoutTags':
-          results = await media_api.getMediaByFilter(filter: FilterMode.withoutTags);
+          results =
+              await media_api.getMediaByFilter(filter: FilterMode.withoutTags);
           break;
         case 'withAlbums':
-          results = await media_api.getMediaByFilter(filter: FilterMode.withAlbums);
+          results =
+              await media_api.getMediaByFilter(filter: FilterMode.withAlbums);
           break;
         case 'withoutAlbums':
-          results = await media_api.getMediaByFilter(filter: FilterMode.withoutAlbums);
+          results = await media_api.getMediaByFilter(
+              filter: FilterMode.withoutAlbums);
           break;
         default:
           results = await media_api.getAllMedia();
@@ -786,8 +816,14 @@ class _AddMediaDialogContentState extends State<_AddMediaDialogContent> {
                   : items.isEmpty
                       ? Center(child: Text(loc.noMedia))
                       : GridView.builder(
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: context.read<AppBloc>().state.settings?.gridColumns ?? 3,
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: context
+                                    .read<AppBloc>()
+                                    .state
+                                    .settings
+                                    ?.gridColumns ??
+                                3,
                             crossAxisSpacing: AppSpacing.sm,
                             mainAxisSpacing: AppSpacing.sm,
                           ),
@@ -812,7 +848,8 @@ class _AddMediaDialogContentState extends State<_AddMediaDialogContent> {
                                         ? Image.file(
                                             File(media.thumbnailPath),
                                             fit: BoxFit.cover,
-                                            errorBuilder: (_, __, ___) => Container(
+                                            errorBuilder: (_, __, ___) =>
+                                                Container(
                                               color: cs.surfaceContainerHighest,
                                               child: const Icon(Icons.image),
                                             ),
@@ -825,19 +862,20 @@ class _AddMediaDialogContentState extends State<_AddMediaDialogContent> {
                                   if (isSelected)
                                     Positioned.fill(
                                       child: Container(
-                                        color: cs.primary.withValues(alpha: 0.3),
+                                        color:
+                                            cs.primary.withValues(alpha: 0.3),
                                       ),
                                     ),
                                   if (isSelected)
-                  Positioned(
-                    top: AppSpacing.sm,
-                    right: AppSpacing.sm,
-                    child: Icon(
-                      Icons.check_circle,
-                      size: AppSpacing.lg,
-                      color: cs.primary,
-                    ),
-                  ),
+                                    Positioned(
+                                      top: AppSpacing.sm,
+                                      right: AppSpacing.sm,
+                                      child: Icon(
+                                        Icons.check_circle,
+                                        size: AppSpacing.lg,
+                                        color: cs.primary,
+                                      ),
+                                    ),
                                 ],
                               ),
                             );
@@ -857,9 +895,12 @@ class _AddMediaDialogContentState extends State<_AddMediaDialogContent> {
               ? null
               : () {
                   context.read<AlbumBloc>().add(
-                    AlbumAddMediaEvent(_selectedIds.toList(), widget.albumId),
-                  );
-                  context.read<AlbumBloc>().add(AlbumLoadChildrenEvent(widget.albumId));
+                        AlbumAddMediaEvent(
+                            _selectedIds.toList(), widget.albumId),
+                      );
+                  context
+                      .read<AlbumBloc>()
+                      .add(AlbumLoadChildrenEvent(widget.albumId));
                   Navigator.pop(context);
                 },
           child: Text('${loc.addToAlbum} (${_selectedIds.length})'),
@@ -871,13 +912,26 @@ class _AddMediaDialogContentState extends State<_AddMediaDialogContent> {
   Widget _buildFilterBar(AppLocalizations loc) {
     String label;
     switch (_filter) {
-      case 'image': label = loc.filterImages; break;
-      case 'video': label = loc.filterVideos; break;
-      case 'withTags': label = loc.filterWithTags; break;
-      case 'withoutTags': label = loc.filterWithoutTags; break;
-      case 'withAlbums': label = loc.filterWithAlbums; break;
-      case 'withoutAlbums': label = loc.filterWithoutAlbums; break;
-      default: label = loc.filterAll;
+      case 'image':
+        label = loc.filterImages;
+        break;
+      case 'video':
+        label = loc.filterVideos;
+        break;
+      case 'withTags':
+        label = loc.filterWithTags;
+        break;
+      case 'withoutTags':
+        label = loc.filterWithoutTags;
+        break;
+      case 'withAlbums':
+        label = loc.filterWithAlbums;
+        break;
+      case 'withoutAlbums':
+        label = loc.filterWithoutAlbums;
+        break;
+      default:
+        label = loc.filterAll;
     }
     return PopupMenuButton<String>(
       child: Chip(
@@ -889,13 +943,34 @@ class _AddMediaDialogContentState extends State<_AddMediaDialogContent> {
         _applyFilter();
       },
       itemBuilder: (_) => [
-        CheckedPopupMenuItem(value: 'all', checked: _filter == 'all', child: Text(loc.filterAll)),
-        CheckedPopupMenuItem(value: 'image', checked: _filter == 'image', child: Text(loc.filterImages)),
-        CheckedPopupMenuItem(value: 'video', checked: _filter == 'video', child: Text(loc.filterVideos)),
-        CheckedPopupMenuItem(value: 'withTags', checked: _filter == 'withTags', child: Text(loc.filterWithTags)),
-        CheckedPopupMenuItem(value: 'withoutTags', checked: _filter == 'withoutTags', child: Text(loc.filterWithoutTags)),
-        CheckedPopupMenuItem(value: 'withAlbums', checked: _filter == 'withAlbums', child: Text(loc.filterWithAlbums)),
-        CheckedPopupMenuItem(value: 'withoutAlbums', checked: _filter == 'withoutAlbums', child: Text(loc.filterWithoutAlbums)),
+        CheckedPopupMenuItem(
+            value: 'all',
+            checked: _filter == 'all',
+            child: Text(loc.filterAll)),
+        CheckedPopupMenuItem(
+            value: 'image',
+            checked: _filter == 'image',
+            child: Text(loc.filterImages)),
+        CheckedPopupMenuItem(
+            value: 'video',
+            checked: _filter == 'video',
+            child: Text(loc.filterVideos)),
+        CheckedPopupMenuItem(
+            value: 'withTags',
+            checked: _filter == 'withTags',
+            child: Text(loc.filterWithTags)),
+        CheckedPopupMenuItem(
+            value: 'withoutTags',
+            checked: _filter == 'withoutTags',
+            child: Text(loc.filterWithoutTags)),
+        CheckedPopupMenuItem(
+            value: 'withAlbums',
+            checked: _filter == 'withAlbums',
+            child: Text(loc.filterWithAlbums)),
+        CheckedPopupMenuItem(
+            value: 'withoutAlbums',
+            checked: _filter == 'withoutAlbums',
+            child: Text(loc.filterWithoutAlbums)),
       ],
     );
   }

@@ -177,9 +177,9 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
 
       for (final e in entities) {
         try {
-          if (e is Directory)
+          if (e is Directory) {
             dirs.add(e);
-          else if (e is File) fils.add(e);
+          } else if (e is File) fils.add(e);
         } catch (_) {}
       }
 
@@ -219,13 +219,18 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
     if (e is Directory) return Icons.folder;
     final ext = _ext(e.path);
     if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic', 'heif']
-        .contains(ext)) return Icons.image;
-    if (['mp4', 'mkv', 'avi', 'mov', 'webm', 'flv'].contains(ext))
+        .contains(ext)) {
+      return Icons.image;
+    }
+    if (['mp4', 'mkv', 'avi', 'mov', 'webm', 'flv'].contains(ext)) {
       return Icons.videocam;
-    if (['mp3', 'wav', 'flac', 'aac', 'ogg'].contains(ext))
+    }
+    if (['mp3', 'wav', 'flac', 'aac', 'ogg'].contains(ext)) {
       return Icons.audiotrack;
-    if (['pdf', 'doc', 'docx', 'txt', 'md', 'epub'].contains(ext))
+    }
+    if (['pdf', 'doc', 'docx', 'txt', 'md', 'epub'].contains(ext)) {
       return Icons.description;
+    }
     if (['zip', 'rar', '7z', 'tar', 'gz'].contains(ext)) return Icons.archive;
     return Icons.insert_drive_file;
   }
@@ -476,10 +481,11 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
               _navigateTo(path, AppLocalizations.of(context));
             } else {
               setState(() {
-                if (sel)
+                if (sel) {
                   _selected.remove(path);
-                else
+                } else {
                   _selected.add(path);
+                }
               });
             }
           },

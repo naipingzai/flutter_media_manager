@@ -39,11 +39,6 @@ dependencies:
   # 本地数据库 (Flutter 侧辅助)
   sqflite: ^2.3.3+1
 
-  # 国际化
-  flutter_localizations:
-    sdk: flutter
-  intl: ^0.20.2
-
   # 图片缓存
   cached_network_image: ^3.4.1
 
@@ -105,3 +100,4 @@ flutter:
   # assets:
   #   - assets/images/
   #   - assets/icons/
+  # assets:

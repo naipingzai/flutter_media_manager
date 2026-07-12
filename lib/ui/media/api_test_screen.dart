@@ -1,14 +1,23 @@
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
-import 'package:flutter_media_knowledge_base/bridge/native/api/settings.dart' as settings_api;
-import 'package:flutter_media_knowledge_base/bridge/native/api/media.dart' as media_api;
-import 'package:flutter_media_knowledge_base/bridge/native/api/import_export.dart' as import_export_api;
-import 'package:flutter_media_knowledge_base/bridge/native/api/album.dart' as album_api;
-import 'package:flutter_media_knowledge_base/bridge/native/api/tag.dart' as tag_api;
-import 'package:flutter_media_knowledge_base/bridge/native/api/note.dart' as note_api;
-import 'package:flutter_media_knowledge_base/bridge/native/api/search.dart' as search_api;
-import 'package:flutter_media_knowledge_base/bridge/native/api/scanner.dart' as scanner_api;
-import 'package:flutter_media_knowledge_base/bridge/native/api/import_export.dart' as import_export_api;
+import 'package:flutter_media_knowledge_base/bridge/native/api/settings.dart'
+    as settings_api;
+import 'package:flutter_media_knowledge_base/bridge/native/api/media.dart'
+    as media_api;
+import 'package:flutter_media_knowledge_base/bridge/native/api/import_export.dart'
+    as import_export_api;
+import 'package:flutter_media_knowledge_base/bridge/native/api/album.dart'
+    as album_api;
+import 'package:flutter_media_knowledge_base/bridge/native/api/tag.dart'
+    as tag_api;
+import 'package:flutter_media_knowledge_base/bridge/native/api/note.dart'
+    as note_api;
+import 'package:flutter_media_knowledge_base/bridge/native/api/search.dart'
+    as search_api;
+import 'package:flutter_media_knowledge_base/bridge/native/api/scanner.dart'
+    as scanner_api;
+import 'package:flutter_media_knowledge_base/bridge/native/api/import_export.dart'
+    as import_export_api;
 
 /// API 测试结果
 class ApiTestResult {
@@ -164,7 +173,7 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
   // ===== 搜索 API 测试 =====
   Future<ApiTestResult> _testSearch() async {
     return _runTest('Search - SearchFilterDefault', () async {
-      final filter = await search_api.SearchFilter.default_;
+      final filter = search_api.SearchFilter.default_;
       return 'filter=$filter';
     });
   }
@@ -172,7 +181,7 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
   // ===== 扫描 API 测试 =====
   Future<ApiTestResult> _testScanner() async {
     return _runTest('Scanner - GetSupportedExtensions', () async {
-      final exts = await import_export_api.getSupportedExtensions();
+      final exts = import_export_api.getSupportedExtensions();
       return 'exts=$exts';
     });
   }
@@ -257,7 +266,9 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
                     subtitle: Text(
                       '${result.durationMs}ms | ${result.success ? '成功' : '失败'}',
                       style: TextStyle(
-                        color: result.success ? Colors.green[700] : Colors.red[700],
+                        color: result.success
+                            ? Colors.green[700]
+                            : Colors.red[700],
                       ),
                     ),
                     children: [

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Flutter 开发学习资料整理</title>
+<style>
+  body { font-family: "Noto Sans CJK SC", "PingFang SC", "Microsoft YaHei", sans-serif; line-height: 1.8; padding: 40px; max-width: 900px; margin: 0 auto; color: #333; }
+  h1 { font-size: 28px; border-bottom: 2px solid #007ACC; padding-bottom: 10px; color: #007ACC; }
+  h2 { font-size: 22px; margin-top: 30px; border-left: 4px solid #007ACC; padding-left: 10px; }
+  h3 { font-size: 18px; margin-top: 20px; color: #444; }
+  p { margin: 10px 0; }
+  ul { margin: 10px 0; padding-left: 25px; }
+  li { margin: 5px 0; }
+  code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; font-family: Consolas, monospace; font-size: 0.95em; }
+  pre { background: #f5f5f5; padding: 10px; border-radius: 6px; overflow-x: auto; margin: 10px 0; }
+  a { color: #007ACC; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  table { border-collapse: collapse; width: 100%; margin: 15px 0; }
+  th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+  th { background: #f5f5f5; }
+  hr { border: none; border-top: 1px solid #ddd; margin: 20px 0; }
+</style>
+</head>
+<body>
+
+<h1>Flutter 开发学习资料整理</h1>
+
+<h2>一、官方中文文档</h2>
+
+<h3>1. Flutter 官方中文文档</h3>
+<ul>
+  <li>网址：<a href="https://docs.flutter.cn/">https://docs.flutter.cn/</a></li>
+  <li>说明：Flutter 官方出品的中文文档，由官方和社区共同维护。内容涵盖安装、入门、UI 构建、状态管理、路由导航、测试、发布等。</li>
+</ul>
+
+<h3>2. Flutter Cookbook（中文）</h3>
+<ul>
+  <li>网址：<a href="https://docs.flutter.cn/cookbook">https://docs.flutter.cn/cookbook</a></li>
+  <li>说明：大量"如何做"的实战示例，适合查阅具体功能实现。</li>
+</ul>
+
+<h3>3. Dart 官方中文文档</h3>
+<ul>
+  <li>网址：<a href="https://dart.cn/">https://dart.cn/</a></li>
+  <li>说明：学习 Dart 语言本身的语法、异步、类、库等。</li>
+</ul>
+
+<hr>
+
+<h2>二、建议学习路线</h2>
+
+<h3>第 1 步：Dart 语言基础</h3>
+<ul>
+  <li>文档：<a href="https://dart.cn/guides/language/language-tour">https://dart.cn/guides/language/language-tour</a></li>
+  <li>重点内容：
+    <ul>
+      <li>变量、函数、类</li>
+      <li>异步编程：<code>async</code> / <code>await</code></li>
+      <li>集合类型：List、Map、Set</li>
+    </ul>
+  </li>
+</ul>
+
+<h3>第 2 步：Flutter 入门</h3>
+<ul>
+  <li>文档：<a href="https://docs.flutter.cn/get-started/install">https://docs.flutter.cn/get-started/install</a></li>
+  <li>重点内容：
+    <ul>
+      <li>安装开发环境</li>
+      <li>创建第一个 Flutter 应用</li>
+      <li>理解 Widget 概念</li>
+    </ul>
+  </li>
+</ul>
+
+<h3>第 3 步：Flutter UI 构建</h3>
+<ul>
+  <li>文档：<a href="https://docs.flutter.cn/ui">https://docs.flutter.cn/ui</a></li>
+  <li>重点内容：
+    <ul>
+      <li>无状态 Widget：<code>StatelessWidget</code></li>
+      <li>有状态 Widget：<code>StatefulWidget</code></li>
+      <li>常用布局：Row、Column、Stack、ListView、GridView</li>
+      <li>常用组件：Text、Button、Image、TextField、Card、Dialog</li>
+    </ul>
+  </li>
+</ul>
+
+<h3>第 4 步：状态管理</h3>
+<ul>
+  <li>进阶内容，建议后面再看</li>
+  <li>常见方案：
+    <ul>
+      <li><code>setState</code></li>
+      <li><code>Provider</code></li>
+      <li><code>BLoC</code></li>
+      <li><code>Riverpod</code></li>
+    </ul>
+  </li>
+</ul>
+
+<hr>
+
+<h2>三、如何读懂本项目的 Flutter 页面代码</h2>
+
+<h3>1. 先看 Widget 树的整体结构</h3>
+<p>Flutter 页面本质上是一棵嵌套的 Widget 树。看代码时，先找最外层和关键分支：</p>
+
+<pre><code>@override
+Widget build(BuildContext context) {
+  return Scaffold(           // 页面骨架：顶部栏、底部栏、浮动按钮
+    appBar: AppBar(...),    // 顶部标题栏
+    body: Column(           // 垂直排列
+      children: [
+        SearchBar(...),     // 搜索栏
+        Expanded(           // 占据剩余空间
+          child: GridView(...), // 网格列表
+        ),
+      ],
+    ),
+  );
+}</code></pre>
+
+<ul>
+  <li><code>Scaffold</code>：整个页面框架</li>
+  <li><code>AppBar</code>：顶部标题栏</li>
+  <li><code>body</code>：页面主体内容</li>
+  <li><code>Column</code> / <code>Row</code>：垂直 / 水平排列</li>
+  <li><code>Expanded</code>：让子组件占满剩余空间</li>
+</ul>
+
+<h3>2. 用 VS Code 的 Flutter 工具直观查看</h3>
+<ul>
+  <li><strong>Flutter Outline</strong>：在 VS Code 左侧边栏打开，能看到当前文件的 Widget 层级结构。</li>
+  <li><strong>Widget Inspector</strong>：运行应用后打开 DevTools，点击 Inspector，在手机上点哪个 UI 元素，代码里就会高亮对应的 Widget。</li>
+  <li><strong>Flutter DevTools</strong>：可查看页面渲染树、性能、网络请求等。</li>
+</ul>
+
+<h3>3. 定位某个 UI 元素在代码中的位置</h3>
+<p>如果你看到界面上某个按钮/文字，但不知道代码在哪：</p>
+<ol>
+  <li>找到它的文字内容（比如"搜索"）。</li>
+  <li>用 VS Code 全局搜索 <code>Ctrl + Shift + F</code> 搜这个文字。</li>
+  <li>找到后，向上看几层，就能知道它属于哪个 Widget。</li>
+</ol>
+
+<h3>4. 常见 Widget 与 UI 元素对照</h3>
+
+<table>
+  <tr><th>代码里的 Widget</th><th>在页面上是什么</th></tr>
+  <tr><td><code>Text("标题")</code></td><td>一段文字</td></tr>
+  <tr><td><code>ElevatedButton(...)</code></td><td>凸起按钮</td></tr>
+  <tr><td><code>IconButton(...)</code></td><td>图标按钮</td></tr>
+  <tr><td><code>TextField(...)</code></td><td>输入框</td></tr>
+  <tr><td><code>ListView(...)</code></td><td>可滚动列表</td></tr>
+  <tr><td><code>GridView(...)</code></td><td>网格</td></tr>
+  <tr><td><code>Image(...)</code> / <code>Image.network(...)</code></td><td>图片</td></tr>
+  <tr><td><code>Container(...)</code></td><td>带样式（颜色、边距、圆角）的盒子</td></tr>
+  <tr><td><code>Card(...)</code></td><td>卡片</td></tr>
+  <tr><td><code>Dialog</code> / <code>AlertDialog(...)</code></td><td>弹窗</td></tr>
+</table>
+
+<h3>5. 从具体页面文件入手</h3>
+<p>本项目 <code>lib/ui/</code> 目录下按页面分文件：</p>
+<ul>
+  <li><code>home_screen.dart</code>：首页</li>
+  <li><code>media_screen.dart</code>：媒体页</li>
+  <li><code>settings_screen.dart</code>：设置页</li>
+  <li><code>album_screen.dart</code>：相册页</li>
+  <li><code>tag_screen.dart</code>：标签页</li>
+  <li><code>search_screen.dart</code>：搜索页</li>
+</ul>
+<p>想看哪个页面，就打开对应文件，直接找 <code>build()</code> 方法。</p>
+
+<hr>
+
+<h2>四、结合官方文档查 Widget</h2>
+
+<p>看到项目代码中不认识的 Widget 时，可以去官方文档搜索：</p>
+
+<table>
+  <tr><th>Widget</th><th>搜索关键词</th></tr>
+  <tr><td><code>Scaffold</code></td><td>Flutter Scaffold</td></tr>
+  <tr><td><code>AppBar</code></td><td>Flutter AppBar</td></tr>
+  <tr><td><code>ListView</code></td><td>Flutter ListView</td></tr>
+  <tr><td><code>GridView</code></td><td>Flutter GridView</td></tr>
+  <tr><td><code>BlocBuilder</code></td><td>Flutter BLoC</td></tr>
+  <tr><td><code>GoRouter</code></td><td>Flutter GoRouter</td></tr>
+</table>
+
+<hr>
+
+<h2>五、其他中文社区资源</h2>
+
+<ul>
+  <li>Flutter 中文社区：<a href="https://flutter-io.cn/">https://flutter-io.cn/</a></li>
+  <li>CSDN、掘金、知乎：有很多 Flutter 中文教程</li>
+  <li>B站：有很多 Flutter 中文视频教程</li>
+</ul>
+
+<hr>
+
+<h2>六、下一步建议</h2>
+
+<p>如果想快速理解本项目，建议先选一个最感兴趣的页面，比如：</p>
+<ul>
+  <li>首页 <code>lib/ui/home/home_screen.dart</code></li>
+  <li>媒体页 <code>lib/ui/media/media_screen.dart</code></li>
+  <li>设置页 <code>lib/ui/settings/settings_screen.dart</code></li>
+</ul>
+
+<p>逐层阅读 <code>build()</code> 方法，对照模拟器/真机上的界面，把每个 Widget 和屏幕上的区域对应起来。</p>
+
+<p>如有需要，可以指定具体页面，让我帮你逐行解释代码和 UI 的对应关系。</p>
+
+</body>
+</html>

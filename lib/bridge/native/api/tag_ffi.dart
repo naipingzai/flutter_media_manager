@@ -54,11 +54,13 @@ class TagFfi {
   }
 
   DynamicLibrary _openLib() {
-    if (Platform.isLinux || Platform.isAndroid)
+    if (Platform.isLinux || Platform.isAndroid) {
       return DynamicLibrary.open('libadvance_media_kb.so');
+    }
     if (Platform.isWindows) return DynamicLibrary.open('advance_media_kb.dll');
-    if (Platform.isMacOS)
+    if (Platform.isMacOS) {
       return DynamicLibrary.open('libadvance_media_kb.dylib');
+    }
     throw UnsupportedError('Unsupported platform');
   }
 

@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_media_knowledge_base/bridge/native/api/note.dart';
 import 'package:logger/logger.dart';
-import 'package:flutter_media_knowledge_base/functionality/media/media_bloc.dart';
 
 part 'note_event.dart';
 part 'note_state.dart';

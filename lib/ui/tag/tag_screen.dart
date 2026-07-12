@@ -594,7 +594,7 @@ class _TagScreenState extends State<TagScreen> {
                                 : null,
                             boxShadow: isSelected
                                 ? [
-                                    BoxShadow(
+                                    const BoxShadow(
                                         color: Colors.black26, blurRadius: 4)
                                   ]
                                 : null,
@@ -718,7 +718,7 @@ class _TagScreenState extends State<TagScreen> {
                                     : null,
                                 boxShadow: isSelected
                                     ? [
-                                        BoxShadow(
+                                        const BoxShadow(
                                             color: Colors.black26,
                                             blurRadius: 4)
                                       ]
@@ -740,7 +740,7 @@ class _TagScreenState extends State<TagScreen> {
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String?>(
-                        value: selectedParentId,
+                        initialValue: selectedParentId,
                         isExpanded: true,
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
@@ -904,8 +904,7 @@ class _TagBreadcrumbItem extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.isActive,
-    this.onTap,
-  });
+  }) : onTap = null;
 
   @override
   Widget build(BuildContext context) {

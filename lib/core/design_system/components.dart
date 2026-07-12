@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'app_theme.dart';
-import '../i18n/app_localizations.dart' hide AppLocalizations;
 
 /// Material 3 横向滚动面包屑导航栏 - 自动滚动到最新层级
 class BreadcrumbBar extends StatefulWidget {

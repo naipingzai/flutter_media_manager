@@ -128,9 +128,9 @@ class ImportStateMachine {
             status != ImportStatus.error) {
           return this; // 非法转换
         }
-        return ImportStateMachine(
+        return const ImportStateMachine(
           status: ImportStatus.scanning,
-          files: const [],
+          files: [],
           current: 0,
           total: 0,
           successCount: 0,

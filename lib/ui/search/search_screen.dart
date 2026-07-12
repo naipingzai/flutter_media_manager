@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_media_knowledge_base/core/design_system/app_theme.dart';
 import 'package:flutter_media_knowledge_base/core/i18n/app_localizations.dart';
-import 'package:flutter_media_knowledge_base/bridge/native/api/media.dart';
-import 'package:flutter_media_knowledge_base/bridge/native/api/note.dart' as note_api;
+import 'package:flutter_media_knowledge_base/bridge/native/api/note.dart'
+    as note_api;
 import 'package:flutter_media_knowledge_base/bridge/native/api/search.dart';
 import 'widgets/advanced_search_dialog.dart';
 import '../viewer/viewer_page.dart';
@@ -292,7 +292,8 @@ class _SearchScreenState extends State<SearchScreen> {
                     borderRadius: BorderRadius.circular(AppRadius.lg),
                     side: BorderSide(color: cs.outlineVariant),
                   ),
-                  leading: Icon(Icons.history, size: 20, color: cs.onSurfaceVariant),
+                  leading:
+                      Icon(Icons.history, size: 20, color: cs.onSurfaceVariant),
                   title: Text(
                     query,
                     style: tt.bodyLarge?.copyWith(color: cs.onSurface),
@@ -304,7 +305,8 @@ class _SearchScreenState extends State<SearchScreen> {
                   ),
                   onTap: () {
                     _controller.text = query;
-                    _controller.selection = TextSelection.collapsed(offset: query.length);
+                    _controller.selection =
+                        TextSelection.collapsed(offset: query.length);
                     _executeSearch(query);
                   },
                 ),
@@ -375,7 +377,8 @@ class _SearchScreenState extends State<SearchScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => ViewerPage(initialMedia: media, mediaList: _results),
+              builder: (_) =>
+                  ViewerPage(initialMedia: media, mediaList: _results),
             ),
           );
         },
@@ -470,7 +473,8 @@ class _SearchScreenState extends State<SearchScreen> {
             width: 56,
             height: 56,
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            child: Icon(_getMediaIcon(media.mediaType), color: Theme.of(context).colorScheme.onSurfaceVariant),
+            child: Icon(_getMediaIcon(media.mediaType),
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ),
       );
@@ -482,24 +486,31 @@ class _SearchScreenState extends State<SearchScreen> {
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
-      child: Icon(_getMediaIcon(media.mediaType), color: Theme.of(context).colorScheme.onSurfaceVariant),
+      child: Icon(_getMediaIcon(media.mediaType),
+          color: Theme.of(context).colorScheme.onSurfaceVariant),
     );
   }
 
   IconData _getMediaIcon(MediaType type) {
     switch (type) {
-      case MediaType.image: return Icons.image;
-      case MediaType.video: return Icons.videocam;
-      case MediaType.audio: return Icons.audiotrack;
-      case MediaType.document: return Icons.description;
-      case MediaType.other: return Icons.insert_drive_file;
+      case MediaType.image:
+        return Icons.image;
+      case MediaType.video:
+        return Icons.videocam;
+      case MediaType.audio:
+        return Icons.audiotrack;
+      case MediaType.document:
+        return Icons.description;
+      case MediaType.other:
+        return Icons.insert_drive_file;
     }
   }
 
   String _formatSize(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    if (bytes < 1024 * 1024 * 1024)
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 

@@ -6,8 +6,7 @@ import 'package:flutter_media_knowledge_base/ui/media/media_screen.dart';
 import 'package:flutter_media_knowledge_base/ui/album/album_screen.dart';
 import 'package:flutter_media_knowledge_base/ui/tag/tag_screen.dart';
 
-/// 主屏幕，包含底部导航栏（3 个 Tab：所有媒体/相册/标签）
-/// Skill-09 §1：只有 3 个主页 Tab，笔记通过详情页 Tab 使用（Skill-14）
+/// 主屏幕，包含底部导航栏（3 个 Tab：媒体/相册/标签）
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -38,8 +37,8 @@ class HomeScreen extends StatelessWidget {
                 label: AppLocalizations.of(context).tabAllMedia,
               ),
               NavigationDestination(
-                icon: const Icon(Icons.photo_album_outlined),
-                selectedIcon: const Icon(Icons.photo_album),
+                icon: const Icon(Icons.photo_camera_outlined),
+                selectedIcon: const Icon(Icons.photo_camera),
                 label: AppLocalizations.of(context).tabAlbums,
               ),
               NavigationDestination(

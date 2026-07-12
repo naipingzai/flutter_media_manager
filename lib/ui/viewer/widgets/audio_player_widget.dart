@@ -112,7 +112,8 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
       );
     }
 
-    final durationMs = _duration.inMilliseconds.toDouble().clamp(1, double.infinity);
+    final durationMs =
+        _duration.inMilliseconds.toDouble().clamp(1, double.infinity);
     final positionMs = _position.inMilliseconds.toDouble().clamp(0, durationMs);
 
     return Center(
@@ -144,7 +145,8 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
           // 文件名
           Text(
             widget.filePath.split('/').last,
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 13),
+            style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5), fontSize: 13),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 32),
@@ -159,10 +161,10 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
                 ),
                 Expanded(
                   child: SliderTheme(
-                    data: SliderThemeData(
+                    data: const SliderThemeData(
                       trackHeight: 4,
-                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
-                      overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                      thumbShape: RoundSliderThumbShape(enabledThumbRadius: 7),
+                      overlayShape: RoundSliderOverlayShape(overlayRadius: 14),
                       activeTrackColor: Colors.white,
                       inactiveTrackColor: Colors.white30,
                       thumbColor: Colors.white,
@@ -187,7 +189,8 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               IconButton(
-                icon: const Icon(Icons.skip_previous, color: Colors.white, size: 36),
+                icon: const Icon(Icons.skip_previous,
+                    color: Colors.white, size: 36),
                 onPressed: () {
                   _player.seek(Duration.zero);
                 },
@@ -200,7 +203,9 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
                 ),
                 child: IconButton(
                   icon: Icon(
-                    _isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
+                    _isPlaying
+                        ? Icons.pause_circle_filled
+                        : Icons.play_circle_filled,
                     color: Colors.white,
                     size: 64,
                   ),
@@ -209,7 +214,8 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
               ),
               const SizedBox(width: 16),
               IconButton(
-                icon: const Icon(Icons.skip_next, color: Colors.white, size: 36),
+                icon:
+                    const Icon(Icons.skip_next, color: Colors.white, size: 36),
                 onPressed: () {
                   _player.seek(_duration);
                 },
@@ -225,10 +231,10 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
                 const Icon(Icons.volume_down, color: Colors.white60, size: 18),
                 Expanded(
                   child: SliderTheme(
-                    data: SliderThemeData(
+                    data: const SliderThemeData(
                       trackHeight: 3,
-                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                      overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                      thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
+                      overlayShape: RoundSliderOverlayShape(overlayRadius: 12),
                       activeTrackColor: Colors.white,
                       inactiveTrackColor: Colors.white30,
                       thumbColor: Colors.white,

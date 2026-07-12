@@ -154,14 +154,17 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   @override
   Widget build(BuildContext context) {
     if (!_isInitialized || _controller == null) {
-      return const Center(child: CircularProgressIndicator(color: Colors.white));
+      return const Center(
+          child: CircularProgressIndicator(color: Colors.white));
     }
 
     final controller = _controller!;
     final position = controller.value.position;
     final duration = controller.value.duration;
-    final maxMs = duration.inMilliseconds.toDouble().clamp(1, double.infinity).toDouble();
-    final valueMs = position.inMilliseconds.toDouble().clamp(0, maxMs).toDouble();
+    final maxMs =
+        duration.inMilliseconds.toDouble().clamp(1, double.infinity).toDouble();
+    final valueMs =
+        position.inMilliseconds.toDouble().clamp(0, maxMs).toDouble();
 
     return GestureDetector(
       onTap: _toggleControls,
@@ -214,14 +217,17 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                         ],
                         Text(
                           _formatDuration(position),
-                          style: const TextStyle(color: Colors.white, fontSize: 12),
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 12),
                         ),
                         Expanded(
                           child: SliderTheme(
-                            data: SliderThemeData(
+                            data: const SliderThemeData(
                               trackHeight: 4,
-                              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                              overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                              thumbShape:
+                                  RoundSliderThumbShape(enabledThumbRadius: 6),
+                              overlayShape:
+                                  RoundSliderOverlayShape(overlayRadius: 12),
                               activeTrackColor: Colors.white,
                               inactiveTrackColor: Colors.white30,
                               thumbColor: Colors.white,
@@ -236,11 +242,13 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                         ),
                         Text(
                           _formatDuration(duration),
-                          style: const TextStyle(color: Colors.white, fontSize: 12),
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 12),
                         ),
                         if (_showControls) ...[
                           const SizedBox(width: 12),
-                          _buildControlButton(Icons.fullscreen, _toggleFullscreen),
+                          _buildControlButton(
+                              Icons.fullscreen, _toggleFullscreen),
                         ],
                       ],
                     ),
@@ -252,6 +260,5 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         ],
       ),
     );
-
   }
 }

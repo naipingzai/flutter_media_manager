@@ -2,6 +2,7 @@
 /// 作用:     相册相关 C 函数的 Dart FFI 封装
 /// 说明:     使用 dart:ffi 直接调用 native/src/ffi_bridge.cpp 中导出的
 ///           amkb_* 函数，并通过静态回调收集 C 端返回的多条记录。
+library;
 
 import 'dart:ffi';
 import 'dart:io';
@@ -43,11 +44,13 @@ class AlbumFfi {
   }
 
   DynamicLibrary _openLib() {
-    if (Platform.isLinux || Platform.isAndroid)
+    if (Platform.isLinux || Platform.isAndroid) {
       return DynamicLibrary.open('libadvance_media_kb.so');
+    }
     if (Platform.isWindows) return DynamicLibrary.open('advance_media_kb.dll');
-    if (Platform.isMacOS)
+    if (Platform.isMacOS) {
       return DynamicLibrary.open('libadvance_media_kb.dylib');
+    }
     throw UnsupportedError('Unsupported platform');
   }
 

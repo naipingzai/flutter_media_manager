@@ -4,6 +4,7 @@
 // 说明:     定义所有 C++ 导出函数的 Dart 类型签名，并提供单例类
 //           NativeLibrary 用于动态加载 .so / .dll / .dylib 并调用函数。
 ////////////////////////////////////////////////////////////////////////
+library;
 
 // --------------------------------------------------------------------
 import 'dart:ffi';
@@ -187,15 +188,12 @@ class NativeLibrary {
     if (Platform.isLinux) {
       // 加载 libadvance_media_kb.so
       return DynamicLibrary.open('libadvance_media_kb.so');
-    }
-    else if (Platform.isAndroid) {
+    } else if (Platform.isAndroid) {
       // Android 的 .so 已打包到 jniLibs，同名加载
       return DynamicLibrary.open('libadvance_media_kb.so');
-    }
-    else if (Platform.isWindows) {
+    } else if (Platform.isWindows) {
       return DynamicLibrary.open('advance_media_kb.dll');
-    }
-    else if (Platform.isMacOS) {
+    } else if (Platform.isMacOS) {
       return DynamicLibrary.open('libadvance_media_kb.dylib');
     }
     throw UnsupportedError('Platform not supported');

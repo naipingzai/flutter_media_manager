@@ -2,6 +2,7 @@
 /// 作用:     媒体业务 API 的 Dart 封装
 /// 说明:     将 FFI 返回的 MediaItemData 转换为强类型 MediaItem，
 ///           提供查询、搜索、删除、导入等高层接口。
+library;
 
 export '../models.dart';
 

@@ -1,6 +1,7 @@
 /// 文件坐标: lib/core/design_system/app_theme.dart
 /// 作用:     Material 3 设计系统常量与主题工厂
 /// 说明:     定义间距、尺寸、圆角、动画、色板、文本样式和完整 ThemeData。
+library;
 
 import 'package:flutter/material.dart';
 import 'package:dynamic_color/dynamic_color.dart';
@@ -155,8 +156,9 @@ String formatFileSize(Object bytes) {
   final b = (bytes is BigInt) ? bytes.toInt() : bytes as int;
   if (b < 1024) return '$b B';
   if (b < 1024 * 1024) return '${(b / 1024).toStringAsFixed(1)} KB';
-  if (b < 1024 * 1024 * 1024)
+  if (b < 1024 * 1024 * 1024) {
     return '${(b / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
   return '${(b / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
 }
 
@@ -522,8 +524,9 @@ class AppTheme {
       ),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected))
+          if (states.contains(WidgetState.selected)) {
             return colorScheme.onPrimary;
+          }
           return colorScheme.outline;
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
@@ -696,13 +699,15 @@ class AppTheme {
       segmentedButtonTheme: SegmentedButtonThemeData(
         style: ButtonStyle(
           backgroundColor: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.selected))
+            if (states.contains(WidgetState.selected)) {
               return colorScheme.secondaryContainer;
+            }
             return Colors.transparent;
           }),
           foregroundColor: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.selected))
+            if (states.contains(WidgetState.selected)) {
               return colorScheme.onSecondaryContainer;
+            }
             return colorScheme.onSurface;
           }),
           textStyle: WidgetStateProperty.all(tt.labelLarge),

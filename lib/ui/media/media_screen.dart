@@ -643,8 +643,8 @@ class _MediaScreenState extends State<MediaScreen> {
       if (!context.mounted) return;
       final result = await showDialog<Set<String>>(
           context: context,
-          builder: (ctx) =>
-              _TagSelectionDialog(tags: tags, preselectedIds: <String>{}));
+          builder: (ctx) => _TagSelectionDialog(
+              tags: tags, preselectedIds: const <String>{}));
       if (result == null || result.isEmpty) return;
       int successCount = 0;
       for (final mediaId in mediaIds) {

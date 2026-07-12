@@ -2,6 +2,7 @@
 /// 作用:     相册业务 API 的 Dart 封装
 /// 说明:     将底层 FFI 返回的原始数据转换为应用层强类型模型，
 ///           供 BLoC/UI 调用。
+library;
 
 export '../models.dart';
 
