@@ -6,15 +6,17 @@ import 'package:path_provider/path_provider.dart';
 
 import 'package:flutter_media_knowledge_base/core/i18n/app_localizations.dart';
 import 'package:flutter_media_knowledge_base/core/design_system/app_theme.dart';
-import 'package:flutter_media_knowledge_base/bridge/native/api/settings.dart' as native_api;
-import 'package:flutter_media_knowledge_base/bridge/native/api/import_export.dart' as native_export;
-import 'package:flutter_media_knowledge_base/bridge/native/api/media.dart' as media_api;
+import 'package:flutter_media_knowledge_base/bridge/native/api/settings.dart'
+    as native_api;
+import 'package:flutter_media_knowledge_base/bridge/native/api/import_export.dart'
+    as native_export;
+import 'package:flutter_media_knowledge_base/bridge/native/api/media.dart'
+    as media_api;
 import 'package:flutter_media_knowledge_base/ui/media/api_test_screen.dart';
 import 'package:flutter_media_knowledge_base/functionality/tag/tag_bloc.dart';
 import 'package:flutter_media_knowledge_base/functionality/album/album_bloc.dart';
 import 'package:flutter_media_knowledge_base/functionality/media/media_bloc.dart';
 import 'package:flutter_media_knowledge_base/functionality/home/app_bloc.dart';
-
 
 /// 设置页面
 class SettingsScreen extends StatefulWidget {
@@ -54,7 +56,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: Text(AppLocalizations.of(context).settings),
         centerTitle: true,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(AppRadius.xxl)),
+          borderRadius:
+              BorderRadius.vertical(bottom: Radius.circular(AppRadius.xxl)),
         ),
       ),
       body: BlocBuilder<AppBloc, AppState>(
@@ -67,132 +70,127 @@ class _SettingsScreenState extends State<SettingsScreen> {
           }
 
           return ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
+            borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(AppRadius.xxl)),
             child: ListView(
               children: [
                 _SectionHeader(title: AppLocalizations.of(context).themeMode),
-              ListTile(
-                leading: const Icon(Icons.palette),
-                title: Text(AppLocalizations.of(context).themeMode),
-                subtitle: Text(_themeModeLabel(settings.themeMode)),
-                onTap: () => _showThemeModeDialog(context, settings),
-              ),
-              // 语言设置
-              ListTile(
-                leading: const Icon(Icons.language),
-                title: Text(AppLocalizations.of(context).language),
-                subtitle: Text(_languageLabel(settings.language)),
-                onTap: () => _showLanguageDialog(context, settings),
-              ),
-              const Divider(),
-              _SectionHeader(title: AppLocalizations.of(context).display),
-              ListTile(
-                leading: const Icon(Icons.photo_size_select_small),
-                title: Text(loc.thumbnailQualityLabel),
-                subtitle: Text('${settings.thumbnailQuality}%'),
-                onTap: () => _showThumbnailQualityDialog(context, settings),
-              ),
-              ListTile(
-                leading: const Icon(Icons.grid_view),
-                title: Text(loc.gridColumns),
-                subtitle: Text('${settings.gridColumns} ${loc.columns}'),
-                onTap: () => _showGridColumnsDialog(context, settings),
-              ),
-              const Divider(),
-              _SectionHeader(title: loc.storageSection),
-              if (_loadingStats)
-                const Padding(
-                  padding: EdgeInsets.all(AppSpacing.lg),
-                  child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                )
-              else ...[
                 ListTile(
-                  leading: const Icon(Icons.storage),
-                  title: Text(loc.storageStats),
-                  subtitle: Text(_buildStatsText(context)),
+                  leading: const Icon(Icons.palette),
+                  title: Text(AppLocalizations.of(context).themeMode),
+                  subtitle: Text(_themeModeLabel(settings.themeMode)),
+                  onTap: () => _showThemeModeDialog(context, settings),
+                ),
+                const Divider(),
+                _SectionHeader(title: AppLocalizations.of(context).display),
+                ListTile(
+                  leading: const Icon(Icons.photo_size_select_small),
+                  title: Text(loc.thumbnailQualityLabel),
+                  subtitle: Text('${settings.thumbnailQuality}%'),
+                  onTap: () => _showThumbnailQualityDialog(context, settings),
                 ),
                 ListTile(
-                  leading: const Icon(Icons.cleaning_services),
-                  title: Text(loc.clearThumbnailCache),
-                  subtitle: Text(_stats != null
-                      ? _formatSize(_stats!.thumbnailCacheSize)
-                      : loc.clickToClearUnreferenced),
-                  onTap: () => _clearThumbnailCache(context),
+                  leading: const Icon(Icons.grid_view),
+                  title: Text(loc.gridColumns),
+                  subtitle: Text('${settings.gridColumns} ${loc.columns}'),
+                  onTap: () => _showGridColumnsDialog(context, settings),
+                ),
+                const Divider(),
+                _SectionHeader(title: loc.storageSection),
+                if (_loadingStats)
+                  const Padding(
+                    padding: EdgeInsets.all(AppSpacing.lg),
+                    child: Center(
+                        child: CircularProgressIndicator(strokeWidth: 2)),
+                  )
+                else ...[
+                  ListTile(
+                    leading: const Icon(Icons.storage),
+                    title: Text(loc.storageStats),
+                    subtitle: Text(_buildStatsText(context)),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.cleaning_services),
+                    title: Text(loc.clearThumbnailCache),
+                    subtitle: Text(_stats != null
+                        ? _formatSize(_stats!.thumbnailCacheSize)
+                        : loc.clickToClearUnreferenced),
+                    onTap: () => _clearThumbnailCache(context),
+                  ),
+                ],
+                const Divider(),
+                _SectionHeader(title: loc.dataSection),
+                ListTile(
+                  leading: const Icon(Icons.import_export),
+                  title: Text(loc.importDb),
+                  subtitle: Text(loc.importDbDesc),
+                  onTap: () => _showImportDialog(context),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.folder_zip),
+                  title: Text(loc.importZip),
+                  subtitle: Text(loc.importZipDesc),
+                  onTap: () => _showImportZipDialog(context),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.backup),
+                  title: Text(loc.exportDb),
+                  onTap: () => _showExportDialog(context),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.archive),
+                  title: Text(loc.exportZip),
+                  subtitle: Text(loc.exportZipDesc),
+                  onTap: () => _showExportZipDialog(context),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.find_in_page),
+                  title: Text(loc.findUnreferenced),
+                  subtitle: Text(loc.findUnreferencedDesc),
+                  onTap: () => _showFindUnreferencedDialog(context),
+                ),
+                ListTile(
+                  leading: Icon(Icons.delete_forever, color: cs.error),
+                  title: Text(
+                    loc.clearAllData,
+                    style: TextStyle(color: cs.error),
+                  ),
+                  onTap: () => _showClearDataConfirmDialog(context),
+                ),
+                const Divider(),
+                _SectionHeader(title: loc.devSection),
+                ListTile(
+                  leading: const Icon(Icons.bug_report),
+                  title: Text(loc.apiTest),
+                  subtitle: Text(loc.apiTestDesc),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ApiTestScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const Divider(),
+                _SectionHeader(title: loc.aboutSection),
+                ListTile(
+                  leading: const Icon(Icons.info),
+                  title: Text(loc.versionLabel),
+                  subtitle: const Text('1.0.0'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.code),
+                  title: Text(loc.techStack),
+                  subtitle: Text(loc.techStackValue),
                 ),
               ],
-              const Divider(),
-              _SectionHeader(title: loc.dataSection),
-              ListTile(
-                leading: const Icon(Icons.import_export),
-                title: Text(loc.importDb),
-                subtitle: Text(loc.importDbDesc),
-                onTap: () => _showImportDialog(context),
-              ),
-              ListTile(
-                leading: const Icon(Icons.folder_zip),
-                title: Text(loc.importZip),
-                subtitle: Text(loc.importZipDesc),
-                onTap: () => _showImportZipDialog(context),
-              ),
-              ListTile(
-                leading: const Icon(Icons.backup),
-                title: Text(loc.exportDb),
-                onTap: () => _showExportDialog(context),
-              ),
-              ListTile(
-                leading: const Icon(Icons.archive),
-                title: Text(loc.exportZip),
-                subtitle: Text(loc.exportZipDesc),
-                onTap: () => _showExportZipDialog(context),
-              ),
-              ListTile(
-                leading: const Icon(Icons.find_in_page),
-                title: Text(loc.findUnreferenced),
-                subtitle: Text(loc.findUnreferencedDesc),
-                onTap: () => _showFindUnreferencedDialog(context),
-              ),
-              ListTile(
-                leading: Icon(Icons.delete_forever, color: cs.error),
-                title: Text(
-                  loc.clearAllData,
-                  style: TextStyle(color: cs.error),
-                ),
-                onTap: () => _showClearDataConfirmDialog(context),
-              ),
-              const Divider(),
-              _SectionHeader(title: loc.devSection),
-              ListTile(
-                leading: const Icon(Icons.bug_report),
-                title: Text(loc.apiTest),
-                subtitle: Text(loc.apiTestDesc),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ApiTestScreen(),
-                    ),
-                  );
-                },
-              ),
-              const Divider(),
-              _SectionHeader(title: loc.aboutSection),
-              ListTile(
-                leading: const Icon(Icons.info),
-                title: Text(loc.versionLabel),
-                subtitle: const Text('1.0.0'),
-              ),
-              ListTile(
-                leading: const Icon(Icons.code),
-                title: Text(loc.techStack),
-                subtitle: Text(loc.techStackValue),
-              ),
-            ],
-          ),
-        );
-      },
-    ),
-  );
-}
+            ),
+          );
+        },
+      ),
+    );
+  }
 
   String _buildStatsText(BuildContext context) {
     final loc = AppLocalizations.of(context);
@@ -218,7 +216,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await _loadStats();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(loc.clearedThumbnailCount.replaceAll('%d', deleted.toString()))),
+        SnackBar(
+            content: Text(loc.clearedThumbnailCount
+                .replaceAll('%d', deleted.toString()))),
       );
     } catch (e) {
       if (!mounted) return;
@@ -240,85 +240,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  String _languageLabel(String lang) {
-    final loc = AppLocalizations.of(context);
-    switch (lang) {
-      case 'zh':
-        return loc.languageZh;
-      case 'en':
-        return loc.languageEn;
-      default:
-        return loc.languageSystem;
-    }
-  }
-
-  void _showLanguageDialog(
-      BuildContext context, native_api.AppSettings settings) {
-    final loc = AppLocalizations.of(context);
-    showDialog(
-      context: context,
-      builder: (dialogCtx) {
-        return AlertDialog(
-          title: Text(loc.selectLanguage),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              RadioListTile<String>(
-                title: Text(loc.languageSystem),
-                value: 'system',
-                groupValue: settings.language,
-                onChanged: (value) => _changeLanguage(context, dialogCtx, settings, value),
-              ),
-              RadioListTile<String>(
-                title: Text(loc.languageZh),
-                value: 'zh',
-                groupValue: settings.language,
-                onChanged: (value) => _changeLanguage(context, dialogCtx, settings, value),
-              ),
-              RadioListTile<String>(
-                title: Text(loc.languageEn),
-                value: 'en',
-                groupValue: settings.language,
-                onChanged: (value) => _changeLanguage(context, dialogCtx, settings, value),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  /// Skill-16：语言切换 + 重启提示
-  void _changeLanguage(
-    BuildContext outerCtx,
-    BuildContext dialogCtx,
-    native_api.AppSettings settings,
-    String? value,
-  ) {
-    if (value == null || value == settings.language) {
-      Navigator.pop(dialogCtx);
-      return;
-    }
-    final newSettings = native_api.AppSettings(
-      themeMode: settings.themeMode,
-      gridColumns: settings.gridColumns,
-      albumGridColumns: settings.albumGridColumns,
-      thumbnailQuality: settings.thumbnailQuality,
-      language: value,
-      dynamicColor: settings.dynamicColor,
-      lastScanPath: settings.lastScanPath,
-    );
-    outerCtx.read<AppBloc>().add(AppSettingsUpdatedEvent(newSettings));
-    Navigator.pop(dialogCtx);
-    // Skill-16 §3：语言切换后提示重启
-    ScaffoldMessenger.of(outerCtx).showSnackBar(
-      SnackBar(
-        content: Text(AppLocalizations.of(outerCtx).languageChangeRestart),
-        duration: const Duration(seconds: 3),
-      ),
-    );
-  }
-
   void _showThemeModeDialog(
       BuildContext context, native_api.AppSettings settings) {
     final loc = AppLocalizations.of(context);
@@ -336,9 +257,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 groupValue: settings.themeMode,
                 onChanged: (value) {
                   if (value != null) {
-                    context
-                        .read<AppBloc>()
-                        .add(AppThemeChangedEvent(value));
+                    context.read<AppBloc>().add(AppThemeChangedEvent(value));
                     Navigator.pop(context);
                   }
                 },
@@ -349,9 +268,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 groupValue: settings.themeMode,
                 onChanged: (value) {
                   if (value != null) {
-                    context
-                        .read<AppBloc>()
-                        .add(AppThemeChangedEvent(value));
+                    context.read<AppBloc>().add(AppThemeChangedEvent(value));
                     Navigator.pop(context);
                   }
                 },
@@ -362,9 +279,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 groupValue: settings.themeMode,
                 onChanged: (value) {
                   if (value != null) {
-                    context
-                        .read<AppBloc>()
-                        .add(AppThemeChangedEvent(value));
+                    context.read<AppBloc>().add(AppThemeChangedEvent(value));
                     Navigator.pop(context);
                   }
                 },
@@ -485,12 +400,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text(loc.importDataSuccess)),
                       );
-                      context
-                          .read<AppBloc>()
-                          .add(const AppInitializeEvent());
-                      context
-                          .read<MediaBloc>()
-                          .add(const MediaLoadAllEvent());
+                      context.read<AppBloc>().add(const AppInitializeEvent());
+                      context.read<MediaBloc>().add(const MediaLoadAllEvent());
                     }
                   } catch (e) {
                     if (context.mounted) {
@@ -527,14 +438,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Navigator.pop(context);
                 final result = await FilePicker.platform.getDirectoryPath();
                 if (result != null) {
-                  final exportPath =
-                      '$result/advance_media_kb_backup.db';
+                  final exportPath = '$result/advance_media_kb_backup.db';
                   try {
-                    await native_api.exportData(
-                        exportPath: exportPath);
+                    await native_api.exportData(exportPath: exportPath);
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('${loc.exportedTo}: $exportPath')),
+                        SnackBar(
+                            content: Text('${loc.exportedTo}: $exportPath')),
                       );
                     }
                   } catch (e) {
@@ -607,7 +517,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 final path = result.files.single.path!;
                 // 显示冲突策略选择
                 if (!context.mounted) return;
-                final strategy = await showDialog<native_export.ConflictStrategy>(
+                final strategy =
+                    await showDialog<native_export.ConflictStrategy>(
                   context: context,
                   builder: (ctx) => AlertDialog(
                     title: Text(loc.conflictStrategy),
@@ -618,19 +529,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           title: Text(loc.strategySkip),
                           subtitle: Text(loc.strategySkipDesc),
                           leading: const Icon(Icons.skip_next),
-                          onTap: () => Navigator.pop(ctx, native_export.ConflictStrategy.skip),
+                          onTap: () => Navigator.pop(
+                              ctx, native_export.ConflictStrategy.skip),
                         ),
                         ListTile(
                           title: Text(loc.strategyReplace),
                           subtitle: Text(loc.strategyReplaceDesc),
                           leading: const Icon(Icons.swap_horiz),
-                          onTap: () => Navigator.pop(ctx, native_export.ConflictStrategy.replace),
+                          onTap: () => Navigator.pop(
+                              ctx, native_export.ConflictStrategy.replace),
                         ),
                         ListTile(
                           title: Text(loc.strategyRename),
                           subtitle: Text(loc.strategyRenameDesc),
                           leading: const Icon(Icons.drive_file_rename_outline),
-                          onTap: () => Navigator.pop(ctx, native_export.ConflictStrategy.rename),
+                          onTap: () => Navigator.pop(
+                              ctx, native_export.ConflictStrategy.rename),
                         ),
                       ],
                     ),
@@ -647,7 +561,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const CircularProgressIndicator(),
-                        SizedBox(height: AppSpacing.lg),
+                        const SizedBox(height: AppSpacing.lg),
                         Text(loc.importingZip),
                       ],
                     ),
@@ -733,7 +647,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const CircularProgressIndicator(),
-                      SizedBox(height: AppSpacing.lg),
+                      const SizedBox(height: AppSpacing.lg),
                       Text(loc.exportingZip),
                     ],
                   ),
@@ -777,7 +691,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const CircularProgressIndicator(),
-            SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             Text(loc.scanningUnreferenced),
           ],
         ),
@@ -834,7 +748,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: Text(loc.unreferencedFound.replaceAll('%d', '${unreferenced.length}')),
+          title: Text(
+              loc.unreferencedFound.replaceAll('%d', '${unreferenced.length}')),
           content: SizedBox(
             width: double.maxFinite,
             height: 300,
@@ -846,7 +761,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 final size = file.existsSync() ? file.lengthSync() : 0;
                 return ListTile(
                   dense: true,
-                  leading: const Icon(Icons.insert_drive_file, size: AppSpacing.xl),
+                  leading:
+                      const Icon(Icons.insert_drive_file, size: AppSpacing.xl),
                   title: Text(fileName, style: AppTextStyles.body),
                   subtitle: Text(
                     '${(size / 1024).toStringAsFixed(1)} KB',
@@ -874,11 +790,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 }
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(loc.unreferencedDeleted.replaceAll('%d', deleted.toString()))),
+                  SnackBar(
+                      content: Text(loc.unreferencedDeleted
+                          .replaceAll('%d', deleted.toString()))),
                 );
                 await _loadStats();
               },
-              child: Text(loc.deleteAll.replaceAll('%d', '${unreferenced.length}')),
+              child: Text(
+                  loc.deleteAll.replaceAll('%d', '${unreferenced.length}')),
             ),
           ],
         ),
@@ -925,7 +844,8 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.md),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.md),
       child: Text(
         title,
         style: Theme.of(context).textTheme.titleSmall?.copyWith(

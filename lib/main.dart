@@ -1,13 +1,11 @@
 import 'dart:developer' as developer;
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path_provider/path_provider.dart';
 import 'bridge/native/native_library.dart';
 import 'bridge/native/api/settings.dart' as native_api;
 import 'core/design_system/app_theme.dart';
-import 'core/i18n/app_localizations.dart';
 import 'core/navigation/app_router.dart';
 
 import 'functionality/home/app_bloc.dart';
@@ -125,36 +123,15 @@ class FlutterMediaDB extends StatelessWidget {
         BlocProvider<TagBloc>(create: (context) => TagBloc()),
         BlocProvider<NoteBloc>(create: (context) => NoteBloc()),
       ],
-
       child: BlocBuilder<AppBloc, AppState>(
         builder: (context, state) {
           return MaterialApp(
             title: 'AdvanceMediaKB',
-
             debugShowCheckedModeBanner: false,
-
-            locale: _resolveLocale(state.settings?.language),
-
-            localizationsDelegates: const [
-              AppLocalizations.delegate, // 自定义本地化
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-
-            supportedLocales: const [
-              Locale('zh'), // 中文
-              Locale('en'), // 英文
-            ],
-
             theme: AppTheme.lightTheme(),
-
             darkTheme: AppTheme.darkTheme(),
-
             themeMode: _mapThemeMode(state.settings?.themeMode),
-
             onGenerateRoute: (settings) => generateRoute(settings),
-
             home: const HomeScreen(),
           );
         },
@@ -171,22 +148,6 @@ class FlutterMediaDB extends StatelessWidget {
         return ThemeMode.dark;
       default:
         return ThemeMode.system;
-    }
-  }
-
-  // ------------------------------------------------------------------
-  Locale _resolveLocale(String? language) {
-    switch (language) {
-      case 'zh':
-        return const Locale('zh');
-      case 'en':
-        return const Locale('en');
-      default:
-        final systemLocale = WidgetsBinding.instance.platformDispatcher.locale;
-        if (['zh', 'en'].contains(systemLocale.languageCode)) {
-          return Locale(systemLocale.languageCode);
-        }
-        return const Locale('zh');
     }
   }
 }
