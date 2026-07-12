@@ -149,10 +149,6 @@ class AppLocalizations {
   String get themeSystem => _get('themeSystem');
   String get themeLight => _get('themeLight');
   String get themeDark => _get('themeDark');
-  String get language => _get('language');
-  String get languageSystem => _get('languageSystem');
-  String get languageZh => _get('languageZh');
-  String get languageEn => _get('languageEn');
   String get gridColumns => _get('gridColumns');
   String get albumGridColumns => _get('albumGridColumns');
   String get showPreview => _get('showPreview');
@@ -163,7 +159,6 @@ class AppLocalizations {
   String get confirmClearData => _get('confirmClearData');
   String get storageManagement => _get('storageManagement');
   String get storageManagementDesc => _get('storageManagementDesc');
-  String get languageChangeRestart => _get('languageChangeRestart');
   String get version => _get('version');
   String get editMode => _get('editMode');
   String get copyPath => _get('copyPath');
@@ -293,7 +288,6 @@ class AppLocalizations {
   String get techStackValue => _get('techStackValue');
   String get clearedThumbnailCount => _get('clearedThumbnailCount');
   String get cleanFailed => _get('cleanFailed');
-  String get selectLanguage => _get('selectLanguage');
   String get moveLeft => _get('moveLeft');
   String get moveRight => _get('moveRight');
 
@@ -490,9 +484,6 @@ const Map<String, String> _zhStrings = {
   'themeLight': '浅色',
   'themeDark': '深色',
   'language': '语言',
-  'languageSystem': '跟随系统',
-  'languageZh': '简体中文',
-  'languageEn': '英文',
   'gridColumns': '网格列数',
   'albumGridColumns': '相册网格列数',
   'showPreview': '显示内容预览',
@@ -503,7 +494,6 @@ const Map<String, String> _zhStrings = {
   'confirmClearData': '确定要清除所有数据吗？此操作不可恢复！',
   'storageManagement': '存储管理',
   'storageManagementDesc': '管理缩略图缓存和未引用的文件',
-  'languageChangeRestart': '语言设置将在应用重启后生效',
   'version': '版本',
   'editMode': '编辑模式',
   'copyPath': '复制路径',
@@ -620,7 +610,6 @@ const Map<String, String> _zhStrings = {
   'techStackValue': 'Flutter + C++ (sqlite3)',
   'clearedThumbnailCount': '已清理 %d 个缩略图文件',
   'cleanFailed': '清理失败: %s',
-  'selectLanguage': '选择语言',
   'importData': '导入数据',
   'importDataDesc': '导入功能将替换当前数据库。请确保已备份重要数据。\\n\\n选择之前导出的数据库文件（.db）进行导入。',
   'exportData': '导出数据',
