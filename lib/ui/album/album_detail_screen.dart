@@ -4,7 +4,10 @@ import 'package:flutter_media_manager/core/design_system/app_theme.dart';
 import 'package:flutter_media_manager/core/i18n/app_localizations.dart';
 import 'package:flutter_media_manager/bridge/native/api/album.dart';
 import 'package:flutter_media_manager/ui/viewer/viewer_page.dart';
+import 'package:flutter_media_manager/ui/media/widgets/file_browser_dialog.dart';
 import 'package:flutter_media_manager/functionality/home/app_bloc.dart';
+import 'package:flutter_media_manager/bridge/native/api/media.dart'
+    as media_api;
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// 相册详情页 - 显示相册内的媒体网格
@@ -71,10 +74,23 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
         title: Text(widget.albumName),
       ),
       body: _buildBody(context, loc, cs),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showCreateAlbumDialog(context),
-        icon: const Icon(Icons.create_new_folder_rounded, size: 20),
-        label: Text(loc.createAlbum),
+      floatingActionButton: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton.extended(
+            heroTag: 'detail_import',
+            onPressed: () => _showImportMediaDialog(context),
+            icon: const Icon(Icons.add_photo_alternate_rounded, size: 20),
+            label: Text(loc.importMedia),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          FloatingActionButton.extended(
+            heroTag: 'detail_create',
+            onPressed: () => _showCreateAlbumDialog(context),
+            icon: const Icon(Icons.create_new_folder_rounded, size: 20),
+            label: Text(loc.createAlbum),
+          ),
+        ],
       ),
     );
   }
@@ -109,6 +125,40 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Future<void> _showImportMediaDialog(BuildContext context) async {
+    final loc = AppLocalizations.of(context);
+    final filePaths = await openFileBrowser(context);
+    if (filePaths.isEmpty) return;
+    if (!context.mounted) return;
+
+    int successCount = 0;
+    int failCount = 0;
+    for (final path in filePaths) {
+      try {
+        final file = File(path);
+        if (!await file.exists()) {
+          failCount++;
+          continue;
+        }
+        await media_api.importSingleFile(filePath: path);
+        successCount++;
+      } catch (_) {
+        failCount++;
+      }
+    }
+    // Add imported media to this album
+    if (successCount > 0) {
+      try {
+        await addMediaToAlbum(mediaIds: [], albumId: widget.albumId);
+      } catch (_) {}
+    }
+    if (!context.mounted) return;
+    _loadData();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${loc.importComplete}: $successCount')),
     );
   }
 
@@ -314,40 +364,24 @@ class _AlbumCard extends StatelessWidget {
     final loc = AppLocalizations.of(context);
 
     return Card(
+      color: cs.primaryContainer.withOpacity(0.15),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+          child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: cs.primaryContainer.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                ),
-                child:
-                    Icon(Icons.camera_alt_rounded, size: 32, color: cs.primary),
+              Expanded(
+                child: Text(name,
+                    style: AppTextStyles.subtitle.copyWith(color: cs.onSurface),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
               ),
-              const SizedBox(height: AppSpacing.md),
-              Text(name,
-                  style: AppTextStyles.subtitle.copyWith(color: cs.onSurface),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis),
-              const SizedBox(height: AppSpacing.xs),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: cs.surfaceContainerHighest.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(AppRadius.full),
-                ),
-                child: Text('$mediaCount ${loc.files}',
-                    style: AppTextStyles.caption
-                        .copyWith(color: cs.onSurfaceVariant)),
-              ),
+              Text('$mediaCount',
+                  style: AppTextStyles.caption
+                      .copyWith(color: cs.onSurfaceVariant)),
             ],
           ),
         ),
@@ -440,3 +474,4 @@ class _MediaGridItem extends StatelessWidget {
     }
   }
 }
+

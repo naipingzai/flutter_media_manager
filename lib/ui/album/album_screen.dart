@@ -347,8 +347,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
       try {
         await importSingleFile(filePath: path);
         successCount++;
-      } catch (_) {
-      }
+      } catch (_) {}
     }
     // 添加到相册
     if (successCount > 0) {
@@ -538,11 +537,10 @@ class _AlbumCard extends StatelessWidget {
         onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md, vertical: AppSpacing.sm),
           child: Row(
             children: [
-              Icon(Icons.photo_album_rounded, size: 20, color: cs.primary),
-              const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(name,
                     style: AppTextStyles.subtitle.copyWith(color: cs.onSurface),
@@ -559,4 +557,3 @@ class _AlbumCard extends StatelessWidget {
     );
   }
 }
-
