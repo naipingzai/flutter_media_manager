@@ -4,8 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:flutter_media_manager/core/i18n/app_localizations.dart';
 import 'package:flutter_media_manager/core/design_system/app_theme.dart';
-import 'package:flutter_media_manager/bridge/native/api/tag.dart'
-    as tag_api;
+import 'package:flutter_media_manager/bridge/native/api/tag.dart' as tag_api;
 import 'package:flutter_media_manager/bridge/native/api/media.dart';
 import '../viewer/viewer_page.dart';
 import '../../functionality/tag/tag_bloc.dart';
@@ -537,7 +536,6 @@ class _TagScreenState extends State<TagScreen> {
     );
   }
 
-
   // ── Create tag dialog ───────────────────────────────────────────
   void _showCreateTagDialog(BuildContext context) {
     final loc = AppLocalizations.of(context);
@@ -817,7 +815,7 @@ class _TagScreenState extends State<TagScreen> {
                       Text(loc.tagParent, style: AppTextStyles.subtitle),
                       const SizedBox(height: AppSpacing.sm),
                       DropdownButtonFormField<String?>(
-                        initialValue: selectedParentId,
+                        value: selectedParentId,
                         isExpanded: true,
                         decoration: const InputDecoration(
                           contentPadding:

@@ -430,7 +430,7 @@ class _AdvancedSearchDialogState extends State<AdvancedSearchDialog> {
           _buildEmptyHint(loc.noAlbums, cs, tt)
         else
           DropdownButtonFormField<album_api.AlbumWithInfo>(
-            initialValue: _selectedAlbum,
+            value: _selectedAlbum,
             decoration: InputDecoration(
               hintText: loc.selectAlbum,
               prefixIcon: const Icon(Icons.photo_album, size: 20),
