@@ -129,25 +129,20 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
   }
 
   Future<void> _showImportMediaDialog(BuildContext context) async {
-    final loc = AppLocalizations.of(context);
     final filePaths = await openFileBrowser(context);
     if (filePaths.isEmpty) return;
     if (!context.mounted) return;
 
     int successCount = 0;
-    int failCount = 0;
     for (final path in filePaths) {
       try {
         final file = File(path);
         if (!await file.exists()) {
-          failCount++;
           continue;
         }
         await media_api.importSingleFile(filePath: path);
         successCount++;
-      } catch (_) {
-        failCount++;
-      }
+      } catch (_) {}
     }
     // Add imported media to this album
     if (successCount > 0) {
@@ -157,6 +152,7 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
     }
     if (!context.mounted) return;
     _loadData();
+    final loc = AppLocalizations.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('${loc.importComplete}: $successCount')),
     );
@@ -361,7 +357,6 @@ class _AlbumCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final loc = AppLocalizations.of(context);
 
     return Card(
       color: cs.primaryContainer.withOpacity(0.15),
@@ -474,4 +469,3 @@ class _MediaGridItem extends StatelessWidget {
     }
   }
 }
-

@@ -528,7 +528,6 @@ class _AlbumCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final loc = AppLocalizations.of(context);
 
     return Card(
       color: cs.primaryContainer.withOpacity(0.15),
