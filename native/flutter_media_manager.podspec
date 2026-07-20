@@ -10,8 +10,8 @@ Pod::Spec.new do |s|
   s.platform         = :ios, '13.0'
   s.swift_version    = '5.0'
 
-  s.source_files     = 'src/**/*.{cpp,h}', 'third_party/**/*.{c,h}'
-  s.public_header_files = 'src/**/*.h', 'third_party/**/*.h'
+  s.source_files     = 'src/**/*.{cpp,h}', 'third_party/sqlite3.h'
+  s.public_header_files = 'src/**/*.h', 'third_party/sqlite3.h'
 
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
