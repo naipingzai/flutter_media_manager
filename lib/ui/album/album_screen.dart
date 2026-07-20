@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_media_manager/core/i18n/app_localizations.dart';
 import 'package:flutter_media_manager/core/design_system/app_theme.dart';
+import 'package:flutter_media_manager/core/design_system/components.dart';
 import 'package:flutter_media_manager/bridge/native/api/album.dart';
 import 'package:flutter_media_manager/bridge/native/api/media.dart';
 import 'package:flutter_media_manager/functionality/home/app_bloc.dart';
 import 'package:flutter_media_manager/ui/album/album_detail_screen.dart';
-import 'package:flutter_media_manager/ui/media/widgets/file_browser_dialog.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// 相册管理页面 - 支持创建、重命名、删除、网格列数控制
@@ -328,43 +328,42 @@ class _AlbumScreenState extends State<AlbumScreen> {
     );
   }
 
-  // ── 导入媒体到相册 ─────────────────────────────────────────────
+  // ── 导入已有媒体到相册 ─────────────────────────────────────────
   void _showImportMediaDialog(BuildContext context) async {
     final loc = AppLocalizations.of(context);
-    final filePaths = await _pickFiles(context);
-    if (filePaths.isEmpty) return;
-
+    // 获取所有已有媒体
+    final allMedia = await getAllMedia();
+    if (allMedia.isEmpty) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.noMediaDesc)),
+      );
+      return;
+    }
     // 选择目标相册
-    if (!mounted) return;
+    if (!context.mounted) return;
     final selectedAlbum = await showDialog<String>(
       context: context,
       builder: (ctx) => const _SelectAlbumDialog(),
     );
     if (selectedAlbum == null) return;
-
-    int successCount = 0;
-    for (final path in filePaths) {
-      try {
-        await importSingleFile(filePath: path);
-        successCount++;
-      } catch (_) {}
-    }
+    // 选择要添加的媒体
+    if (!context.mounted) return;
+    final selectedMediaIds = await showDialog<Set<String>>(
+      context: context,
+      builder: (ctx) => _MediaSelectionDialog(allMedia: allMedia),
+    );
+    if (selectedMediaIds == null || selectedMediaIds.isEmpty) return;
     // 添加到相册
-    if (successCount > 0) {
-      try {
-        await addMediaToAlbum(mediaIds: [], albumId: selectedAlbum);
-      } catch (_) {}
-    }
-    if (!mounted) return;
+    try {
+      await addMediaToAlbum(
+          mediaIds: selectedMediaIds.toList(), albumId: selectedAlbum);
+    } catch (_) {}
+    if (!context.mounted) return;
     _loadAlbums();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${loc.importComplete}: $successCount')),
+      SnackBar(content: Text('${loc.addToAlbum} ${selectedMediaIds.length}')),
     );
-  }
-
-  Future<List<String>> _pickFiles(BuildContext context) async {
-    final result = await openFileBrowser(context);
-    return result;
   }
 
   // ── 删除确认 ───────────────────────────────────────────────────
@@ -553,6 +552,62 @@ class _AlbumCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+// ── Media selection dialog ──────────────────────────────────────
+class _MediaSelectionDialog extends StatefulWidget {
+  final List<MediaItem> allMedia;
+  const _MediaSelectionDialog({required this.allMedia});
+  @override
+  State<_MediaSelectionDialog> createState() => _MediaSelectionDialogState();
+}
+
+class _MediaSelectionDialogState extends State<_MediaSelectionDialog> {
+  final Set<String> _selectedIds = {};
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final loc = AppLocalizations.of(context);
+    return AlertDialog(
+      title: Text(loc.importMedia),
+      content: SizedBox(
+        width: double.maxFinite,
+        height: 400,
+        child: ListView.builder(
+          itemCount: widget.allMedia.length,
+          itemBuilder: (ctx, i) {
+            final media = widget.allMedia[i];
+            final isSelected = _selectedIds.contains(media.id);
+            return CheckboxListTile(
+              value: isSelected,
+              onChanged: (val) {
+                setState(() {
+                  if (val == true) {
+                    _selectedIds.add(media.id);
+                  } else {
+                    _selectedIds.remove(media.id);
+                  }
+                });
+              },
+              title: Text(media.originalName, maxLines: 1, overflow: TextOverflow.ellipsis),
+              subtitle: Text(formatFileSize(media.size), style: AppTextStyles.caption),
+            );
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(loc.cancel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _selectedIds),
+          child: Text('${loc.confirm} (${_selectedIds.length})'),
+        ),
+      ],
     );
   }
 }

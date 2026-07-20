@@ -920,12 +920,16 @@ int Database::import_media(const std::string& fp, const std::string& ad) {
         dp = ad + "/media/" + sn;
         counter++;
     }
-    // 缩略图占位路径
-    std::string tp = ad + "/media/thumbnails/" + generate_uuid() + ".jpg";
+    // 缩略图路径：图片类型直接用原文件路径，非图片创建空占位
+    std::string tp;
+    if (mt == "image") {
+        tp = dp;  // 图片直接用存储路径作为缩略图
+    } else {
+        tp = ad + "/media/thumbnails/" + generate_uuid() + ".jpg";
+        { std::ofstream th(tp); th << ""; }
+    }
     // 复制文件到目标目录
     fs::copy_file(fp, dp);
-    // 创建空缩略图文件占位
-    { std::ofstream th(tp); th << ""; }
     // 加锁保护数据库写入
     std::lock_guard<std::mutex> lock(mutex_);
     // SQL 语句指针

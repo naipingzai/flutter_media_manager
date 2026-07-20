@@ -4,7 +4,6 @@ import 'package:flutter_media_manager/core/design_system/app_theme.dart';
 import 'package:flutter_media_manager/core/i18n/app_localizations.dart';
 import 'package:flutter_media_manager/bridge/native/api/album.dart';
 import 'package:flutter_media_manager/ui/viewer/viewer_page.dart';
-import 'package:flutter_media_manager/ui/media/widgets/file_browser_dialog.dart';
 import 'package:flutter_media_manager/functionality/home/app_bloc.dart';
 import 'package:flutter_media_manager/bridge/native/api/media.dart'
     as media_api;
@@ -129,32 +128,32 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
   }
 
   Future<void> _showImportMediaDialog(BuildContext context) async {
-    final filePaths = await openFileBrowser(context);
-    if (filePaths.isEmpty) return;
+    final loc = AppLocalizations.of(context);
+    // Get all existing media
+    final allMedia = await media_api.getAllMedia();
+    if (allMedia.isEmpty) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.noMediaDesc)),
+      );
+      return;
+    }
+    // Select media to add
     if (!context.mounted) return;
-
-    int successCount = 0;
-    for (final path in filePaths) {
-      try {
-        final file = File(path);
-        if (!await file.exists()) {
-          continue;
-        }
-        await media_api.importSingleFile(filePath: path);
-        successCount++;
-      } catch (_) {}
-    }
-    // Add imported media to this album
-    if (successCount > 0) {
-      try {
-        await addMediaToAlbum(mediaIds: [], albumId: widget.albumId);
-      } catch (_) {}
-    }
+    final selectedIds = await showDialog<Set<String>>(
+      context: context,
+      builder: (ctx) => _MediaSelectionDialog(allMedia: allMedia),
+    );
+    if (selectedIds == null || selectedIds.isEmpty) return;
+    // Add to album
+    try {
+      await addMediaToAlbum(
+          mediaIds: selectedIds.toList(), albumId: widget.albumId);
+    } catch (_) {}
     if (!context.mounted) return;
     _loadData();
-    final loc = AppLocalizations.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${loc.importComplete}: $successCount')),
+      SnackBar(content: Text('${loc.addToAlbum} ${selectedIds.length}')),
     );
   }
 
@@ -467,5 +466,59 @@ class _MediaGridItem extends StatelessWidget {
       default:
         return Icons.insert_drive_file_outlined;
     }
+  }
+}
+
+// ── Media selection dialog ──────────────────────────────────────
+class _MediaSelectionDialog extends StatefulWidget {
+  final List<MediaItem> allMedia;
+  const _MediaSelectionDialog({required this.allMedia});
+  @override
+  State<_MediaSelectionDialog> createState() => _MediaSelectionDialogState();
+}
+
+class _MediaSelectionDialogState extends State<_MediaSelectionDialog> {
+  final Set<String> _selectedIds = {};
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    return AlertDialog(
+      title: Text(loc.importMedia),
+      content: SizedBox(
+        width: double.maxFinite,
+        height: 400,
+        child: ListView.builder(
+          itemCount: widget.allMedia.length,
+          itemBuilder: (ctx, i) {
+            final media = widget.allMedia[i];
+            final isSelected = _selectedIds.contains(media.id);
+            return CheckboxListTile(
+              value: isSelected,
+              onChanged: (val) {
+                setState(() {
+                  if (val == true) {
+                    _selectedIds.add(media.id);
+                  } else {
+                    _selectedIds.remove(media.id);
+                  }
+                });
+              },
+              title: Text(media.originalName, maxLines: 1, overflow: TextOverflow.ellipsis),
+            );
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(loc.cancel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _selectedIds),
+          child: Text('${loc.confirm} (${_selectedIds.length})'),
+        ),
+      ],
+    );
   }
 }
