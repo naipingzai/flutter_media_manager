@@ -181,9 +181,13 @@ class _MediaGridItem extends StatelessWidget {
   }
 
   Widget _buildThumbnail(BuildContext context) {
-    if (media.thumbnailPath.isEmpty) return _buildFallbackIcon(context);
+    // Try thumbnail first, then fall back to original file path
+    final displayPath = media.thumbnailPath.isNotEmpty
+        ? media.thumbnailPath
+        : (media.mediaType == MediaType.image ? media.filePath : '');
+    if (displayPath.isEmpty) return _buildFallbackIcon(context);
     return Image.file(
-      File(media.thumbnailPath),
+      File(displayPath),
       fit: BoxFit.cover,
       errorBuilder: (_, __, ___) => _buildFallbackIcon(context),
     );
