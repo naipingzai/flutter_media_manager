@@ -5,7 +5,8 @@ import 'package:flutter_media_manager/core/design_system/app_theme.dart';
 import 'package:flutter_media_manager/core/i18n/app_localizations.dart';
 import 'package:flutter_media_manager/bridge/native/api/search.dart';
 import 'package:flutter_media_manager/bridge/native/api/tag.dart' as tag_api;
-import 'package:flutter_media_manager/bridge/native/api/album.dart' as album_api;
+import 'package:flutter_media_manager/bridge/native/api/album.dart'
+    as album_api;
 import 'package:flutter_media_manager/functionality/media/media_bloc.dart';
 
 /// 高级搜索对话框 - Material 3 组合筛选：关键词、类型、日期范围、标签、相册
@@ -429,7 +430,7 @@ class _AdvancedSearchDialogState extends State<AdvancedSearchDialog> {
           _buildEmptyHint(loc.noAlbums, cs, tt)
         else
           DropdownButtonFormField<album_api.AlbumWithInfo>(
-            initialValue: _selectedAlbum,
+            value: _selectedAlbum,
             decoration: InputDecoration(
               hintText: loc.selectAlbum,
               prefixIcon: const Icon(Icons.photo_album, size: 20),
