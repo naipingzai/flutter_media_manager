@@ -37,7 +37,7 @@ Future<void> main() async {
     if (Platform.isAndroid) {
       final externalDir = await getExternalStorageDirectory();
       if (externalDir != null) {
-        targetDir = '${externalDir.path}/AdvanceMediaKB';
+        targetDir = '${externalDir.path}/FlutterMediaManager';
         _log('Using external dir: $targetDir');
       }
     }
@@ -126,7 +126,7 @@ class FlutterMediaDB extends StatelessWidget {
         BlocProvider<TagBloc>(create: (context) => TagBloc()),
       ],
       child: MaterialApp(
-        title: 'AdvanceMediaKB',
+        title: 'Flutter Media Manager',
         debugShowCheckedModeBanner: false,
         theme: _buildLightTheme(),
         darkTheme: _buildDarkTheme(),

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_media_knowledge_base/core/i18n/app_localizations.dart';
-import 'package:flutter_media_knowledge_base/core/design_system/app_theme.dart';
-import 'package:flutter_media_knowledge_base/bridge/native/api/album.dart';
-import 'package:flutter_media_knowledge_base/bridge/native/api/media.dart';
-import 'package:flutter_media_knowledge_base/functionality/home/app_bloc.dart';
-import 'package:flutter_media_knowledge_base/ui/album/album_detail_screen.dart';
-import 'package:flutter_media_knowledge_base/ui/media/widgets/file_browser_dialog.dart';
+import 'package:flutter_media_manager/core/i18n/app_localizations.dart';
+import 'package:flutter_media_manager/core/design_system/app_theme.dart';
+import 'package:flutter_media_manager/bridge/native/api/album.dart';
+import 'package:flutter_media_manager/bridge/native/api/media.dart';
+import 'package:flutter_media_manager/functionality/home/app_bloc.dart';
+import 'package:flutter_media_manager/ui/album/album_detail_screen.dart';
+import 'package:flutter_media_manager/ui/media/widgets/file_browser_dialog.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// 相册管理页面 - 支持创建、重命名、删除、网格列数控制

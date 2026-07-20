@@ -2,18 +2,18 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:flutter_media_knowledge_base/core/design_system/app_theme.dart';
-import 'package:flutter_media_knowledge_base/core/i18n/app_localizations.dart';
+import 'package:flutter_media_manager/core/design_system/app_theme.dart';
+import 'package:flutter_media_manager/core/i18n/app_localizations.dart';
 import 'widgets/media_grid.dart';
 import 'widgets/file_browser_dialog.dart';
-import 'package:flutter_media_knowledge_base/bridge/native/api/media.dart';
-import 'package:flutter_media_knowledge_base/bridge/native/api/tag.dart';
-import 'package:flutter_media_knowledge_base/bridge/native/api/album.dart';
-import 'package:flutter_media_knowledge_base/core/navigation/app_router.dart';
-import 'package:flutter_media_knowledge_base/ui/search/search_screen.dart';
-import 'package:flutter_media_knowledge_base/ui/settings/settings_screen.dart';
+import 'package:flutter_media_manager/bridge/native/api/media.dart';
+import 'package:flutter_media_manager/bridge/native/api/tag.dart';
+import 'package:flutter_media_manager/bridge/native/api/album.dart';
+import 'package:flutter_media_manager/core/navigation/app_router.dart';
+import 'package:flutter_media_manager/ui/search/search_screen.dart';
+import 'package:flutter_media_manager/ui/settings/settings_screen.dart';
 import '../../functionality/media/media_bloc.dart';
-import 'package:flutter_media_knowledge_base/functionality/home/app_bloc.dart';
+import 'package:flutter_media_manager/functionality/home/app_bloc.dart';
 
 class MediaScreen extends StatefulWidget {
   const MediaScreen({super.key});

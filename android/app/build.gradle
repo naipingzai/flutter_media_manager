@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.flutter_media_knowledge_base"
+    namespace = "com.fluttermediamanager.flutter_media_manager"
     compileSdk = 36
     ndkVersion = "28.2.13676358"
 
@@ -15,7 +15,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.flutter_media_knowledge_base"
+        applicationId = "com.fluttermediamanager.flutter_media_manager"
         minSdkVersion = flutter.minSdkVersion
         targetSdk = 35
         versionCode = 1

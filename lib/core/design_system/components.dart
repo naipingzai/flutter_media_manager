@@ -117,3 +117,20 @@ class UIHelper {
 
 /// Convenience accessor for UIHelper.
 String formatFileSize(int bytes) => UIHelper.formatFileSize(bytes);
+
+/// Format duration (milliseconds) to human-readable string.
+String formatDuration(int? milliseconds) {
+  if (milliseconds == null || milliseconds <= 0) return '--';
+  final seconds = milliseconds ~/ 1000;
+  final minutes = seconds ~/ 60;
+  final hours = minutes ~/ 60;
+
+  if (hours > 0) {
+    final remainingMinutes = minutes % 60;
+    final remainingSeconds = seconds % 60;
+    return '${hours}:${remainingMinutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+  } else {
+    final remainingSeconds = seconds % 60;
+    return '${minutes}:${remainingSeconds.toString().padLeft(2, '0')}';
+  }
+}

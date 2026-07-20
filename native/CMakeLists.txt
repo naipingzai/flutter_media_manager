@@ -1,7 +1,7 @@
 ######################################################################
 # 文件坐标: native/CMakeLists.txt
 # 作用:     C++ 原生库的 CMake 构建配置
-# 说明:     构建 SQLite3 静态库和 advance_media_kb 动态共享库
+# 说明:     构建 SQLite3 静态库和 flutter_media_manager 动态共享库
 ######################################################################
 
 # --------------------------------------------------------------------
@@ -11,8 +11,8 @@ cmake_minimum_required(VERSION 3.10)
 
 # --------------------------------------------------------------------
 # 第 2 行: 定义项目名称并启用 C 和 C++ 语言支持
-# 项目名 advance_media_kb 会用于生成共享库文件名
-project(advance_media_kb C CXX)
+# 项目名 flutter_media_manager 会用于生成共享库文件名
+project(flutter_media_manager C CXX)
 
 # --------------------------------------------------------------------
 # 第 4 行: 设置 C++ 标准为 C++17
@@ -64,32 +64,32 @@ set(SOURCES
 # 第 19 行: 注释说明该共享库供 Dart FFI 动态加载
 
 # --------------------------------------------------------------------
-# 第 20 行: 创建共享库目标 advance_media_kb
-# 生成 libadvance_media_kb.so (Linux/Android)
-add_library(advance_media_kb SHARED ${SOURCES})
+# 第 20 行: 创建共享库目标 flutter_media_manager
+# 生成 libflutter_media_manager.so (Linux/Android)
+add_library(flutter_media_manager SHARED ${SOURCES})
 
 # --------------------------------------------------------------------
 # 第 21 行: 设置主库的私有头文件搜索路径
 # - src 目录包含 database.h
 # - third_party 目录包含 sqlite3.h
-target_include_directories(advance_media_kb PRIVATE src ${CMAKE_CURRENT_SOURCE_DIR}/third_party)
+target_include_directories(flutter_media_manager PRIVATE src ${CMAKE_CURRENT_SOURCE_DIR}/third_party)
 
 # --------------------------------------------------------------------
 # 第 22 行: 将 sqlite3 静态库链接到主共享库
 # PRIVATE 表示依赖不传递
-target_link_libraries(advance_media_kb PRIVATE sqlite3)
+target_link_libraries(flutter_media_manager PRIVATE sqlite3)
 
 # --------------------------------------------------------------------
 # 第 23 行: 设置主库的优化选项
 # -O2 优化，-fPIC 确保位置无关代码
-target_compile_options(advance_media_kb PRIVATE -O2 -fPIC)
+target_compile_options(flutter_media_manager PRIVATE -O2 -fPIC)
 
 # --------------------------------------------------------------------
 # 第 25 行: 条件判断：非 Apple 且非 Android 平台
 # 桌面 Linux 需要显式链接 pthread、dl 和数学库 m
 if(NOT APPLE AND NOT ANDROID)
     # 第 26 行: 链接 pthread 线程库、dl 动态加载库、m 数学库
-    target_link_libraries(advance_media_kb PRIVATE pthread dl m)
+    target_link_libraries(flutter_media_manager PRIVATE pthread dl m)
 endif()
 
 # --------------------------------------------------------------------
@@ -97,5 +97,5 @@ endif()
 # Android NDK 已经内置 pthread，但需要显式链接 log 库
 if(ANDROID)
     # 第 29 行: 链接 Android 日志库，用于原生层打印 logcat
-    target_link_libraries(advance_media_kb PRIVATE log)
+    target_link_libraries(flutter_media_manager PRIVATE log)
 endif()

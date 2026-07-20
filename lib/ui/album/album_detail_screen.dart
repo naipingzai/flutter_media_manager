@@ -1,11 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_media_knowledge_base/core/design_system/app_theme.dart';
-import 'package:flutter_media_knowledge_base/core/i18n/app_localizations.dart';
-import 'package:flutter_media_knowledge_base/bridge/native/api/album.dart';
-import 'package:flutter_media_knowledge_base/bridge/native/api/media.dart';
-import 'package:flutter_media_knowledge_base/ui/viewer/viewer_page.dart';
-import 'package:flutter_media_knowledge_base/functionality/home/app_bloc.dart';
+import 'package:flutter_media_manager/core/design_system/app_theme.dart';
+import 'package:flutter_media_manager/core/i18n/app_localizations.dart';
+import 'package:flutter_media_manager/bridge/native/api/album.dart';
+import 'package:flutter_media_manager/bridge/native/api/media.dart';
+import 'package:flutter_media_manager/ui/viewer/viewer_page.dart';
+import 'package:flutter_media_manager/functionality/home/app_bloc.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// 相册详情页 - 显示相册内的媒体网格

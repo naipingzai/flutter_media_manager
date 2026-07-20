@@ -1,4 +1,4 @@
-/// Design system for AdvanceMediaKB.
+/// Design system for Flutter Media Manager.
 ///
 /// Provides consistent spacing, radius, sizing, typography, and color
 /// tokens used across all UI surfaces.

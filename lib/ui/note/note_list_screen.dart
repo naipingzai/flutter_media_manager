@@ -5,11 +5,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../functionality/note/note_bloc.dart';
-import 'package:flutter_media_knowledge_base/core/design_system/app_theme.dart';
-import 'package:flutter_media_knowledge_base/core/design_system/components.dart';
-import 'package:flutter_media_knowledge_base/core/i18n/app_localizations.dart';
-import 'package:flutter_media_knowledge_base/core/navigation/app_router.dart';
-import 'package:flutter_media_knowledge_base/bridge/native/api/note.dart' as note_api;
+import 'package:flutter_media_manager/core/design_system/app_theme.dart';
+import 'package:flutter_media_manager/core/design_system/components.dart';
+import 'package:flutter_media_manager/core/i18n/app_localizations.dart';
+import 'package:flutter_media_manager/core/navigation/app_router.dart';
+import 'package:flutter_media_manager/bridge/native/api/note.dart' as note_api;
 import 'note_edit_screen.dart';
 
 /// 笔记列表页（覆盖层）

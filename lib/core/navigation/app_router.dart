@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_media_knowledge_base/ui/home/home_screen.dart';
-import 'package:flutter_media_knowledge_base/ui/settings/settings_screen.dart';
-import 'package:flutter_media_knowledge_base/ui/viewer/viewer_page.dart';
-import 'package:flutter_media_knowledge_base/bridge/native/api/media.dart'
+import 'package:flutter_media_manager/ui/home/home_screen.dart';
+import 'package:flutter_media_manager/ui/settings/settings_screen.dart';
+import 'package:flutter_media_manager/ui/viewer/viewer_page.dart';
+import 'package:flutter_media_manager/bridge/native/api/media.dart'
     as media_api;
 
 /// Skill-09: 应用壳与导航规范

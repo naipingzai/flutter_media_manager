@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:flutter_media_knowledge_base/core/i18n/app_localizations.dart';
-import 'package:flutter_media_knowledge_base/core/design_system/app_theme.dart';
-import 'package:flutter_media_knowledge_base/bridge/native/api/settings.dart'
+import 'package:flutter_media_manager/core/i18n/app_localizations.dart';
+import 'package:flutter_media_manager/core/design_system/app_theme.dart';
+import 'package:flutter_media_manager/bridge/native/api/settings.dart'
     as native_api;
-import 'package:flutter_media_knowledge_base/ui/media/api_test_screen.dart';
-import 'package:flutter_media_knowledge_base/functionality/home/app_bloc.dart';
+import 'package:flutter_media_manager/ui/media/api_test_screen.dart';
+import 'package:flutter_media_manager/functionality/home/app_bloc.dart';
 
 /// 设置页面
 class SettingsScreen extends StatefulWidget {

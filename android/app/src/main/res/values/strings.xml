@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">AdvanceMediaKB</string>
-    <string name="app_name_short">MediaKB</string>
+    <string name="app_name">Flutter Media Manager</string>
+    <string name="app_name_short">MediaMgr</string>
 </resources>

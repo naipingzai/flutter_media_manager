@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_media_knowledge_base/core/i18n/app_localizations.dart';
+import 'package:flutter_media_manager/core/i18n/app_localizations.dart';
 
 /// API test screen for debugging native bridge calls.
 class ApiTestScreen extends StatefulWidget {

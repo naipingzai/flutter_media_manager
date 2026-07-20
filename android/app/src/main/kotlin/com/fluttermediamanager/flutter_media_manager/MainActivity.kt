@@ -1,4 +1,4 @@
-package com.example.flutter_media_knowledge_base
+package com.fluttermediamanager.flutter_media_manager
 
 import io.flutter.embedding.android.FlutterActivity
 

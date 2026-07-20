@@ -1,4 +1,4 @@
-# AdvanceMediaKB
+# Flutter Media Manager
 
 一个跨平台媒体管理应用，支持 Android、iOS 和 macOS。
 

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../functionality/home/app_bloc.dart';
-import 'package:flutter_media_knowledge_base/core/i18n/app_localizations.dart';
-import 'package:flutter_media_knowledge_base/ui/media/media_screen.dart';
-import 'package:flutter_media_knowledge_base/ui/album/album_screen.dart';
-import 'package:flutter_media_knowledge_base/ui/tag/tag_screen.dart';
+import 'package:flutter_media_manager/core/i18n/app_localizations.dart';
+import 'package:flutter_media_manager/ui/media/media_screen.dart';
+import 'package:flutter_media_manager/ui/album/album_screen.dart';
+import 'package:flutter_media_manager/ui/tag/tag_screen.dart';
 
 /// 主屏幕，包含底部导航栏（3 个 Tab：媒体/相册/标签）
 class HomeScreen extends StatelessWidget {

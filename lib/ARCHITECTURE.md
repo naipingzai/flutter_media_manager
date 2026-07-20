@@ -1,4 +1,4 @@
-# AdvanceMediaKB 架构文档
+# Flutter Media Manager 架构文档
 
 ## 目录结构
 

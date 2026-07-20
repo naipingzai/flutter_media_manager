@@ -1,5 +1,5 @@
-name: flutter_media_knowledge_base
-description: "FlutterMediaKnowledgeBase - Cross-platform multimedia file management application (Flutter + C++)"
+name: flutter_media_manager
+description: "Flutter Media Manager - Cross-platform multimedia file management application (Flutter + C++)"
 publish_to: 'none'
 
 version: 1.0.0+1

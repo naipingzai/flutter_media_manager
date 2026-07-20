@@ -186,15 +186,15 @@ class NativeLibrary {
 
   DynamicLibrary _loadLibrary() {
     if (Platform.isLinux) {
-      // 加载 libadvance_media_kb.so
-      return DynamicLibrary.open('libadvance_media_kb.so');
+      // 加载 libflutter_media_manager.so
+      return DynamicLibrary.open('libflutter_media_manager.so');
     } else if (Platform.isAndroid) {
       // Android 的 .so 已打包到 jniLibs，同名加载
-      return DynamicLibrary.open('libadvance_media_kb.so');
+      return DynamicLibrary.open('libflutter_media_manager.so');
     } else if (Platform.isWindows) {
-      return DynamicLibrary.open('advance_media_kb.dll');
+      return DynamicLibrary.open('flutter_media_manager.dll');
     } else if (Platform.isMacOS) {
-      return DynamicLibrary.open('libadvance_media_kb.dylib');
+      return DynamicLibrary.open('libflutter_media_manager.dylib');
     }
     throw UnsupportedError('Platform not supported');
   }

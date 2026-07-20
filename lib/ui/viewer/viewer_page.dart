@@ -3,18 +3,18 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_media_knowledge_base/core/design_system/app_theme.dart';
-import 'package:flutter_media_knowledge_base/core/i18n/app_localizations.dart';
-import 'package:flutter_media_knowledge_base/bridge/native/api/album.dart'
+import 'package:flutter_media_manager/core/design_system/app_theme.dart';
+import 'package:flutter_media_manager/core/i18n/app_localizations.dart';
+import 'package:flutter_media_manager/bridge/native/api/album.dart'
     as album_api;
-import 'package:flutter_media_knowledge_base/bridge/native/api/media.dart';
-import 'package:flutter_media_knowledge_base/bridge/native/api/note.dart'
+import 'package:flutter_media_manager/bridge/native/api/media.dart';
+import 'package:flutter_media_manager/bridge/native/api/note.dart'
     as note_api;
-import 'package:flutter_media_knowledge_base/bridge/native/api/tag.dart'
+import 'package:flutter_media_manager/bridge/native/api/tag.dart'
     as tag_api;
-import 'package:flutter_media_knowledge_base/ui/viewer/widgets/audio_player_widget.dart';
-import 'package:flutter_media_knowledge_base/ui/viewer/widgets/video_player_widget.dart';
-import 'package:flutter_media_knowledge_base/functionality/media/media_bloc.dart';
+import 'package:flutter_media_manager/ui/viewer/widgets/audio_player_widget.dart';
+import 'package:flutter_media_manager/ui/viewer/widgets/video_player_widget.dart';
+import 'package:flutter_media_manager/functionality/media/media_bloc.dart';
 
 /// 统一媒体查看器页面
 class ViewerPage extends StatefulWidget {
