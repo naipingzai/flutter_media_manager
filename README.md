@@ -1,56 +1,79 @@
-# Flutter Media Knowledge Base
+# AdvanceMediaKB
 
-跨平台多媒体文件管理应用（Flutter + C++ FFI + SQLite3）。
+一个跨平台媒体管理应用，支持 Android、iOS 和 macOS。
 
-支持 Linux 桌面和 Android 移动端。使用 C++ 原生层通过 SQLite3 管理本地数据库，并通过 Dart FFI 与 Flutter 交互。
+## 平台支持
 
-## 主要功能
+| 平台 | 支持状态 |
+|------|---------|
+| Android | ✅ |
+| iOS | ✅ |
+| macOS | ✅ |
 
-- 多媒体文件导入与管理
-- 相册管理
-- 标签层级管理
-- 富文本笔记
-- 高级搜索与过滤
-- 图片、视频、音频预览
+## 编译指南
 
-## 技术栈
+### 环境要求
 
-- **Flutter 3.x** / Dart 3.x
-- **C++ 17** 原生层
-- **SQLite3** 单文件数据库
-- **Dart FFI** 调用原生库
-- **BLoC** 状态管理
-- **Material 3** 设计系统
+- Flutter 3.27.0 (stable channel)
+- Dart 3.x
+- Android: JDK 17 + Android SDK
+| iOS/macOS | Xcode 15+ (仅在 macOS 上)
 
-## 快速构建
+### Android 编译
 
 ```bash
-# Linux 桌面
-./scripts/build.sh linux-x64
+# 获取依赖
+flutter pub get
 
-# Android APK
-./scripts/build.sh android-arm64
+# 运行
+flutter run
+
+# 构建 APK
+flutter build apk --release
 ```
 
-更多详细说明请查看 [BUILD.md](BUILD.md)。
+### iOS 编译 (需要 macOS)
 
-## 项目目录
+```bash
+# 进入 iOS 目录
+cd ios
 
-```text
-lib/
-├── bridge/native/    # Dart FFI 桥接
-├── core/             # 主题、导航、国际化、权限
-├── functionality/    # BLoC 状态管理
-├── ui/               # 页面和 Widget
-main.dart
+# 安装 CocoaPods 依赖
+pod install
 
-native/
-├── src/
-│   ├── db/database.h      # C++ 数据模型与数据库接口
-│   ├── db/database.cpp    # SQLite3 实现
-│   └── ffi_bridge.cpp     # C ABI 导出层
-└── third_party/sqlite3.c  # SQLite3 单文件合并
+# 返回根目录并运行
+cd ..
+flutter run
+
+# 构建 IPA
+flutter build ios --release
 ```
+
+### macOS 编译 (需要 macOS)
+
+```bash
+# 运行
+flutter run -d macos
+
+# 构建
+flutter build macos --release
+```
+
+## CI/CD
+
+项目使用 GitHub Actions 进行持续集成：
+
+- **Build Android** - 在 Ubuntu 上构建 APK
+- **Build iOS** - 在 macOS 上构建 iOS 应用
+
+## 架构
+
+项目遵循 BLoC 模式进行状态管理，采用分层架构：
+
+- `lib/bridge/` - 原生功能桥接层
+- `lib/core/` - 核心基础设施
+- `lib/functionality/` - 业务逻辑 (BLoC)
+- `lib/ui/` - 用户界面
 
 ## 许可证
 
