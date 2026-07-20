@@ -115,26 +115,6 @@ class _TagScreenState extends State<TagScreen> {
       BuildContext context, AppLocalizations loc, ColorScheme cs) {
     return AppBar(
       title: Text(loc.tabTags),
-      automaticallyImplyLeading: false,
-      leadingWidth: 48,
-      leading: BlocBuilder<TagBloc, TagState>(
-        builder: (context, state) {
-          if (_filteredMedia != null) {
-            return IconButton(
-              icon: const Icon(Icons.arrow_back_rounded),
-              onPressed: _clearFilter,
-            );
-          }
-          if (state.currentParentId != null) {
-            return IconButton(
-              icon: const Icon(Icons.arrow_back_rounded),
-              onPressed: () =>
-                  context.read<TagBloc>().add(const TagNavigateUpEvent()),
-            );
-          }
-          return const SizedBox.shrink();
-        },
-      ),
       actions: [
         if (_filteredMedia != null)
           IconButton(
@@ -984,54 +964,33 @@ class _TagCard extends StatelessWidget {
     final tag = tagInfo.tag;
     final cs = Theme.of(context).colorScheme;
 
+    final tagColor = tag.color != null
+        ? Color(int.parse(tag.color!.replaceFirst('#', '0xFF')))
+        : cs.primary;
     return Card(
+      color: tagColor.withOpacity(0.15),
       child: InkWell(
         onTap: onTap,
         onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+          child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: (tag.color != null
-                          ? Color(
-                              int.parse(tag.color!.replaceFirst('#', '0xFF')))
-                          : cs.primaryContainer)
-                      .withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
+              Icon(Icons.label_rounded, size: 20, color: tagColor),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  tag.name,
+                  style: AppTextStyles.subtitle.copyWith(color: cs.onSurface),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                child: Icon(Icons.label_rounded,
-                    size: 32,
-                    color: tag.color != null
-                        ? Color(int.parse(tag.color!.replaceFirst('#', '0xFF')))
-                        : cs.primary),
               ),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                tag.name,
-                style: AppTextStyles.subtitle.copyWith(color: cs.onSurface),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: AppSpacing.xs),
               if (tagInfo.mediaCount != null)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: cs.surfaceContainerHighest.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(AppRadius.full),
-                  ),
-                  child: Text(
-                    '${tagInfo.mediaCount} ${AppLocalizations.of(context).files}',
-                    style: AppTextStyles.caption
-                        .copyWith(color: cs.onSurfaceVariant),
-                  ),
+                Text(
+                  '${tagInfo.mediaCount}',
+                  style: AppTextStyles.caption.copyWith(color: cs.onSurfaceVariant),
                 ),
             ],
           ),
@@ -1252,3 +1211,4 @@ class _TagFilterDialogState extends State<_TagFilterDialog> {
     );
   }
 }
+

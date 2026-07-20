@@ -532,41 +532,26 @@ class _AlbumCard extends StatelessWidget {
     final loc = AppLocalizations.of(context);
 
     return Card(
+      color: cs.primaryContainer.withOpacity(0.15),
       child: InkWell(
         onTap: onTap,
         onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+          child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: cs.primaryContainer.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                ),
-                child:
-                    Icon(Icons.camera_alt_rounded, size: 32, color: cs.primary),
+              Icon(Icons.photo_album_rounded, size: 20, color: cs.primary),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(name,
+                    style: AppTextStyles.subtitle.copyWith(color: cs.onSurface),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
               ),
-              const SizedBox(height: AppSpacing.md),
-              Text(name,
-                  style: AppTextStyles.subtitle.copyWith(color: cs.onSurface),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis),
-              const SizedBox(height: AppSpacing.xs),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: cs.surfaceContainerHighest.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(AppRadius.full),
-                ),
-                child: Text('$mediaCount ${loc.files}',
-                    style: AppTextStyles.caption
-                        .copyWith(color: cs.onSurfaceVariant)),
-              ),
+              Text('$mediaCount',
+                  style: AppTextStyles.caption
+                      .copyWith(color: cs.onSurfaceVariant)),
             ],
           ),
         ),
@@ -574,3 +559,4 @@ class _AlbumCard extends StatelessWidget {
     );
   }
 }
+
