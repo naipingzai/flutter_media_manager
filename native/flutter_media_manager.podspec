@@ -16,6 +16,7 @@ Pod::Spec.new do |s|
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
     'OTHER_CPLUSPLUSFLAGS' => '-std=c++17 -DSQLITE_THREADSAFE=1 -fvisibility=default',
+    'OTHER_CFLAGS' => '-DSQLITE_THREADSAFE=1',
     'OTHER_LDFLAGS' => '-ObjC',
   }
 
