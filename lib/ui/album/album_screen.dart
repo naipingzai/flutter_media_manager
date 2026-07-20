@@ -343,13 +343,11 @@ class _AlbumScreenState extends State<AlbumScreen> {
     if (selectedAlbum == null) return;
 
     int successCount = 0;
-    int failCount = 0;
     for (final path in filePaths) {
       try {
         await importSingleFile(filePath: path);
         successCount++;
       } catch (_) {
-        failCount++;
       }
     }
     // 添加到相册

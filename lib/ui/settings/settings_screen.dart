@@ -54,7 +54,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         builder: (context, state) {
           final settings = state.settings;
           final loc = AppLocalizations.of(context);
-          final cs = Theme.of(context).colorScheme;
           if (settings == null) {
             return const Center(child: CircularProgressIndicator());
           }

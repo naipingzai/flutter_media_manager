@@ -94,7 +94,7 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
   bool _loading = true;
   String? _error;
   bool _sortByName = true;
-  bool _showHidden = false;
+  final bool _showHidden = false;
   final ScrollController _breadcrumbScroll = ScrollController();
 
   static const _quickPaths = [

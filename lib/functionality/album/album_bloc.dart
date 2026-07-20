@@ -1,7 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_media_manager/bridge/native/api/album.dart';
-import 'package:flutter_media_manager/bridge/native/models.dart';
 import 'package:logger/logger.dart';
 
 part 'album_event.dart';

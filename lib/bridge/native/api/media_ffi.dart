@@ -53,12 +53,15 @@ class MediaFfi {
   }
 
   DynamicLibrary _openLib() {
-    if (Platform.isLinux || Platform.isAndroid)
+    if (Platform.isLinux || Platform.isAndroid) {
       return DynamicLibrary.open('libflutter_media_manager.so');
-    if (Platform.isWindows)
+    }
+    if (Platform.isWindows) {
       return DynamicLibrary.open('flutter_media_manager.dll');
-    if (Platform.isMacOS)
+    }
+    if (Platform.isMacOS) {
       return DynamicLibrary.open('libflutter_media_manager.dylib');
+    }
     throw UnsupportedError('Unsupported platform');
   }
 

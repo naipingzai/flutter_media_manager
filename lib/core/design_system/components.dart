@@ -128,9 +128,9 @@ String formatDuration(int? milliseconds) {
   if (hours > 0) {
     final remainingMinutes = minutes % 60;
     final remainingSeconds = seconds % 60;
-    return '${hours}:${remainingMinutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+    return '$hours:${remainingMinutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
   } else {
     final remainingSeconds = seconds % 60;
-    return '${minutes}:${remainingSeconds.toString().padLeft(2, '0')}';
+    return '$minutes:${remainingSeconds.toString().padLeft(2, '0')}';
   }
 }

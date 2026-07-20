@@ -537,24 +537,6 @@ class _TagScreenState extends State<TagScreen> {
     );
   }
 
-  // ── Show tag media ──────────────────────────────────────────────
-  Future<void> _showTagMedia(BuildContext context, String tagId) async {
-    try {
-      final media = await tag_api.getMediaByTag(tagId: tagId);
-      if (!mounted) return;
-      setState(() {
-        _filteredMedia = media;
-        _selectedTagIds
-          ..clear()
-          ..add(tagId);
-      });
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${AppLocalizations.of(context).error}: $e')),
-      );
-    }
-  }
 
   // ── Create tag dialog ───────────────────────────────────────────
   void _showCreateTagDialog(BuildContext context) {
@@ -835,7 +817,7 @@ class _TagScreenState extends State<TagScreen> {
                       Text(loc.tagParent, style: AppTextStyles.subtitle),
                       const SizedBox(height: AppSpacing.sm),
                       DropdownButtonFormField<String?>(
-                        value: selectedParentId,
+                        initialValue: selectedParentId,
                         isExpanded: true,
                         decoration: const InputDecoration(
                           contentPadding:

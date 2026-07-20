@@ -19,8 +19,6 @@ typedef _GetMediaTagsFn = Int32 Function(
     Pointer<Utf8>, Pointer<NativeFunction<_TagCb>>);
 typedef _MediaCb = Void Function(Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>,
     Int64, Pointer<Utf8>, Pointer<Utf8>);
-typedef _GetMediaByTagsOrFn = Int32 Function(
-    Pointer<Utf8>, Pointer<Utf8>, Pointer<NativeFunction<_MediaCb>>);
 typedef _GetMediaBySingleTagFn = Int32 Function(
     Pointer<Utf8>, Pointer<NativeFunction<_MediaCb>>);
 
@@ -57,8 +55,9 @@ class TagFfi {
     if (Platform.isLinux || Platform.isAndroid) {
       return DynamicLibrary.open('libflutter_media_manager.so');
     }
-    if (Platform.isWindows)
+    if (Platform.isWindows) {
       return DynamicLibrary.open('flutter_media_manager.dll');
+    }
     if (Platform.isMacOS) {
       return DynamicLibrary.open('libflutter_media_manager.dylib');
     }

@@ -273,21 +273,6 @@ class _MediaGridItem extends StatelessWidget {
         return Icons.insert_drive_file_outlined;
     }
   }
-
-  static (IconData, Color) _typeIconData(MediaType type, ColorScheme cs) {
-    switch (type) {
-      case MediaType.image:
-        return (Icons.image_outlined, cs.secondary);
-      case MediaType.video:
-        return (Icons.videocam_outlined, cs.error);
-      case MediaType.audio:
-        return (Icons.audiotrack_outlined, cs.primary);
-      case MediaType.document:
-        return (Icons.description_outlined, cs.tertiary);
-      default:
-        return (Icons.insert_drive_file_outlined, cs.onSurfaceVariant);
-    }
-  }
 }
 
 // ── List tile (single-column mode) ────────────────────────────────
