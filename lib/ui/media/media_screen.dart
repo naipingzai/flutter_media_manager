@@ -7,6 +7,7 @@ import 'package:flutter_media_manager/core/i18n/app_localizations.dart';
 import 'widgets/media_grid.dart';
 import 'widgets/file_browser_dialog.dart';
 import 'package:flutter_media_manager/bridge/native/api/media.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter_media_manager/bridge/native/api/tag.dart';
 import 'package:flutter_media_manager/bridge/native/api/album.dart';
 import 'package:flutter_media_manager/core/navigation/app_router.dart';
@@ -575,17 +576,18 @@ class _MediaScreenState extends State<MediaScreen> {
                   _openFileBrowser(context);
                 },
               ),
-              // Option 2: From directory
-              _ImportOptionTile(
-                icon: Icons.folder_open_outlined,
-                iconColor: cs.tertiary,
-                title: loc.importFromDirectory,
-                subtitle: '批量导入整个文件夹中的媒体文件',
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _openDirectoryBrowser(context);
-                },
-              ),
+              // Option 2: From directory (Android only)
+              if (!Platform.isIOS)
+                _ImportOptionTile(
+                  icon: Icons.folder_open_outlined,
+                  iconColor: cs.tertiary,
+                  title: loc.importFromDirectory,
+                  subtitle: '批量导入整个文件夹中的媒体文件',
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _openDirectoryBrowser(context);
+                  },
+                ),
               const SizedBox(height: AppSpacing.sm),
             ],
           ),
@@ -699,8 +701,16 @@ class _MediaScreenState extends State<MediaScreen> {
 
   // ── File import ─────────────────────────────────────────────────
   Future<void> _openFileBrowser(BuildContext context) async {
-    final filePaths = await openFileBrowser(context);
-    if (filePaths.isEmpty) return;
+    List<String> filePaths;
+    if (Platform.isIOS) {
+      final picker = ImagePicker();
+      final pickedFiles = await picker.pickMultiImage();
+      if (pickedFiles.isEmpty) return;
+      filePaths = pickedFiles.map((f) => f.path).toList();
+    } else {
+      filePaths = await openFileBrowser(context);
+      if (filePaths.isEmpty) return;
+    }
     if (!context.mounted) return;
 
     showDialog(
