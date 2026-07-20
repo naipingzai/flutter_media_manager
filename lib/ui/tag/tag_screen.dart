@@ -116,6 +116,7 @@ class _TagScreenState extends State<TagScreen> {
     return AppBar(
       title: Text(loc.tabTags),
       automaticallyImplyLeading: false,
+      leadingWidth: 48,
       leading: BlocBuilder<TagBloc, TagState>(
         builder: (context, state) {
           if (_filteredMedia != null) {
@@ -681,8 +682,7 @@ class _TagScreenState extends State<TagScreen> {
                             boxShadow: isSelected
                                 ? [
                                     BoxShadow(
-                                        color:
-                                            cs.primary.withOpacity(0.3),
+                                        color: cs.primary.withOpacity(0.3),
                                         blurRadius: 6)
                                   ]
                                 : null,
@@ -797,8 +797,7 @@ class _TagScreenState extends State<TagScreen> {
                                 boxShadow: isSelected
                                     ? [
                                         BoxShadow(
-                                            color: cs.primary
-                                                .withOpacity(0.3),
+                                            color: cs.primary.withOpacity(0.3),
                                             blurRadius: 6)
                                       ]
                                     : null,
