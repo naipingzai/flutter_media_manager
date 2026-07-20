@@ -40,20 +40,20 @@ jobs:
       - name: Run Flutter linter
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
 
-      # Build iOS app (archive for App Store)
+      # Build iOS app for simulator (no code signing required)
       - name: Build iOS App
         run: |
           cd ios
           pod install --repo-update
           cd ..
-          flutter build ios --release --no-codesign
+          flutter build ios --simulator
 
       # Upload build artifacts
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ios-build
-          path: build/ios/iphoneos/
+          path: build/ios/iphonesimulator/
           retention-days: 7
 
   # Optional: Build iOS Simulator for testing
