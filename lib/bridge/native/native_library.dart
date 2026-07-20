@@ -189,15 +189,15 @@ class NativeLibrary {
       // iOS uses statically linked library
       return DynamicLibrary.process();
     } else if (Platform.isLinux) {
-      // 加载 libflutter_media_manager.so
-      return DynamicLibrary.open('libflutter_media_manager.so');
+      // 加载 libflutter_media_manager_native.so
+      return DynamicLibrary.open('libflutter_media_manager_native.so');
     } else if (Platform.isAndroid) {
       // Android 的 .so 已打包到 jniLibs，同名加载
-      return DynamicLibrary.open('libflutter_media_manager.so');
+      return DynamicLibrary.open('libflutter_media_manager_native.so');
     } else if (Platform.isWindows) {
-      return DynamicLibrary.open('flutter_media_manager.dll');
+      return DynamicLibrary.open('flutter_media_manager_native.dll');
     } else if (Platform.isMacOS) {
-      return DynamicLibrary.open('libflutter_media_manager.dylib');
+      return DynamicLibrary.open('libflutter_media_manager_native.dylib');
     }
     throw UnsupportedError('Platform not supported');
   }

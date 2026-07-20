@@ -48,13 +48,13 @@ class AlbumFfi {
       return DynamicLibrary.process();
     }
     if (Platform.isLinux || Platform.isAndroid) {
-      return DynamicLibrary.open('libflutter_media_manager.so');
+      return DynamicLibrary.open('libflutter_media_manager_native.so');
     }
     if (Platform.isWindows) {
-      return DynamicLibrary.open('flutter_media_manager.dll');
+      return DynamicLibrary.open('flutter_media_manager_native.dll');
     }
     if (Platform.isMacOS) {
-      return DynamicLibrary.open('libflutter_media_manager.dylib');
+      return DynamicLibrary.open('libflutter_media_manager_native.dylib');
     }
     throw UnsupportedError('Unsupported platform');
   }
