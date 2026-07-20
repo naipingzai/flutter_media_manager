@@ -134,7 +134,7 @@ Route<T> _buildCardOverlayRoute<T>(Widget page) {
       return GestureDetector(
         onTap: () => Navigator.of(context).pop(),
         child: Material(
-          color: cs.scrim.withValues(alpha: 0.35),
+          color: cs.scrim.withOpacity(0.35),
           child: SafeArea(
             child: Align(
               alignment: Alignment.centerRight,

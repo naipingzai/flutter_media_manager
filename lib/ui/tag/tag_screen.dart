@@ -218,7 +218,7 @@ class _TagScreenState extends State<TagScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: cs.errorContainer.withValues(alpha: 0.3),
+                color: cs.errorContainer.withOpacity(0.3),
                 shape: BoxShape.circle,
               ),
               child: Icon(Icons.cloud_off_rounded, size: 48, color: cs.error),
@@ -263,7 +263,7 @@ class _TagScreenState extends State<TagScreen> {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: cs.primaryContainer.withValues(alpha: 0.3),
+                  color: cs.primaryContainer.withOpacity(0.3),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(Icons.label_outline_rounded,
@@ -329,7 +329,7 @@ class _TagScreenState extends State<TagScreen> {
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
         border: Border(
-          top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3)),
+          top: BorderSide(color: cs.outlineVariant.withOpacity(0.3)),
         ),
       ),
       child: SafeArea(
@@ -364,8 +364,8 @@ class _TagScreenState extends State<TagScreen> {
     return Expanded(
       child: Material(
         color: enabled
-            ? color.withValues(alpha: 0.1)
-            : cs.surfaceContainerHighest.withValues(alpha: 0.3),
+            ? color.withOpacity(0.1)
+            : cs.surfaceContainerHighest.withOpacity(0.3),
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: InkWell(
           onTap: enabled ? onTap : null,
@@ -458,7 +458,7 @@ class _TagScreenState extends State<TagScreen> {
     final filterInfoBar = Container(
       padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-      color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
+      color: cs.surfaceContainerHighest.withOpacity(0.4),
       child: Row(
         children: [
           Icon(Icons.filter_list_rounded, size: 16, color: cs.primary),
@@ -593,7 +593,7 @@ class _TagScreenState extends State<TagScreen> {
                 width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: cs.onSurfaceVariant.withValues(alpha: 0.3),
+                  color: cs.onSurfaceVariant.withOpacity(0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -682,7 +682,7 @@ class _TagScreenState extends State<TagScreen> {
                                 ? [
                                     BoxShadow(
                                         color:
-                                            cs.primary.withValues(alpha: 0.3),
+                                            cs.primary.withOpacity(0.3),
                                         blurRadius: 6)
                                   ]
                                 : null,
@@ -798,7 +798,7 @@ class _TagScreenState extends State<TagScreen> {
                                     ? [
                                         BoxShadow(
                                             color: cs.primary
-                                                .withValues(alpha: 0.3),
+                                                .withOpacity(0.3),
                                             blurRadius: 6)
                                       ]
                                     : null,
@@ -1002,7 +1002,7 @@ class _TagCard extends StatelessWidget {
                           ? Color(
                               int.parse(tag.color!.replaceFirst('#', '0xFF')))
                           : cs.primaryContainer)
-                      .withValues(alpha: 0.3),
+                      .withOpacity(0.3),
                   borderRadius: BorderRadius.circular(AppRadius.lg),
                 ),
                 child: Icon(Icons.label_rounded,
@@ -1025,7 +1025,7 @@ class _TagCard extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                    color: cs.surfaceContainerHighest.withOpacity(0.5),
                     borderRadius: BorderRadius.circular(AppRadius.full),
                   ),
                   child: Text(
@@ -1063,7 +1063,7 @@ class _MediaGridItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Material(
-      color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
+      color: cs.surfaceContainerHighest.withOpacity(0.4),
       borderRadius: BorderRadius.circular(AppRadius.md),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -1084,8 +1084,8 @@ class _MediaGridItem extends StatelessWidget {
               AnimatedContainer(
                 duration: AppAnimation.fast,
                 color: isSelected
-                    ? cs.primary.withValues(alpha: 0.25)
-                    : cs.scrim.withValues(alpha: 0.05),
+                    ? cs.primary.withOpacity(0.25)
+                    : cs.scrim.withOpacity(0.05),
               ),
             if (isSelectionMode)
               Positioned(
@@ -1101,7 +1101,7 @@ class _MediaGridItem extends StatelessWidget {
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                  color: cs.primary.withValues(alpha: 0.3),
+                                  color: cs.primary.withOpacity(0.3),
                                   blurRadius: 8),
                             ],
                           ),
@@ -1120,7 +1120,7 @@ class _MediaGridItem extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                   decoration: BoxDecoration(
-                    color: cs.scrim.withValues(alpha: 0.55),
+                    color: cs.scrim.withOpacity(0.55),
                     borderRadius: BorderRadius.circular(AppRadius.xs),
                   ),
                   child: Icon(
@@ -1143,7 +1143,7 @@ class _MediaGridItem extends StatelessWidget {
         child: Icon(
           _getMediaIcon(media.mediaType),
           size: AppSize.iconXl,
-          color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+          color: cs.onSurfaceVariant.withOpacity(0.5),
         ),
       ),
     );

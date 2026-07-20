@@ -115,7 +115,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: cs.errorContainer.withValues(alpha: 0.3),
+                  color: cs.errorContainer.withOpacity(0.3),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(Icons.cloud_off_rounded, size: 48, color: cs.error),
@@ -147,7 +147,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: cs.primaryContainer.withValues(alpha: 0.3),
+                  color: cs.primaryContainer.withOpacity(0.3),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(Icons.camera_alt_outlined,
@@ -221,7 +221,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
                 width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: cs.onSurfaceVariant.withValues(alpha: 0.3),
+                  color: cs.onSurfaceVariant.withOpacity(0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -544,7 +544,7 @@ class _AlbumCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: cs.primaryContainer.withValues(alpha: 0.5),
+                  color: cs.primaryContainer.withOpacity(0.5),
                   borderRadius: BorderRadius.circular(AppRadius.lg),
                 ),
                 child:
@@ -560,7 +560,7 @@ class _AlbumCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                  color: cs.surfaceContainerHighest.withOpacity(0.5),
                   borderRadius: BorderRadius.circular(AppRadius.full),
                 ),
                 child: Text('$mediaCount ${loc.files}',

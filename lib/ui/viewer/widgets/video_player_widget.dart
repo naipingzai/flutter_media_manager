@@ -136,7 +136,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   Widget _buildControlButton(IconData icon, VoidCallback onTap) {
     return Material(
-      color: Colors.white.withValues(alpha: 0.12),
+      color: Colors.white.withOpacity(0.12),
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
         onTap: onTap,
@@ -190,7 +190,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
                   colors: [
-                    Colors.black.withValues(alpha: 0.8),
+                    Colors.black.withOpacity(0.8),
                     Colors.transparent,
                   ],
                 ),

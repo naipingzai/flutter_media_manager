@@ -253,7 +253,7 @@ class _MediaScreenState extends State<MediaScreen> {
         decoration: BoxDecoration(
           color: isFiltered
               ? cs.primaryContainer
-              : cs.surfaceContainerHighest.withValues(alpha: 0.5),
+              : cs.surfaceContainerHighest.withOpacity(0.5),
           borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
         child: Row(
@@ -343,7 +343,7 @@ class _MediaScreenState extends State<MediaScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: cs.errorContainer.withValues(alpha: 0.3),
+                    color: cs.errorContainer.withOpacity(0.3),
                     shape: BoxShape.circle,
                   ),
                   child:
@@ -393,7 +393,7 @@ class _MediaScreenState extends State<MediaScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: cs.primaryContainer.withValues(alpha: 0.3),
+                color: cs.primaryContainer.withOpacity(0.3),
                 shape: BoxShape.circle,
               ),
               child: Icon(Icons.photo_library_outlined,
@@ -428,7 +428,7 @@ class _MediaScreenState extends State<MediaScreen> {
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
         border: Border(
-          top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3)),
+          top: BorderSide(color: cs.outlineVariant.withOpacity(0.3)),
         ),
       ),
       child: SafeArea(
@@ -479,8 +479,8 @@ class _MediaScreenState extends State<MediaScreen> {
     return Expanded(
       child: Material(
         color: enabled
-            ? color.withValues(alpha: 0.1)
-            : cs.surfaceContainerHighest.withValues(alpha: 0.3),
+            ? color.withOpacity(0.1)
+            : cs.surfaceContainerHighest.withOpacity(0.3),
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: InkWell(
           onTap: enabled ? onTap : null,
@@ -537,7 +537,7 @@ class _MediaScreenState extends State<MediaScreen> {
                 width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: cs.onSurfaceVariant.withValues(alpha: 0.3),
+                  color: cs.onSurfaceVariant.withOpacity(0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -908,7 +908,7 @@ class _ImportOptionTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
       child: Material(
-        color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+        color: cs.surfaceContainerHighest.withOpacity(0.3),
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: InkWell(
           onTap: onTap,
@@ -920,7 +920,7 @@ class _ImportOptionTile extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: iconColor.withValues(alpha: 0.12),
+                    color: iconColor.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: Icon(icon, size: 22, color: iconColor),

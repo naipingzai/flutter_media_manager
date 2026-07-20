@@ -115,7 +115,7 @@ class _MediaGridItem extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     return Material(
-      color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
+      color: cs.surfaceContainerHighest.withOpacity(0.4),
       borderRadius: BorderRadius.circular(AppRadius.md),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -197,7 +197,7 @@ class _MediaGridItem extends StatelessWidget {
         child: Icon(
           _mediaIcon(media.mediaType),
           size: AppSize.iconXl,
-          color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+          color: cs.onSurfaceVariant.withOpacity(0.5),
         ),
       ),
     );
@@ -210,7 +210,7 @@ class _MediaGridItem extends StatelessWidget {
         vertical: 3,
       ),
       decoration: BoxDecoration(
-        color: cs.scrim.withValues(alpha: 0.7),
+        color: cs.scrim.withOpacity(0.7),
         borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
       child: Text(
@@ -228,8 +228,8 @@ class _MediaGridItem extends StatelessWidget {
     return AnimatedContainer(
       duration: AppAnimation.fast,
       color: isSelected
-          ? cs.primary.withValues(alpha: 0.25)
-          : cs.scrim.withValues(alpha: 0.05),
+          ? cs.primary.withOpacity(0.25)
+          : cs.scrim.withOpacity(0.05),
       child: Center(
         child: AnimatedSwitcher(
           duration: AppAnimation.thumbnailScale,
@@ -241,7 +241,7 @@ class _MediaGridItem extends StatelessWidget {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: cs.primary.withValues(alpha: 0.3),
+                        color: cs.primary.withOpacity(0.3),
                         blurRadius: 8,
                       ),
                     ],
@@ -321,7 +321,7 @@ class _MediaListTile extends StatelessWidget {
               Positioned.fill(
                 child: Container(
                   decoration: BoxDecoration(
-                    color: cs.primary.withValues(alpha: 0.4),
+                    color: cs.primary.withOpacity(0.4),
                     borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: Icon(

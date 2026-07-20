@@ -222,7 +222,7 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
 
   Widget _buildTopButton(IconData icon, VoidCallback onTap, {String? tooltip}) {
     final btn = Material(
-      color: Colors.black.withValues(alpha: 0.08),
+      color: Colors.black.withOpacity(0.08),
       borderRadius: BorderRadius.circular(AppRadius.md),
       child: InkWell(
         onTap: onTap,
@@ -650,7 +650,7 @@ class _DocumentContent extends StatelessWidget {
             Text(
               media.mimeType,
               style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.5), fontSize: 13),
+                  color: Colors.white.withOpacity(0.5), fontSize: 13),
             ),
           ],
         ),

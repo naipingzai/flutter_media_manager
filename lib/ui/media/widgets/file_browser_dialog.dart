@@ -287,7 +287,7 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
     return Container(
       height: 44,
       padding: const EdgeInsets.symmetric(horizontal: 8),
-      color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+      color: cs.surfaceContainerHighest.withOpacity(0.3),
       child: ListView(
         controller: _breadcrumbScroll,
         scrollDirection: Axis.horizontal,
@@ -327,7 +327,7 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
       widgets.add(Padding(
         padding: const EdgeInsets.symmetric(horizontal: 2),
         child: Icon(Icons.chevron_right_rounded,
-            size: 16, color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
+            size: 16, color: cs.onSurfaceVariant.withOpacity(0.5)),
       ));
       widgets.add(_BreadcrumbPill(
         label: parts[i],
@@ -399,7 +399,7 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: cs.tertiaryContainer.withValues(alpha: 0.5),
+                    color: cs.tertiaryContainer.withOpacity(0.5),
                     borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child:
@@ -417,7 +417,7 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
                 ),
                 Icon(Icons.chevron_right_rounded,
                     size: 20,
-                    color: cs.onSurfaceVariant.withValues(alpha: 0.4)),
+                    color: cs.onSurfaceVariant.withOpacity(0.4)),
               ],
             ),
           ),
@@ -438,7 +438,7 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
       child: Material(
         color: sel
-            ? cs.primaryContainer.withValues(alpha: 0.2)
+            ? cs.primaryContainer.withOpacity(0.2)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: InkWell(
@@ -458,8 +458,8 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
                   height: 36,
                   decoration: BoxDecoration(
                     color: sel
-                        ? cs.primary.withValues(alpha: 0.12)
-                        : cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                        ? cs.primary.withOpacity(0.12)
+                        : cs.surfaceContainerHighest.withOpacity(0.5),
                     borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: Icon(iconData,
@@ -492,7 +492,7 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
                           Text(
                             '  ·  ${_formatSize(fileSize)}',
                             style: AppTextStyles.caption.copyWith(
-                              color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+                              color: cs.onSurfaceVariant.withOpacity(0.7),
                             ),
                           ),
                         ],
@@ -517,7 +517,7 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
                       : Icon(Icons.circle_outlined,
                           key: const ValueKey(false),
                           size: 20,
-                          color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
+                          color: cs.onSurfaceVariant.withOpacity(0.3)),
                 ),
               ],
             ),
@@ -537,11 +537,11 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+              color: cs.surfaceContainerHighest.withOpacity(0.3),
               shape: BoxShape.circle,
             ),
             child: Icon(Icons.folder_off_outlined,
-                size: 48, color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
+                size: 48, color: cs.onSurfaceVariant.withOpacity(0.5)),
           ),
           const SizedBox(height: AppSpacing.lg),
           Text(loc.noFiles,
@@ -563,7 +563,7 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: cs.errorContainer.withValues(alpha: 0.3),
+                color: cs.errorContainer.withOpacity(0.3),
                 shape: BoxShape.circle,
               ),
               child: Icon(Icons.folder_off_rounded, size: 48, color: cs.error),
@@ -590,7 +590,7 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
         border: Border(
-          top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3)),
+          top: BorderSide(color: cs.outlineVariant.withOpacity(0.3)),
         ),
       ),
       child: SafeArea(
@@ -801,7 +801,7 @@ class _DirectoryPickerPageState extends State<DirectoryPickerPage> {
           // 当前路径提示
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: cs.surfaceContainerHighest.withValues(alpha: 0.2),
+            color: cs.surfaceContainerHighest.withOpacity(0.2),
             child: Row(
               children: [
                 Icon(Icons.folder_rounded, size: 16, color: cs.primary),
@@ -831,7 +831,7 @@ class _DirectoryPickerPageState extends State<DirectoryPickerPage> {
     return Container(
       height: 44,
       padding: const EdgeInsets.symmetric(horizontal: 8),
-      color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+      color: cs.surfaceContainerHighest.withOpacity(0.3),
       child: ListView(
         controller: _breadcrumbScroll,
         scrollDirection: Axis.horizontal,
@@ -868,7 +868,7 @@ class _DirectoryPickerPageState extends State<DirectoryPickerPage> {
       widgets.add(Padding(
         padding: const EdgeInsets.symmetric(horizontal: 2),
         child: Icon(Icons.chevron_right_rounded,
-            size: 16, color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
+            size: 16, color: cs.onSurfaceVariant.withOpacity(0.5)),
       ));
       widgets.add(_BreadcrumbPill(
         label: parts[i],
@@ -909,7 +909,7 @@ class _DirectoryPickerPageState extends State<DirectoryPickerPage> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: cs.errorContainer.withValues(alpha: 0.3),
+                  color: cs.errorContainer.withOpacity(0.3),
                   shape: BoxShape.circle,
                 ),
                 child:
@@ -939,11 +939,11 @@ class _DirectoryPickerPageState extends State<DirectoryPickerPage> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+                color: cs.surfaceContainerHighest.withOpacity(0.3),
                 shape: BoxShape.circle,
               ),
               child: Icon(Icons.folder_off_outlined,
-                  size: 48, color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
+                  size: 48, color: cs.onSurfaceVariant.withOpacity(0.5)),
             ),
             const SizedBox(height: AppSpacing.lg),
             Text(loc.noSubfolders,
@@ -977,7 +977,7 @@ class _DirectoryPickerPageState extends State<DirectoryPickerPage> {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: cs.tertiaryContainer.withValues(alpha: 0.5),
+                        color: cs.tertiaryContainer.withOpacity(0.5),
                         borderRadius: BorderRadius.circular(AppRadius.sm),
                       ),
                       child: Icon(Icons.folder_rounded,
@@ -993,7 +993,7 @@ class _DirectoryPickerPageState extends State<DirectoryPickerPage> {
                     ),
                     Icon(Icons.chevron_right_rounded,
                         size: 20,
-                        color: cs.onSurfaceVariant.withValues(alpha: 0.4)),
+                        color: cs.onSurfaceVariant.withOpacity(0.4)),
                   ],
                 ),
               ),
@@ -1009,7 +1009,7 @@ class _DirectoryPickerPageState extends State<DirectoryPickerPage> {
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
         border: Border(
-          top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3)),
+          top: BorderSide(color: cs.outlineVariant.withOpacity(0.3)),
         ),
       ),
       child: SafeArea(
@@ -1078,7 +1078,7 @@ class _BreadcrumbPill extends StatelessWidget {
           decoration: BoxDecoration(
             color: isActive
                 ? cs.primaryContainer
-                : cs.surfaceContainerHighest.withValues(alpha: 0.3),
+                : cs.surfaceContainerHighest.withOpacity(0.3),
             borderRadius: BorderRadius.circular(AppRadius.sm),
           ),
           child: Row(

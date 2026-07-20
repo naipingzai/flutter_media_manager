@@ -143,7 +143,7 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: cs.errorContainer.withValues(alpha: 0.3),
+                  color: cs.errorContainer.withOpacity(0.3),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(Icons.cloud_off_rounded, size: 48, color: cs.error),
@@ -175,7 +175,7 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: cs.primaryContainer.withValues(alpha: 0.3),
+                  color: cs.primaryContainer.withOpacity(0.3),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(Icons.camera_alt_outlined,
@@ -325,7 +325,7 @@ class _AlbumCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: cs.primaryContainer.withValues(alpha: 0.5),
+                  color: cs.primaryContainer.withOpacity(0.5),
                   borderRadius: BorderRadius.circular(AppRadius.lg),
                 ),
                 child:
@@ -341,7 +341,7 @@ class _AlbumCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                  color: cs.surfaceContainerHighest.withOpacity(0.5),
                   borderRadius: BorderRadius.circular(AppRadius.full),
                 ),
                 child: Text('$mediaCount ${loc.files}',
@@ -371,7 +371,7 @@ class _MediaGridItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Material(
-      color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
+      color: cs.surfaceContainerHighest.withOpacity(0.4),
       borderRadius: BorderRadius.circular(AppRadius.md),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -396,7 +396,7 @@ class _MediaGridItem extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                   decoration: BoxDecoration(
-                    color: cs.scrim.withValues(alpha: 0.55),
+                    color: cs.scrim.withOpacity(0.55),
                     borderRadius: BorderRadius.circular(AppRadius.xs),
                   ),
                   child: Icon(
@@ -419,7 +419,7 @@ class _MediaGridItem extends StatelessWidget {
         child: Icon(
           _mediaIcon(media.mediaType),
           size: AppSize.iconXl,
-          color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+          color: cs.onSurfaceVariant.withOpacity(0.5),
         ),
       ),
     );
