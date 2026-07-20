@@ -20,6 +20,7 @@ Pod::Spec.new do |s|
     'OTHER_LDFLAGS' => '-ObjC',
   }
 
+  s.libraries = 'sqlite3'
   s.xcconfig = {
     'HEADER_SEARCH_PATHS' => '"${PODS_TARGET_SRCROOT}/src" "${PODS_TARGET_SRCROOT}/third_party"',
   }
