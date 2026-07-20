@@ -185,7 +185,10 @@ class NativeLibrary {
   }
 
   DynamicLibrary _loadLibrary() {
-    if (Platform.isLinux) {
+    if (Platform.isIOS) {
+      // iOS uses statically linked library
+      return DynamicLibrary.process();
+    } else if (Platform.isLinux) {
       // 加载 libflutter_media_manager.so
       return DynamicLibrary.open('libflutter_media_manager.so');
     } else if (Platform.isAndroid) {

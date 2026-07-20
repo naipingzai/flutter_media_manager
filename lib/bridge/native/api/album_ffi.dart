@@ -44,6 +44,9 @@ class AlbumFfi {
   }
 
   DynamicLibrary _openLib() {
+    if (Platform.isIOS) {
+      return DynamicLibrary.process();
+    }
     if (Platform.isLinux || Platform.isAndroid) {
       return DynamicLibrary.open('libflutter_media_manager.so');
     }

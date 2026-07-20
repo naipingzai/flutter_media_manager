@@ -78,6 +78,9 @@ class SettingsFfi {
   }
 
   DynamicLibrary _loadLibrary() {
+    if (Platform.isIOS) {
+      return DynamicLibrary.process();
+    }
     if (Platform.isLinux || Platform.isAndroid) {
       return DynamicLibrary.open('libflutter_media_manager.so');
     } else if (Platform.isWindows) {
