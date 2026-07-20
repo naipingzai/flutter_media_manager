@@ -48,44 +48,21 @@ jobs:
           cd ..
           flutter build ios --simulator
 
+      # Package .app into a zip for easy download
+      - name: Package iOS app
+        run: |
+          APP_PATH=$(find build/ios/iphonesimulator -name "*.app" -type d | head -1)
+          if [ -n "$APP_PATH" ]; then
+            APP_NAME=$(basename "$APP_PATH" .app)
+            cd build/ios/iphonesimulator
+            zip -r "${APP_NAME}-ios-simulator.zip" "$(basename "$APP_PATH")"
+            echo "ZIP created: ${APP_NAME}-ios-simulator.zip"
+          fi
+
       # Upload build artifacts
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ios-build
-          path: build/ios/iphonesimulator/
-          retention-days: 7
-
-  # Optional: Build iOS Simulator for testing
-  build-ios-simulator:
-    name: Build iOS Simulator
-    runs-on: macos-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.27.0'
-          channel: 'stable'
-          cache: true
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      # Build for iOS Simulator
-      - name: Build iOS Simulator
-        run: |
-          cd ios
-          pod install --repo-update
-          cd ..
-          flutter build ios --simulator
-
-      - name: Upload simulator build
-        uses: actions/upload-artifact@v4
-        with:
-          name: ios-simulator-build
-          path: build/ios/iphonesimulator/
+          name: ios-simulator-app
+          path: build/ios/iphonesimulator/*.zip
           retention-days: 7
