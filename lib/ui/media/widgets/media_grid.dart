@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:flutter_media_knowledge_base/core/design_system/app_theme.dart';
+import 'package:flutter_media_knowledge_base/core/design_system/components.dart';
 import 'package:flutter_media_knowledge_base/bridge/native/api/media.dart';
 import 'package:flutter_media_knowledge_base/ui/viewer/viewer_page.dart';
 import '../../../functionality/media/media_bloc.dart';
-
 
 class MediaGrid extends StatelessWidget {
   final List<MediaItem> mediaList;
@@ -92,6 +92,8 @@ class MediaGrid extends StatelessWidget {
   }
 }
 
+// ── Grid item ─────────────────────────────────────────────────────
+
 class _MediaGridItem extends StatelessWidget {
   final MediaItem media;
   final bool isSelected;
@@ -112,7 +114,7 @@ class _MediaGridItem extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     return Material(
-      color: cs.surfaceContainerHighest,
+      color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
       borderRadius: BorderRadius.circular(AppRadius.md),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -121,18 +123,16 @@ class _MediaGridItem extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // ── Thumbnail area ──
             Expanded(
               child: Stack(
                 fit: StackFit.expand,
                 children: [
                   _buildThumbnail(context),
                   if (selectionMode) _buildSelectionOverlay(cs),
-                  Positioned(
-                    top: AppSpacing.xs,
-                    left: AppSpacing.xs,
-                    child: _buildTypeIcon(cs),
-                  ),
-                  if (media.mediaType == MediaType.video && media.duration != null)
+                  // Duration badge (bottom-right, video only)
+                  if (media.mediaType == MediaType.video &&
+                      media.duration != null)
                     Positioned(
                       bottom: AppSpacing.xs,
                       right: AppSpacing.xs,
@@ -141,6 +141,7 @@ class _MediaGridItem extends StatelessWidget {
                 ],
               ),
             ),
+            // ── Info area ──
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.sm,
@@ -156,7 +157,7 @@ class _MediaGridItem extends StatelessWidget {
                     media.originalName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
+                    style: AppTextStyles.bodySmall.copyWith(
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -165,7 +166,7 @@ class _MediaGridItem extends StatelessWidget {
                     formatFileSize(media.size),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelSmall?.copyWith(
+                    style: AppTextStyles.caption.copyWith(
                       color: cs.onSurfaceVariant,
                     ),
                   ),
@@ -189,70 +190,69 @@ class _MediaGridItem extends StatelessWidget {
 
   Widget _buildFallbackIcon(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Center(
-      child: Icon(
-        _mediaIcon(media.mediaType),
-        size: AppSize.iconLarge,
-        color: cs.onSurfaceVariant,
-      ),
-    );
-  }
-
-  Widget _buildTypeIcon(ColorScheme cs) {
-    final (icon, color) = _typeIconData(media.mediaType, cs);
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.xxs),
-      decoration: BoxDecoration(
-        color: cs.scrim.withValues(alpha: 0.55),
-        borderRadius: BorderRadius.circular(AppRadius.sm),
+      color: cs.surfaceContainerHighest,
+      child: Center(
+        child: Icon(
+          _mediaIcon(media.mediaType),
+          size: AppSize.iconXl,
+          color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+        ),
       ),
-      child: Icon(icon, size: AppSize.iconSmall, color: color),
     );
   }
 
   Widget _buildDurationBadge(ColorScheme cs) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xxs,
+        horizontal: 6,
+        vertical: 3,
       ),
       decoration: BoxDecoration(
         color: cs.scrim.withValues(alpha: 0.7),
-        borderRadius: BorderRadius.circular(AppRadius.sm),
+        borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
       child: Text(
         formatDuration(media.duration!),
         style: TextStyle(
           color: cs.onError,
           fontSize: 10,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
   }
 
   Widget _buildSelectionOverlay(ColorScheme cs) {
-    return Container(
+    return AnimatedContainer(
+      duration: AppAnimation.fast,
       color: isSelected
           ? cs.primary.withValues(alpha: 0.25)
           : cs.scrim.withValues(alpha: 0.05),
       child: Center(
         child: AnimatedSwitcher(
-          duration: AppAnimation.thumbnailScaleIn,
+          duration: AppAnimation.thumbnailScale,
           child: isSelected
               ? Container(
+                  key: const ValueKey(true),
                   decoration: BoxDecoration(
                     color: cs.primary,
                     shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: cs.primary.withValues(alpha: 0.3),
+                        blurRadius: 8,
+                      ),
+                    ],
                   ),
-                  padding: const EdgeInsets.all(AppSpacing.xs),
+                  padding: const EdgeInsets.all(6),
                   child: Icon(
-                    Icons.check,
+                    Icons.check_rounded,
                     color: cs.onPrimary,
-                    size: AppSize.iconMedium,
+                    size: 18,
                   ),
                 )
-              : const SizedBox.shrink(),
+              : const SizedBox.shrink(key: ValueKey(false)),
         ),
       ),
     );
@@ -282,12 +282,14 @@ class _MediaGridItem extends StatelessWidget {
       case MediaType.audio:
         return (Icons.audiotrack_outlined, cs.primary);
       case MediaType.document:
-        return (Icons.description_outlined, cs.primary);
+        return (Icons.description_outlined, cs.tertiary);
       default:
         return (Icons.insert_drive_file_outlined, cs.onSurfaceVariant);
     }
   }
 }
+
+// ── List tile (single-column mode) ────────────────────────────────
 
 class _MediaListTile extends StatelessWidget {
   final MediaItem media;
@@ -310,15 +312,15 @@ class _MediaListTile extends StatelessWidget {
       onTap: onTap,
       onLongPress: onLongPress,
       leading: SizedBox(
-        width: AppSize.touchTargetMin,
-        height: AppSize.touchTargetMin,
+        width: AppSize.touchTarget,
+        height: AppSize.touchTarget,
         child: Stack(
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(AppRadius.sm),
               child: Container(
-                width: AppSize.touchTargetMin,
-                height: AppSize.touchTargetMin,
+                width: AppSize.touchTarget,
+                height: AppSize.touchTarget,
                 color: cs.surfaceContainerHighest,
                 child: media.thumbnailPath.isNotEmpty
                     ? Image.file(
@@ -337,9 +339,9 @@ class _MediaListTile extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: Icon(
-                    Icons.check,
+                    Icons.check_rounded,
                     color: cs.onPrimary,
-                    size: AppSize.iconMedium,
+                    size: AppSize.iconMd,
                   ),
                 ),
               ),
@@ -350,14 +352,15 @@ class _MediaListTile extends StatelessWidget {
         media.originalName,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
+        style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w500),
       ),
       subtitle: Text(
         formatFileSize(media.size),
-        style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+        style: AppTextStyles.caption.copyWith(color: cs.onSurfaceVariant),
       ),
       trailing: Icon(
         _MediaGridItem._mediaIcon(media.mediaType),
-        size: AppSize.iconMedium,
+        size: AppSize.iconMd,
         color: cs.onSurfaceVariant,
       ),
     );
@@ -367,7 +370,7 @@ class _MediaListTile extends StatelessWidget {
     return Center(
       child: Icon(
         _MediaGridItem._mediaIcon(media.mediaType),
-        size: AppSize.iconMedium,
+        size: AppSize.iconMd,
         color: cs.onSurfaceVariant,
       ),
     );

@@ -1,0 +1,91 @@
+# GitHub Actions workflow for building iOS app
+# This workflow builds the iOS app using a macOS runner
+
+name: Build iOS App
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    name: Build iOS App
+    runs-on: macos-latest
+
+    steps:
+      # Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Set up Flutter
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
+
+      # Get Flutter version info
+      - name: Flutter version
+        run: flutter --version
+
+      # Install dependencies
+      - name: Install dependencies
+        run: flutter pub get
+
+      # Run Flutter linter
+      - name: Run Flutter linter
+        run: flutter analyze --no-fatal-infos
+
+      # Build iOS app (archive for App Store)
+      - name: Build iOS App
+        run: |
+          cd ios
+          pod install --repo-update
+          cd ..
+          flutter build ios --release --no-codesign
+
+      # Upload build artifacts
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build
+          path: build/ios/iphoneos/
+          retention-days: 7
+
+  # Optional: Build iOS Simulator for testing
+  build-ios-simulator:
+    name: Build iOS Simulator
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # Build for iOS Simulator
+      - name: Build iOS Simulator
+        run: |
+          cd ios
+          pod install --repo-update
+          cd ..
+          flutter build ios --simulator
+
+      - name: Upload simulator build
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-simulator-build
+          path: build/ios/iphonesimulator/
+          retention-days: 7

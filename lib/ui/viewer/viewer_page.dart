@@ -5,15 +5,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_media_knowledge_base/core/design_system/app_theme.dart';
 import 'package:flutter_media_knowledge_base/core/i18n/app_localizations.dart';
-import 'package:flutter_media_knowledge_base/bridge/native/api/album.dart' as album_api;
-import 'package:flutter_media_knowledge_base/bridge/native/api/import_export.dart';
+import 'package:flutter_media_knowledge_base/bridge/native/api/album.dart'
+    as album_api;
 import 'package:flutter_media_knowledge_base/bridge/native/api/media.dart';
-import 'package:flutter_media_knowledge_base/bridge/native/api/note.dart' as note_api;
-import 'package:flutter_media_knowledge_base/bridge/native/api/tag.dart' as tag_api;
+import 'package:flutter_media_knowledge_base/bridge/native/api/note.dart'
+    as note_api;
+import 'package:flutter_media_knowledge_base/bridge/native/api/tag.dart'
+    as tag_api;
 import 'package:flutter_media_knowledge_base/ui/viewer/widgets/audio_player_widget.dart';
 import 'package:flutter_media_knowledge_base/ui/viewer/widgets/video_player_widget.dart';
 import 'package:flutter_media_knowledge_base/functionality/media/media_bloc.dart';
-
 
 /// 统一媒体查看器页面
 class ViewerPage extends StatefulWidget {
@@ -44,7 +45,8 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _currentIndex = widget.mediaList.indexWhere((m) => m.id == widget.initialMedia.id);
+    _currentIndex =
+        widget.mediaList.indexWhere((m) => m.id == widget.initialMedia.id);
     if (_currentIndex < 0) _currentIndex = 0;
     _currentMedia = widget.mediaList[_currentIndex];
     _pageController = PageController(initialPage: _currentIndex);
@@ -90,7 +92,8 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
 
   void _toggleOverlay() => setState(() => _showOverlay = !_showOverlay);
 
-  void _rotateImage() => setState(() => _imageRotation = (_imageRotation + 1) % 4);
+  void _rotateImage() =>
+      setState(() => _imageRotation = (_imageRotation + 1) % 4);
 
   @override
   Widget build(BuildContext context) {
@@ -116,7 +119,8 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
                 itemCount: widget.mediaList.length,
                 onPageChanged: _switchMedia,
                 itemBuilder: (context, index) {
-                  return _buildMediaContent(widget.mediaList[index], bottomPadding);
+                  return _buildMediaContent(
+                      widget.mediaList[index], bottomPadding);
                 },
               ),
             ),
@@ -204,7 +208,8 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
                 ),
               ),
               if (isImage) ...[
-                _buildTopButton(Icons.rotate_right, _rotateImage, tooltip: loc.rotate),
+                _buildTopButton(Icons.rotate_right, _rotateImage,
+                    tooltip: loc.rotate),
                 const SizedBox(width: AppSpacing.sm),
               ],
               _buildTopButton(Icons.close, () => Navigator.pop(context)),
@@ -255,9 +260,12 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildActionItem(Icons.photo_album_outlined, loc.album, _showAlbumPicker),
+              _buildActionItem(
+                  Icons.photo_album_outlined, loc.album, _showAlbumPicker),
               _buildActionItem(Icons.label_outlined, loc.tags, _showTagManager),
-              _buildActionItem(Icons.delete_outline, loc.delete, _showDeleteConfirm, color: Colors.red),
+              _buildActionItem(
+                  Icons.delete_outline, loc.delete, _showDeleteConfirm,
+                  color: Colors.red),
               _buildActionItem(Icons.more_horiz, loc.more, _showMorePanel),
             ],
           ),
@@ -266,7 +274,8 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildActionItem(IconData icon, String label, VoidCallback onTap, {Color? color}) {
+  Widget _buildActionItem(IconData icon, String label, VoidCallback onTap,
+      {Color? color}) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.md),
@@ -296,7 +305,8 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
       ),
       builder: (ctx) => SafeArea(
         child: Column(
@@ -305,7 +315,8 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
             _buildMoreTile(Icons.edit, loc.rename, _showRenameDialog),
             _buildMoreTile(Icons.download, loc.exportToDownload, _exportMedia),
             _buildMoreTile(Icons.link, loc.copyPath, _copyPath),
-            _buildMoreTile(Icons.info_outline, loc.details, _showFileInfoDialog),
+            _buildMoreTile(
+                Icons.info_outline, loc.details, _showFileInfoDialog),
           ],
         ),
       ),
@@ -336,7 +347,8 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
           autofocus: true,
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(loc.cancel)),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: Text(loc.cancel)),
           TextButton(
             onPressed: () async {
               final newName = controller.text.trim();
@@ -386,19 +398,12 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
 
   Future<void> _exportMedia() async {
     final loc = AppLocalizations.of(context);
-    try {
-      await exportToDownload(mediaIds: [_currentMedia.id]);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${loc.exportedTo}: ...')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${loc.exportFailed}: $e')),
-        );
-      }
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content:
+                Text('${loc.exportFailed}: import_export API not available')),
+      );
     }
   }
 
@@ -455,7 +460,9 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
                   if (ctx.mounted) {
                     Navigator.pop(ctx);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('${loc.addToAlbum}: ${album.album.name}')),
+                      SnackBar(
+                          content:
+                              Text('${loc.addToAlbum}: ${album.album.name}')),
                     );
                   }
                 },
@@ -473,9 +480,11 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(loc.confirmDeleteMedia),
-        content: Text('${loc.confirmDeleteMediaMsg} "${_currentMedia.originalName}"'),
+        content: Text(
+            '${loc.confirmDeleteMediaMsg} "${_currentMedia.originalName}"'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(loc.cancel)),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: Text(loc.cancel)),
           TextButton(
             onPressed: () async {
               await deleteMedia(id: _currentMedia.id);
@@ -485,7 +494,9 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
               if (widget.mediaList.length == 1) {
                 Navigator.pop(context);
               } else {
-                final newList = widget.mediaList.where((m) => m.id != _currentMedia.id).toList();
+                final newList = widget.mediaList
+                    .where((m) => m.id != _currentMedia.id)
+                    .toList();
                 if (newList.isEmpty) {
                   Navigator.pop(context);
                 } else {
@@ -518,12 +529,18 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
       _infoRow(loc.mimeType, _currentMedia.mimeType),
       _infoRow(loc.fileSize, _formatBytes(_currentMedia.size)),
       if (_currentMedia.width != null && _currentMedia.height != null)
-        _infoRow(loc.resolution, '${_currentMedia.width} x ${_currentMedia.height}'),
+        _infoRow(
+            loc.resolution, '${_currentMedia.width} x ${_currentMedia.height}'),
       if (_currentMedia.duration != null)
         _infoRow(loc.duration, _formatDuration(_currentMedia.duration!)),
       _infoRow(loc.hash, _currentMedia.sha256Hash),
-      _infoRow(loc.note, _noteContent?.isEmpty == false ? _noteContent! : loc.none),
-      _infoRow(loc.tags, _mediaTags.isEmpty ? loc.none : _mediaTags.map((t) => t.name).join(', ')),
+      _infoRow(
+          loc.note, _noteContent?.isEmpty == false ? _noteContent! : loc.none),
+      _infoRow(
+          loc.tags,
+          _mediaTags.isEmpty
+              ? loc.none
+              : _mediaTags.map((t) => t.name).join(', ')),
     ];
 
     showDialog(
@@ -540,7 +557,8 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(loc.close)),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: Text(loc.close)),
         ],
       ),
     );
@@ -556,13 +574,16 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
             width: 80,
             child: Text(
               label,
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13),
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 13),
             ),
           ),
           Expanded(
             child: SelectableText(
               value,
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 13),
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface, fontSize: 13),
             ),
           ),
         ],
@@ -573,7 +594,8 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
   String _formatBytes(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    if (bytes < 1024 * 1024 * 1024)
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 }
@@ -615,7 +637,8 @@ class _DocumentContent extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.insert_drive_file, size: 72, color: Colors.white54),
+            const Icon(Icons.insert_drive_file,
+                size: 72, color: Colors.white54),
             const SizedBox(height: AppSpacing.lg),
             Text(
               media.originalName,
@@ -625,7 +648,8 @@ class _DocumentContent extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             Text(
               media.mimeType,
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 13),
+              style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.5), fontSize: 13),
             ),
           ],
         ),
@@ -692,7 +716,8 @@ class _TagManagerDialogState extends State<_TagManagerDialog> {
             return ListTile(
               leading: selected
                   ? const Icon(Icons.check_circle, color: Colors.blue)
-                  : const Icon(Icons.radio_button_unchecked, color: Colors.grey),
+                  : const Icon(Icons.radio_button_unchecked,
+                      color: Colors.grey),
               title: Text(tag.name),
               onTap: () => _toggleTag(tag),
             );
@@ -700,7 +725,8 @@ class _TagManagerDialogState extends State<_TagManagerDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: Text(loc.close)),
+        TextButton(
+            onPressed: () => Navigator.pop(context), child: Text(loc.close)),
       ],
     );
   }

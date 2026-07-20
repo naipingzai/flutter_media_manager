@@ -1,0 +1,106 @@
+# Codemagic CI/CD 配置文件
+# 用于在云端 macOS 设备上编译 Flutter macOS/iOS 应用
+# 文档: https://docs.codemagic.io/
+
+workflows:
+  # ==================== macOS 桌面应用构建 ====================
+  macos-app-build:
+    name: macOS Desktop App Build
+    instance_type: mac # 使用 macOS 虚拟机
+    environment:
+      group: macos_env
+      flutter: 3.24.0
+      xcode: latest-stable
+      cocoapods: default
+      vars:
+        FLUTTER_VERSION: "3.24.0"
+    triggers:
+      # 当推送到 main 分支时自动构建
+      - branch:
+          pattern: "main"
+          event: push
+      # 手动触发
+      - manual
+    scripts:
+      - name: Install dependencies
+        command: |
+          flutter pub get
+      - name: Build macOS app
+        command: |
+          flutter build macos --release
+    artifacts:
+      # 构建产物保留路径
+      - build/macos/Build/Products/Release/*.app
+      - /tmp/xcodebuild_logs/*.log
+    caching:
+      cache_paths:
+        - $FLUTTER_ROOT/.pub-cache
+        - ~/Library/Caches/CocoaPods
+
+  # ==================== iOS 应用构建 ====================
+  ios-app-build:
+    name: iOS App Build
+    instance_type: mac
+    environment:
+      group: ios_env
+      flutter: 3.24.0
+      xcode: latest-stable
+      cocoapods: default
+      vars:
+        FLUTTER_VERSION: "3.24.0"
+        # iOS 打包需要配置 provisioning profile
+        BUNDLE_ID: "com.advancemediakb.advanceMediaKb"
+    triggers:
+      - branch:
+          pattern: "main"
+          event: push
+      - manual
+    scripts:
+      - name: Install dependencies
+        command: |
+          flutter pub get
+          cd ios && pod install --repo-update
+      - name: Build iOS app for simulator
+        command: |
+          flutter build ios --simulator --release
+      - name: Build iOS app for device
+        command: |
+          flutter build ios --release
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - build/ios/iphoneos/**/*.app
+      - /tmp/xcodebuild_logs/*.log
+    caching:
+      cache_paths:
+        - $FLUTTER_ROOT/.pub-cache
+        - ~/Library/Caches/CocoaPods
+        - ios/Pods
+
+  # ==================== 通用构建 (多平台) ====================
+  multi-platform-build:
+    name: Multi-Platform Build
+    instance_type: mac
+    environment:
+      group: common_env
+      flutter: 3.24.0
+      xcode: latest-stable
+      cocoapods: default
+    triggers:
+      - manual
+    scripts:
+      - name: Install dependencies
+        command: flutter pub get
+      - name: Run analysis
+        command: flutter analyze
+      - name: Run tests
+        command: flutter test
+      - name: Build Android APK
+        command: flutter build apk --release
+      - name: Build macOS app
+        command: flutter build macos --release
+    artifacts:
+      - build/app/outputs/flutter-apk/*.apk
+      - build/macos/Build/Products/Release/*.app
+    caching:
+      cache_paths:
+        - $FLUTTER_ROOT/.pub-cache

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_media_knowledge_base/core/design_system/app_theme.dart';
 import 'package:flutter_media_knowledge_base/ui/home/home_screen.dart';
-import 'package:flutter_media_knowledge_base/ui/search/search_screen.dart';
 import 'package:flutter_media_knowledge_base/ui/settings/settings_screen.dart';
 import 'package:flutter_media_knowledge_base/ui/viewer/viewer_page.dart';
 import 'package:flutter_media_knowledge_base/bridge/native/api/media.dart'
@@ -55,12 +53,6 @@ class AppRoutes {
   AppRoutes._();
 
   static const String home = '/';
-  static const String albumDetail = '/album_detail';
-  static const String tagMedia = '/tag_media';
-  static const String mediaDetail = '/media_detail';
-  static const String noteList = '/note_list';
-  static const String noteEdit = '/note_edit';
-  static const String search = '/search';
   static const String settings = '/settings';
   static const String mediaViewer = '/media_viewer';
   static const String fileBrowser = '/file_browser';
@@ -77,8 +69,6 @@ Route<dynamic>? generateRoute(RouteSettings settings) {
   switch (settings.name) {
     case AppRoutes.home:
       return _buildFullScreenOverlayRoute(const HomeScreen());
-    case AppRoutes.search:
-      return _buildCardOverlayRoute(const SearchScreen());
     case AppRoutes.settings:
       return _buildCardOverlayRoute(const SettingsScreen());
     case AppRoutes.mediaViewer:
@@ -102,14 +92,14 @@ Route<T> _buildFullScreenOverlayRoute<T>(Widget page,
     {bool fullscreenDialog = false}) {
   return PageRouteBuilder<T>(
     fullscreenDialog: fullscreenDialog,
-    transitionDuration: AppAnimation.overlaySlideIn,
-    reverseTransitionDuration: AppAnimation.overlaySlideOut,
+    transitionDuration: const Duration(milliseconds: 250),
+    reverseTransitionDuration: const Duration(milliseconds: 200),
     pageBuilder: (_, __, ___) => page,
     transitionsBuilder: (_, animation, __, child) {
       final curved = CurvedAnimation(
         parent: animation,
-        curve: AppAnimation.slideInCurve,
-        reverseCurve: AppAnimation.slideOutCurve,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInCubic,
       );
       return SlideTransition(
         position: Tween<Offset>(
@@ -130,14 +120,14 @@ Route<T> _buildFullScreenOverlayRoute<T>(Widget page,
 
 /// 内部辅助：非全屏圆角卡片覆盖层
 Route<T> _buildCardOverlayRoute<T>(Widget page) {
-  const double radius = AppRadius.xxl;
+  const double radius = 20.0;
   const double margin = 12.0;
 
   return PageRouteBuilder<T>(
     opaque: false,
     barrierDismissible: true,
-    transitionDuration: AppAnimation.overlaySlideIn,
-    reverseTransitionDuration: AppAnimation.overlaySlideOut,
+    transitionDuration: const Duration(milliseconds: 250),
+    reverseTransitionDuration: const Duration(milliseconds: 200),
     pageBuilder: (context, animation, secondaryAnimation) {
       final cs = Theme.of(context).colorScheme;
       final mq = MediaQuery.of(context);
@@ -171,8 +161,8 @@ Route<T> _buildCardOverlayRoute<T>(Widget page) {
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
       final curved = CurvedAnimation(
         parent: animation,
-        curve: AppAnimation.slideInCurve,
-        reverseCurve: AppAnimation.slideOutCurve,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInCubic,
       );
       return SlideTransition(
         position: Tween<Offset>(

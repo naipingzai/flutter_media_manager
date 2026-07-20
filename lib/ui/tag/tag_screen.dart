@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:flutter_media_knowledge_base/core/i18n/app_localizations.dart';
 import 'package:flutter_media_knowledge_base/core/design_system/app_theme.dart';
-import 'package:flutter_media_knowledge_base/core/design_system/components.dart';
 import 'package:flutter_media_knowledge_base/bridge/native/api/tag.dart'
     as tag_api;
 import 'package:flutter_media_knowledge_base/bridge/native/api/media.dart';
@@ -25,6 +24,7 @@ class _TagScreenState extends State<TagScreen> {
   final Set<String> _selectedMediaIds = {};
   bool _isMediaSelectionMode = false;
   List<MediaItem>? _filteredMedia;
+
   int get _tagColumns =>
       context.watch<AppBloc>().state.settings?.gridColumns ?? 3;
 
@@ -64,177 +64,288 @@ class _TagScreenState extends State<TagScreen> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
 
     return PopScope(
-        canPop: !_isMediaSelectionMode,
-        onPopInvoked: (didPop) {
-          if (!didPop && _isMediaSelectionMode) {
-            _clearMediaSelection();
-          }
-        },
-        child: Scaffold(
-          appBar: AppBar(
-            title: BlocBuilder<TagBloc, TagState>(
-              builder: (context, state) {
+      canPop: !_isMediaSelectionMode,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && _isMediaSelectionMode) {
+          _clearMediaSelection();
+        }
+      },
+      child: Scaffold(
+        appBar: _isMediaSelectionMode
+            ? _buildSelectionAppBar(context, loc, cs)
+            : _buildNormalAppBar(context, loc, cs),
+        body: BlocBuilder<TagBloc, TagState>(
+          builder: (context, state) {
+            switch (state.status) {
+              case TagStatus.initial:
+              case TagStatus.loading:
+                return _buildLoading(loc, cs);
+              case TagStatus.error:
+                return _buildError(context, state, loc, cs);
+              case TagStatus.loaded:
                 if (_filteredMedia != null) {
-                  return Text(loc.tags);
+                  return _buildFilteredMediaView(context, cs, loc);
                 }
-                if (state.currentTagId != null && state.breadcrumb.isNotEmpty) {
-                  return Text(state.breadcrumb.last.name);
-                }
-                return Text(loc.tags);
-              },
-            ),
-            leading: BlocBuilder<TagBloc, TagState>(
-              builder: (context, state) {
-                if (_filteredMedia != null) {
-                  return IconButton(
-                    icon: const Icon(Icons.arrow_back),
-                    onPressed: _clearFilter,
+                return _buildLoaded(context, state, loc, cs);
+            }
+          },
+        ),
+        floatingActionButton: _isMediaSelectionMode
+            ? null
+            : BlocBuilder<TagBloc, TagState>(
+                builder: (context, state) {
+                  if (_filteredMedia != null) return const SizedBox.shrink();
+                  return FloatingActionButton.extended(
+                    onPressed: () => _showCreateTagDialog(context),
+                    icon: const Icon(Icons.new_label_rounded, size: 20),
+                    label: Text(loc.createTag),
                   );
-                }
-                if (state.currentParentId != null) {
-                  return IconButton(
-                    icon: const Icon(Icons.arrow_back),
-                    onPressed: () {
-                      context.read<TagBloc>().add(const TagNavigateUpEvent());
-                    },
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-            ),
-            actions: [
-              if (_filteredMedia != null)
-                IconButton(
-                  icon: const Icon(Icons.clear_all),
-                  tooltip: loc.delete,
-                  onPressed: _clearFilter,
-                )
-              else
-                IconButton(
-                  icon: const Icon(Icons.filter_list),
-                  tooltip: loc.tags,
-                  onPressed: _showTagFilterDialog,
-                ),
-            ],
-          ),
-          body: BlocBuilder<TagBloc, TagState>(
-            builder: (context, state) {
-              switch (state.status) {
-                case TagStatus.initial:
-                case TagStatus.loading:
-                  return const Center(child: CircularProgressIndicator());
-                case TagStatus.error:
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.error_outline,
-                            size: AppSize.iconXLarge,
-                            color: Theme.of(context).colorScheme.error),
-                        const SizedBox(height: 16),
-                        Text(
-                            '${loc.error}: ${state.errorMessage ?? loc.unknown}'),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () {
-                            if (state.currentParentId != null) {
-                              context.read<TagBloc>().add(
-                                    TagLoadChildrenEvent(
-                                        state.currentParentId!),
-                                  );
-                            } else {
-                              context
-                                  .read<TagBloc>()
-                                  .add(const TagLoadRootsEvent());
-                            }
-                          },
-                          child: Text(loc.retry),
-                        ),
-                      ],
-                    ),
-                  );
-                case TagStatus.loaded:
-                  // 如果有筛选结果，显示媒体网格
-                  if (_filteredMedia != null) {
-                    return _buildFilteredMediaView(context, _tagColumns);
-                  }
-
-                  return Column(
-                    children: [
-                      // 面包屑导航
-                      if (state.breadcrumb.isNotEmpty)
-                        _buildBreadcrumb(context, state),
-                      // 内容区域
-                      Expanded(
-                          child: _buildContent(context, state, _tagColumns)),
-                    ],
-                  );
-              }
-            },
-          ),
-          floatingActionButton: _isMediaSelectionMode
-              ? const SizedBox.shrink()
-              : BlocBuilder<TagBloc, TagState>(
-                  builder: (context, state) {
-                    if (_filteredMedia != null) return const SizedBox.shrink();
-                    return FloatingActionButton(
-                      onPressed: () => _showCreateTagDialog(context),
-                      tooltip: loc.createTag,
-                      child: const Icon(Icons.new_label),
-                    );
-                  },
-                ),
-          bottomNavigationBar:
-              _isMediaSelectionMode ? _buildMediaSelectionBar(context) : null,
-        ));
+                },
+              ),
+        bottomNavigationBar:
+            _isMediaSelectionMode ? _buildMediaSelectionBar(context, cs) : null,
+      ),
+    );
   }
 
-  Widget _buildMediaSelectionBar(BuildContext context) {
+  // ── Normal AppBar ───────────────────────────────────────────────
+  PreferredSizeWidget _buildNormalAppBar(
+      BuildContext context, AppLocalizations loc, ColorScheme cs) {
+    return AppBar(
+      title: Text(loc.tabTags),
+      automaticallyImplyLeading: false,
+      leading: BlocBuilder<TagBloc, TagState>(
+        builder: (context, state) {
+          if (_filteredMedia != null) {
+            return IconButton(
+              icon: const Icon(Icons.arrow_back_rounded),
+              onPressed: _clearFilter,
+            );
+          }
+          if (state.currentParentId != null) {
+            return IconButton(
+              icon: const Icon(Icons.arrow_back_rounded),
+              onPressed: () =>
+                  context.read<TagBloc>().add(const TagNavigateUpEvent()),
+            );
+          }
+          return const SizedBox.shrink();
+        },
+      ),
+      actions: [
+        if (_filteredMedia != null)
+          IconButton(
+            icon: Icon(Icons.clear_all_rounded, color: cs.onSurfaceVariant),
+            tooltip: loc.clearAll,
+            onPressed: _clearFilter,
+          )
+        else
+          BlocBuilder<TagBloc, TagState>(
+            buildWhen: (prev, curr) =>
+                prev.currentParentId != curr.currentParentId,
+            builder: (context, state) {
+              if (state.currentParentId != null) {
+                return const SizedBox.shrink();
+              }
+              return IconButton(
+                icon:
+                    Icon(Icons.filter_list_rounded, color: cs.onSurfaceVariant),
+                tooltip: loc.tagFilter,
+                onPressed: _showTagFilterDialog,
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+  // ── Selection AppBar ────────────────────────────────────────────
+  PreferredSizeWidget _buildSelectionAppBar(
+      BuildContext context, AppLocalizations loc, ColorScheme cs) {
+    return AppBar(
+      leading: IconButton(
+        icon: const Icon(Icons.close_rounded),
+        onPressed: _clearMediaSelection,
+      ),
+      title: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: cs.primaryContainer,
+          borderRadius: BorderRadius.circular(AppRadius.full),
+        ),
+        child: Text(
+          '${loc.selected} ${_selectedMediaIds.length}',
+          style: TextStyle(
+            color: cs.onPrimaryContainer,
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Loading ─────────────────────────────────────────────────────
+  Widget _buildLoading(AppLocalizations loc, ColorScheme cs) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 40,
+            height: 40,
+            child: CircularProgressIndicator(strokeWidth: 3, color: cs.primary),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text(loc.loading,
+              style: AppTextStyles.body.copyWith(color: cs.onSurfaceVariant)),
+        ],
+      ),
+    );
+  }
+
+  // ── Error ───────────────────────────────────────────────────────
+  Widget _buildError(BuildContext context, TagState state, AppLocalizations loc,
+      ColorScheme cs) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: cs.errorContainer.withValues(alpha: 0.3),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.cloud_off_rounded, size: 48, color: cs.error),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text('${loc.error}: ${state.errorMessage ?? loc.unknown}',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.body.copyWith(color: cs.onSurfaceVariant)),
+            const SizedBox(height: AppSpacing.lg),
+            FilledButton.icon(
+              onPressed: () {
+                if (state.currentParentId != null) {
+                  context
+                      .read<TagBloc>()
+                      .add(TagLoadChildrenEvent(state.currentParentId!));
+                } else {
+                  context.read<TagBloc>().add(const TagLoadRootsEvent());
+                }
+              },
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: Text(loc.retry),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Loaded content ──────────────────────────────────────────────
+  Widget _buildLoaded(BuildContext context, TagState state,
+      AppLocalizations loc, ColorScheme cs) {
+    final hasTags = state.tagsWithInfo.isNotEmpty;
+    final hasParent = state.currentParentId != null;
+
+    if (!hasTags && !hasParent) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.xxl),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: cs.primaryContainer.withValues(alpha: 0.3),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.label_outline_rounded,
+                    size: 56, color: cs.primary),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Text(loc.noTags,
+                  style: AppTextStyles.title.copyWith(color: cs.onSurface),
+                  textAlign: TextAlign.center),
+              const SizedBox(height: AppSpacing.sm),
+              Text(loc.noTagsDesc,
+                  style:
+                      AppTextStyles.body.copyWith(color: cs.onSurfaceVariant),
+                  textAlign: TextAlign.center),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return CustomScrollView(
+      slivers: [
+        if (state.breadcrumb.isNotEmpty)
+          SliverToBoxAdapter(
+            child: _buildBreadcrumb(context, state),
+          ),
+        if (hasTags) ...[
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+            sliver: SliverGrid(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: _tagColumns,
+                crossAxisSpacing: AppSpacing.sm,
+                mainAxisSpacing: AppSpacing.sm,
+                childAspectRatio: 1.0,
+              ),
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final tagInfo = state.tagsWithInfo[index];
+                  return _TagCard(
+                    tagInfo: tagInfo,
+                    onTap: () => context
+                        .read<TagBloc>()
+                        .add(TagNavigateToEvent(tagInfo.tag.id)),
+                    onLongPress: () => _showTagActions(context, tagInfo),
+                  );
+                },
+                childCount: state.tagsWithInfo.length,
+              ),
+            ),
+          ),
+        ],
+        const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
+      ],
+    );
+  }
+
+  // ── Media selection bar ─────────────────────────────────────────
+  Widget _buildMediaSelectionBar(BuildContext context, ColorScheme cs) {
     final loc = AppLocalizations.of(context);
+    final selectedCount = _selectedMediaIds.length;
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-              color: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.1),
-              blurRadius: 8,
-              offset: const Offset(0, -2)),
-        ],
+        color: cs.surfaceContainerLow,
+        border: Border(
+          top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3)),
+        ),
       ),
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
           child: Row(
             children: [
-              IconButton(
-                icon: const Icon(Icons.close),
-                tooltip: loc.cancel,
-                onPressed: _clearMediaSelection,
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text('${loc.selected} ${_selectedMediaIds.length}',
-                    style: TextStyle(
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
-                        fontWeight: FontWeight.bold)),
-              ),
-              const Spacer(),
-              IconButton(
-                icon: Icon(Icons.delete_outline,
-                    color: Theme.of(context).colorScheme.error),
-                tooltip: loc.delete,
-                onPressed: _selectedMediaIds.isNotEmpty
-                    ? () => _batchDeleteSelectedMedia(context)
-                    : null,
+              _actionButton(
+                icon: Icons.delete_outline_rounded,
+                label: loc.delete,
+                color: cs.error,
+                enabled: selectedCount > 0,
+                onTap: () => _batchDeleteSelectedMedia(context),
               ),
             ],
           ),
@@ -243,11 +354,53 @@ class _TagScreenState extends State<TagScreen> {
     );
   }
 
+  Widget _actionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required bool enabled,
+    required VoidCallback onTap,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    return Expanded(
+      child: Material(
+        color: enabled
+            ? color.withValues(alpha: 0.1)
+            : cs.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        child: InkWell(
+          onTap: enabled ? onTap : null,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon,
+                    size: 22, color: enabled ? color : cs.onSurfaceVariant),
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  style: AppTextStyles.caption.copyWith(
+                    color: enabled ? color : cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _batchDeleteSelectedMedia(BuildContext context) async {
     final loc = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
+        icon: Icon(Icons.delete_outline_rounded, size: 40, color: cs.error),
         title: Text(loc.confirmBatchDelete),
         content:
             Text('${loc.confirmBatchDelete} (${_selectedMediaIds.length})'),
@@ -255,9 +408,8 @@ class _TagScreenState extends State<TagScreen> {
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
               child: Text(loc.cancel)),
-          TextButton(
-            style: TextButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.error),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: cs.error),
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(loc.delete),
           ),
@@ -276,7 +428,7 @@ class _TagScreenState extends State<TagScreen> {
     }
   }
 
-  /// 面包屑导航
+  // ── Breadcrumb ──────────────────────────────────────────────────
   Widget _buildBreadcrumb(BuildContext context, TagState state) {
     final loc = AppLocalizations.of(context);
     final nodes = <BreadcrumbNode>[
@@ -285,8 +437,8 @@ class _TagScreenState extends State<TagScreen> {
             label: e.value.name,
             id: e.value.id,
             icon: e.key == state.breadcrumb.length - 1
-                ? Icons.label_important
-                : Icons.label,
+                ? Icons.label_important_rounded
+                : Icons.label_rounded,
           )),
     ];
     return BreadcrumbBar(
@@ -301,85 +453,20 @@ class _TagScreenState extends State<TagScreen> {
     );
   }
 
-  /// 内容区域 - 子标签网格 + 筛选结果
-  Widget _buildContent(BuildContext context, TagState state, int gridColumns) {
-    final loc = AppLocalizations.of(context);
-    final cs = Theme.of(context).colorScheme;
-    final hasTags = state.tagsWithInfo.isNotEmpty;
-    final hasParent = state.currentParentId != null;
-
-    if (!hasTags && !hasParent) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.label,
-                size: AppSize.iconXxl, color: cs.onSurfaceVariant),
-            const SizedBox(height: AppSpacing.md),
-            Text(loc.noTags,
-                style: TextStyle(fontSize: 16, color: cs.onSurfaceVariant)),
-            const SizedBox(height: AppSpacing.sm),
-            Text(loc.noTagsDesc,
-                style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant)),
-          ],
-        ),
-      );
-    }
-
-    return CustomScrollView(
-      slivers: [
-        // 子标签网格
-        if (hasTags) ...[
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            sliver: SliverGrid(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: gridColumns,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 1.0,
-              ),
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final tagInfo = state.tagsWithInfo[index];
-                  return _TagCard(
-                    tagInfo: tagInfo,
-                    onTap: () {
-                      // 点击标签：先尝试进入子标签，如果没有子标签则显示关联媒体
-                      context.read<TagBloc>().add(
-                            TagNavigateToEvent(tagInfo.tag.id),
-                          );
-                    },
-                    onLongPress: () => _showTagActions(context, tagInfo),
-                  );
-                },
-                childCount: state.tagsWithInfo.length,
-              ),
-            ),
-          ),
-        ],
-        // 底部间距
-        const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
-      ],
-    );
-  }
-
-  /// 显示筛选后的媒体网格
-  Widget _buildFilteredMediaView(BuildContext context, int gridColumns) {
-    final loc = AppLocalizations.of(context);
+  // ── Filtered media view ─────────────────────────────────────────
+  Widget _buildFilteredMediaView(
+      BuildContext context, ColorScheme cs, AppLocalizations loc) {
     final filterInfoBar = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
       child: Row(
         children: [
-          Icon(Icons.filter_list,
-              size: 16, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 8),
+          Icon(Icons.filter_list_rounded, size: 16, color: cs.primary),
+          const SizedBox(width: AppSpacing.sm),
           Text(
             '${_selectedTagIds.length} ${loc.tags} · ${_filteredMedia!.length}',
-            style: TextStyle(
-                fontSize: 13,
-                color: Theme.of(context).colorScheme.onSurfaceVariant),
+            style: AppTextStyles.caption.copyWith(color: cs.onSurfaceVariant),
           ),
         ],
       ),
@@ -391,9 +478,17 @@ class _TagScreenState extends State<TagScreen> {
           filterInfoBar,
           Expanded(
             child: Center(
-              child: Text(loc.noResults,
-                  style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.search_off_rounded,
+                      size: 48, color: cs.onSurfaceVariant),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(loc.noResults,
+                      style: AppTextStyles.body
+                          .copyWith(color: cs.onSurfaceVariant)),
+                ],
+              ),
             ),
           ),
         ],
@@ -405,12 +500,12 @@ class _TagScreenState extends State<TagScreen> {
         filterInfoBar,
         Expanded(
           child: GridView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.sm),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: gridColumns,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-              childAspectRatio: 1.0,
+              crossAxisCount: _tagColumns,
+              crossAxisSpacing: AppSpacing.xs,
+              mainAxisSpacing: AppSpacing.xs,
+              childAspectRatio: 0.78,
             ),
             itemCount: _filteredMedia!.length,
             itemBuilder: (context, index) {
@@ -442,7 +537,7 @@ class _TagScreenState extends State<TagScreen> {
     );
   }
 
-  /// 显示标签关联的媒体
+  // ── Show tag media ──────────────────────────────────────────────
   Future<void> _showTagMedia(BuildContext context, String tagId) async {
     try {
       final media = await tag_api.getMediaByTag(tagId: tagId);
@@ -461,100 +556,112 @@ class _TagScreenState extends State<TagScreen> {
     }
   }
 
+  // ── Create tag dialog ───────────────────────────────────────────
   void _showCreateTagDialog(BuildContext context) {
     final loc = AppLocalizations.of(context);
     final nameController = TextEditingController();
     showDialog(
       context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          title: Text(loc.createTag),
-          content: TextField(
-            controller: nameController,
-            decoration: InputDecoration(
-              hintText: loc.tagName,
-              border: const OutlineInputBorder(),
-            ),
-            autofocus: true,
+      builder: (ctx) => AlertDialog(
+        title: Text(loc.createTag),
+        content: TextField(
+          controller: nameController,
+          decoration: InputDecoration(hintText: loc.tagName),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(loc.cancel),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(loc.cancel),
-            ),
-            FilledButton(
-              onPressed: () {
-                final name = nameController.text.trim();
-                if (name.isNotEmpty) {
-                  final currentParentId =
-                      context.read<TagBloc>().state.currentParentId;
-                  context.read<TagBloc>().add(
-                        TagCreateEvent(
-                          name,
-                          color: '#FF6750A4',
-                          parentId: currentParentId,
-                        ),
-                      );
-                  Navigator.pop(ctx);
-                }
-              },
-              child: Text(loc.confirm),
-            ),
-          ],
-        );
-      },
+          FilledButton(
+            onPressed: () {
+              final name = nameController.text.trim();
+              if (name.isNotEmpty) {
+                final currentParentId =
+                    context.read<TagBloc>().state.currentParentId;
+                context.read<TagBloc>().add(
+                      TagCreateEvent(name,
+                          color: '#FF6750A4', parentId: currentParentId),
+                    );
+                Navigator.pop(ctx);
+              }
+            },
+            child: Text(loc.confirm),
+          ),
+        ],
+      ),
     );
   }
 
+  // ── Tag actions (long press) ────────────────────────────────────
   void _showTagActions(BuildContext context, dynamic tagInfo) {
     final loc = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
     showModalBottomSheet(
       context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.create_new_folder),
-              title: Text(loc.createTag),
-              onTap: () {
-                Navigator.pop(ctx);
-                _showCreateSubTagDialog(context, tagInfo.tag.id);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.edit),
-              title: Text(loc.edit),
-              onTap: () {
-                Navigator.pop(ctx);
-                _showEditTagDialog(context, tagInfo);
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.delete,
-                  color: Theme.of(context).colorScheme.error),
-              title: Text(loc.delete,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error)),
-              onTap: () {
-                Navigator.pop(ctx);
-                _confirmDeleteTag(context, tagInfo);
-              },
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: cs.onSurfaceVariant.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              ListTile(
+                leading:
+                    Icon(Icons.create_new_folder_outlined, color: cs.primary),
+                title: Text(loc.createTag),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showCreateSubTagDialog(context, tagInfo.tag.id);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.edit_outlined, color: cs.primary),
+                title: Text(loc.edit),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showEditTagDialog(context, tagInfo);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.delete_outline_rounded, color: cs.error),
+                title: Text(loc.delete, style: TextStyle(color: cs.error)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _confirmDeleteTag(context, tagInfo);
+                },
+              ),
+              const SizedBox(height: AppSpacing.sm),
+            ],
+          ),
         ),
       ),
     );
   }
 
+  // ── Create sub-tag ──────────────────────────────────────────────
   void _showCreateSubTagDialog(BuildContext context, String parentId) {
     final loc = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
     final controller = TextEditingController();
     String selectedColor = '#FF6750A4';
     showDialog(
       context: context,
       builder: (ctx) {
         return StatefulBuilder(
-          builder: (ctx, setState) {
+          builder: (ctx, setDialogState) {
             return AlertDialog(
               title: Text(loc.createTag),
               content: Column(
@@ -562,27 +669,26 @@ class _TagScreenState extends State<TagScreen> {
                 children: [
                   TextField(
                     controller: controller,
-                    decoration: InputDecoration(
-                      hintText: loc.tagName,
-                      border: const OutlineInputBorder(),
-                    ),
+                    decoration: InputDecoration(hintText: loc.tagName),
                     autofocus: true,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.md),
                   Align(
                     alignment: Alignment.centerLeft,
-                    child: Text(loc.selectTagColor,
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    child:
+                        Text(loc.selectTagColor, style: AppTextStyles.subtitle),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
                   Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.sm,
                     children: _colorOptions.map((color) {
                       final isSelected = selectedColor == color;
                       return GestureDetector(
-                        onTap: () => setState(() => selectedColor = color),
-                        child: Container(
+                        onTap: () =>
+                            setDialogState(() => selectedColor = color),
+                        child: AnimatedContainer(
+                          duration: AppAnimation.fast,
                           width: 32,
                           height: 32,
                           decoration: BoxDecoration(
@@ -590,18 +696,20 @@ class _TagScreenState extends State<TagScreen> {
                                 int.parse(color.replaceFirst('#', '0xFF'))),
                             shape: BoxShape.circle,
                             border: isSelected
-                                ? Border.all(color: Colors.white, width: 3)
+                                ? Border.all(color: cs.onPrimary, width: 3)
                                 : null,
                             boxShadow: isSelected
                                 ? [
-                                    const BoxShadow(
-                                        color: Colors.black26, blurRadius: 4)
+                                    BoxShadow(
+                                        color:
+                                            cs.primary.withValues(alpha: 0.3),
+                                        blurRadius: 6)
                                   ]
                                 : null,
                           ),
                           child: isSelected
-                              ? const Icon(Icons.check,
-                                  color: Colors.white, size: 18)
+                              ? Icon(Icons.check_rounded,
+                                  color: cs.onPrimary, size: 18)
                               : null,
                         ),
                       );
@@ -635,7 +743,7 @@ class _TagScreenState extends State<TagScreen> {
     );
   }
 
-  /// 递归收集一个标签及其所有后代的 ID（用于防止循环父子检测）
+  // ── Recursive descendant IDs ────────────────────────────────────
   static Set<String> _collectDescendantIds(
       List<tag_api.Tag> allTags, String rootId) {
     final result = <String>{rootId};
@@ -647,23 +755,19 @@ class _TagScreenState extends State<TagScreen> {
     return result;
   }
 
-  /// 编辑标签对话框（支持修改名字、颜色、父标签）
+  // ── Edit tag dialog ─────────────────────────────────────────────
   void _showEditTagDialog(BuildContext context, dynamic tagInfo) async {
     final loc = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
     final tag = tagInfo.tag;
     final nameController = TextEditingController(text: tag.name);
 
-    // 获取所有可用父标签（排除自身及自身的后代以防循环）
     List<tag_api.Tag> allTags = [];
     try {
       allTags = await tag_api.getAllTags();
-    } catch (_) {
-      // 忽略错误，保持空列表
-    }
+    } catch (_) {}
 
-    // 计算禁止的父标签 ID：自身 + 所有后代
     final forbiddenIds = _collectDescendantIds(allTags, tag.id);
-
     String selectedColor = tag.color ?? _colorOptions.first;
     String? selectedParentId = tag.parentId;
 
@@ -673,7 +777,7 @@ class _TagScreenState extends State<TagScreen> {
       context: context,
       builder: (ctx) {
         return StatefulBuilder(
-          builder: (ctx, setState) {
+          builder: (ctx, setDialogState) {
             return AlertDialog(
               title: Text(loc.edit),
               content: SizedBox(
@@ -683,30 +787,24 @@ class _TagScreenState extends State<TagScreen> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // 名字
                       TextField(
                         controller: nameController,
-                        decoration: InputDecoration(
-                          hintText: loc.tagName,
-                          border: const OutlineInputBorder(),
-                        ),
+                        decoration: InputDecoration(hintText: loc.tagName),
                         autofocus: true,
                       ),
-                      const SizedBox(height: 16),
-                      // 颜色选择
-                      Text(
-                        loc.selectTagColor,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.md),
+                      Text(loc.selectTagColor, style: AppTextStyles.subtitle),
+                      const SizedBox(height: AppSpacing.sm),
                       Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
+                        spacing: AppSpacing.sm,
+                        runSpacing: AppSpacing.sm,
                         children: _colorOptions.map((color) {
                           final isSelected = selectedColor == color;
                           return GestureDetector(
-                            onTap: () => setState(() => selectedColor = color),
-                            child: Container(
+                            onTap: () =>
+                                setDialogState(() => selectedColor = color),
+                            child: AnimatedContainer(
+                              duration: AppAnimation.fast,
                               width: 32,
                               height: 32,
                               decoration: BoxDecoration(
@@ -714,36 +812,32 @@ class _TagScreenState extends State<TagScreen> {
                                     int.parse(color.replaceFirst('#', '0xFF'))),
                                 shape: BoxShape.circle,
                                 border: isSelected
-                                    ? Border.all(color: Colors.white, width: 3)
+                                    ? Border.all(color: cs.onPrimary, width: 3)
                                     : null,
                                 boxShadow: isSelected
                                     ? [
-                                        const BoxShadow(
-                                            color: Colors.black26,
-                                            blurRadius: 4)
+                                        BoxShadow(
+                                            color: cs.primary
+                                                .withValues(alpha: 0.3),
+                                            blurRadius: 6)
                                       ]
                                     : null,
                               ),
                               child: isSelected
-                                  ? const Icon(Icons.check,
-                                      color: Colors.white, size: 18)
+                                  ? Icon(Icons.check_rounded,
+                                      color: cs.onPrimary, size: 18)
                                   : null,
                             ),
                           );
                         }).toList(),
                       ),
-                      const SizedBox(height: 16),
-                      // 父标签选择
-                      Text(
-                        loc.tagParent,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.md),
+                      Text(loc.tagParent, style: AppTextStyles.subtitle),
+                      const SizedBox(height: AppSpacing.sm),
                       DropdownButtonFormField<String?>(
-                        initialValue: selectedParentId,
+                        value: selectedParentId,
                         isExpanded: true,
                         decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
                           contentPadding:
                               EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         ),
@@ -760,7 +854,7 @@ class _TagScreenState extends State<TagScreen> {
                                   )),
                         ],
                         onChanged: (val) =>
-                            setState(() => selectedParentId = val),
+                            setDialogState(() => selectedParentId = val),
                       ),
                     ],
                   ),
@@ -797,19 +891,21 @@ class _TagScreenState extends State<TagScreen> {
     );
   }
 
+  // ── Delete tag confirmation ─────────────────────────────────────
   void _confirmDeleteTag(BuildContext context, dynamic tagInfo) {
     final loc = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(loc.confirmBatchDelete),
-        content: Text('${loc.confirmBatchDelete}\n${tagInfo.tag.name}'),
+        icon: Icon(Icons.delete_outline_rounded, size: 40, color: cs.error),
+        title: Text(loc.deleteTag),
+        content: Text('${loc.confirmDeleteTag}\n\n${tagInfo.tag.name}'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx), child: Text(loc.cancel)),
-          TextButton(
-            style: TextButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.error),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: cs.error),
             onPressed: () {
               context.read<TagBloc>().add(TagDeleteEvent(tagInfo.tag.id));
               Navigator.pop(ctx);
@@ -821,7 +917,7 @@ class _TagScreenState extends State<TagScreen> {
     );
   }
 
-  /// 显示标签筛选对话框
+  // ── Tag filter dialog ───────────────────────────────────────────
   void _showTagFilterDialog() async {
     final allTags = await tag_api.getAllTags();
     if (!mounted) return;
@@ -851,7 +947,6 @@ class _TagScreenState extends State<TagScreen> {
     await _executeFilter();
   }
 
-  /// 执行标签筛选
   Future<void> _executeFilter() async {
     try {
       List<MediaItem> results;
@@ -869,7 +964,6 @@ class _TagScreenState extends State<TagScreen> {
     }
   }
 
-  /// 清除筛选
   void _clearFilter() {
     setState(() {
       _selectedTagIds.clear();
@@ -877,77 +971,24 @@ class _TagScreenState extends State<TagScreen> {
     });
   }
 
-  /// 12 种预设颜色（Material 调色板 + 互补色）
   static const List<String> _colorOptions = [
-    '#FF6750A4', // Deep Purple
-    '#FFE53935', // Red
-    '#FF1E88E5', // Blue
-    '#FF43A047', // Green
-    '#FFFB8C00', // Orange
-    '#FF8E24AA', // Purple
-    '#FF00ACC1', // Cyan
-    '#FFD81B60', // Pink
-    '#FF3949AB', // Indigo
-    '#FF00897B', // Teal
-    '#FF7CB342', // Light Green
-    '#FFC0CA33', // Lime
+    '#FF6750A4',
+    '#FFE53935',
+    '#FF1E88E5',
+    '#FF43A047',
+    '#FFFB8C00',
+    '#FF8E24AA',
+    '#FF00ACC1',
+    '#FFD81B60',
+    '#FF3949AB',
+    '#FF00897B',
+    '#FF7CB342',
+    '#FFC0CA33',
   ];
 }
 
-class _TagBreadcrumbItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isActive;
-  final VoidCallback? onTap;
+// ── Tag card ──────────────────────────────────────────────────────
 
-  const _TagBreadcrumbItem({
-    required this.icon,
-    required this.label,
-    required this.isActive,
-  }) : onTap = null;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: isActive ? cs.primaryContainer : cs.surface,
-            borderRadius: BorderRadius.circular(AppRadius.full),
-            border: Border.all(color: cs.outlineVariant),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon,
-                  size: AppSize.iconSmall,
-                  color:
-                      isActive ? cs.onPrimaryContainer : cs.onSurfaceVariant),
-              const SizedBox(width: AppSpacing.xs),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-                  color: isActive ? cs.onPrimaryContainer : cs.onSurface,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// 标签卡片组件（网格展示）
 class _TagCard extends StatelessWidget {
   final dynamic tagInfo;
   final VoidCallback onTap;
@@ -965,33 +1006,55 @@ class _TagCard extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
 
     return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        side: BorderSide(color: cs.outlineVariant),
-      ),
-      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         onLongPress: onLongPress,
-        child: Container(
-          color: cs.surface,
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm, vertical: AppSpacing.md),
-              child: Text(
-                tag.name,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: cs.onSurface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: (tag.color != null
+                          ? Color(
+                              int.parse(tag.color!.replaceFirst('#', '0xFF')))
+                          : cs.primaryContainer)
+                      .withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
                 ),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
+                child: Icon(Icons.label_rounded,
+                    size: 32,
+                    color: tag.color != null
+                        ? Color(int.parse(tag.color!.replaceFirst('#', '0xFF')))
+                        : cs.primary),
               ),
-            ),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                tag.name,
+                style: AppTextStyles.subtitle.copyWith(color: cs.onSurface),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              if (tagInfo.mediaCount != null)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(AppRadius.full),
+                  ),
+                  child: Text(
+                    '${tagInfo.mediaCount} ${AppLocalizations.of(context).files}',
+                    style: AppTextStyles.caption
+                        .copyWith(color: cs.onSurfaceVariant),
+                  ),
+                ),
+            ],
           ),
         ),
       ),
@@ -999,7 +1062,8 @@ class _TagCard extends StatelessWidget {
   }
 }
 
-/// 媒体网格项（用于标签筛选结果展示）
+// ── Media grid item (unified with media_grid.dart) ───────────────
+
 class _MediaGridItem extends StatelessWidget {
   final MediaItem media;
   final bool isSelectionMode;
@@ -1017,7 +1081,10 @@ class _MediaGridItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    final cs = Theme.of(context).colorScheme;
+    return Material(
+      color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
@@ -1029,51 +1096,57 @@ class _MediaGridItem extends StatelessWidget {
               Image.file(
                 File(media.thumbnailPath),
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _buildPlaceholder(context),
+                errorBuilder: (_, __, ___) => _buildPlaceholder(cs),
               )
             else
-              _buildPlaceholder(context),
+              _buildPlaceholder(cs),
             if (isSelectionMode)
-              Positioned.fill(
-                child: Container(
-                  color: isSelected
-                      ? Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withValues(alpha: 0.3)
-                      : Colors.transparent,
-                ),
+              AnimatedContainer(
+                duration: AppAnimation.fast,
+                color: isSelected
+                    ? cs.primary.withValues(alpha: 0.25)
+                    : cs.scrim.withValues(alpha: 0.05),
               ),
             if (isSelectionMode)
               Positioned(
-                top: 4,
-                right: 4,
-                child: Icon(
-                  isSelected ? Icons.check_circle : Icons.check_circle_outline,
-                  size: 24,
-                  color: isSelected
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.5),
+                top: AppSpacing.xs,
+                right: AppSpacing.xs,
+                child: AnimatedSwitcher(
+                  duration: AppAnimation.thumbnailScale,
+                  child: isSelected
+                      ? Container(
+                          key: const ValueKey(true),
+                          decoration: BoxDecoration(
+                            color: cs.primary,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                  color: cs.primary.withValues(alpha: 0.3),
+                                  blurRadius: 8),
+                            ],
+                          ),
+                          padding: const EdgeInsets.all(6),
+                          child: Icon(Icons.check_rounded,
+                              color: cs.onPrimary, size: 18),
+                        )
+                      : const SizedBox.shrink(key: ValueKey(false)),
                 ),
               ),
             if (media.mediaType != MediaType.image && !isSelectionMode)
               Positioned(
-                bottom: 4,
-                right: 4,
+                bottom: AppSpacing.xs,
+                right: AppSpacing.xs,
                 child: Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                   decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(4),
+                    color: cs.scrim.withValues(alpha: 0.55),
+                    borderRadius: BorderRadius.circular(AppRadius.xs),
                   ),
                   child: Icon(
                     _getMediaIcon(media.mediaType),
-                    size: 14,
-                    color: Colors.white,
+                    size: 12,
+                    color: cs.secondary,
                   ),
                 ),
               ),
@@ -1083,14 +1156,14 @@ class _MediaGridItem extends StatelessWidget {
     );
   }
 
-  Widget _buildPlaceholder(BuildContext context) {
+  Widget _buildPlaceholder(ColorScheme cs) {
     return Container(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      color: cs.surfaceContainerHighest,
       child: Center(
         child: Icon(
           _getMediaIcon(media.mediaType),
-          size: 32,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          size: AppSize.iconXl,
+          color: cs.onSurfaceVariant.withValues(alpha: 0.5),
         ),
       ),
     );
@@ -1099,20 +1172,21 @@ class _MediaGridItem extends StatelessWidget {
   IconData _getMediaIcon(MediaType type) {
     switch (type) {
       case MediaType.image:
-        return Icons.image;
+        return Icons.image_outlined;
       case MediaType.video:
-        return Icons.videocam;
+        return Icons.videocam_outlined;
       case MediaType.audio:
-        return Icons.audiotrack;
+        return Icons.audiotrack_outlined;
       case MediaType.document:
-        return Icons.description;
+        return Icons.description_outlined;
       case MediaType.other:
-        return Icons.insert_drive_file;
+        return Icons.insert_drive_file_outlined;
     }
   }
 }
 
-/// 标签筛选对话框
+// ── Tag filter dialog ─────────────────────────────────────────────
+
 class _TagFilterDialog extends StatefulWidget {
   final List<tag_api.Tag> allTags;
   final Set<String> selectedTagIds;
@@ -1138,13 +1212,24 @@ class _TagFilterDialogState extends State<_TagFilterDialog> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
     return AlertDialog(
-      title: Text(loc.tags),
+      title: Text(loc.tagFilter),
       content: SizedBox(
         width: double.maxFinite,
         height: 400,
         child: widget.allTags.isEmpty
-            ? Center(child: Text(loc.noTags))
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.label_off_outlined,
+                        size: 48, color: cs.onSurfaceVariant),
+                    const SizedBox(height: AppSpacing.md),
+                    Text(loc.noTags),
+                  ],
+                ),
+              )
             : ListView.builder(
                 itemCount: widget.allTags.length,
                 itemBuilder: (ctx, i) {

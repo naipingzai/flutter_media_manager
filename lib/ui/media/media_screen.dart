@@ -1,16 +1,12 @@
-import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:flutter_media_knowledge_base/core/design_system/app_theme.dart';
-import 'package:flutter_media_knowledge_base/core/design_system/components.dart';
 import 'package:flutter_media_knowledge_base/core/i18n/app_localizations.dart';
 import 'widgets/media_grid.dart';
 import 'widgets/file_browser_dialog.dart';
 import 'package:flutter_media_knowledge_base/bridge/native/api/media.dart';
-import 'package:flutter_media_knowledge_base/bridge/native/api/enums.dart';
-import 'package:flutter_media_knowledge_base/bridge/native/api/scanner.dart';
 import 'package:flutter_media_knowledge_base/bridge/native/api/tag.dart';
 import 'package:flutter_media_knowledge_base/bridge/native/api/album.dart';
 import 'package:flutter_media_knowledge_base/core/navigation/app_router.dart';
@@ -36,9 +32,10 @@ class _MediaScreenState extends State<MediaScreen> {
   Widget build(BuildContext context) {
     return BlocBuilder<MediaBloc, MediaState>(
       builder: (context, state) {
+        final cs = Theme.of(context).colorScheme;
         return PopScope(
           canPop: !state.isSelectionMode,
-          onPopInvoked: (didPop) {
+          onPopInvokedWithResult: (didPop, _) {
             if (!didPop && state.isSelectionMode) {
               context.read<MediaBloc>().add(const MediaClearSelectionEvent());
               context
@@ -47,100 +44,154 @@ class _MediaScreenState extends State<MediaScreen> {
             }
           },
           child: Scaffold(
-            appBar: AppBar(
-              title: Text(AppLocalizations.of(context).tabAllMedia),
-              actions: [
-                // 过滤菜单
-                _buildFilterMenuButton(context, state),
-                const SizedBox(width: AppSpacing.xs),
-                // 排序按钮
-                PopupMenuButton<String>(
-                  icon: const Icon(Icons.sort),
-                  tooltip: AppLocalizations.of(context).sort,
-                  onSelected: (val) {
-                    final parts = val.split(':');
-                    final field =
-                        SortField.values.firstWhere((f) => f.name == parts[0]);
-                    final order =
-                        SortOrder.values.firstWhere((o) => o.name == parts[1]);
-                    context.read<MediaBloc>().add(MediaSortEvent(field, order));
-                  },
-                  itemBuilder: (_) {
-                    final loc = AppLocalizations.of(context);
-                    return [
-                      PopupMenuItem(
-                          value: 'date:descending',
-                          child: Text(loc.sortNewestFirst)),
-                      PopupMenuItem(
-                          value: 'date:ascending',
-                          child: Text(loc.sortOldestFirst)),
-                      PopupMenuItem(
-                          value: 'name:ascending',
-                          child: Text(loc.sortNameAsc)),
-                      PopupMenuItem(
-                          value: 'name:descending',
-                          child: Text(loc.sortNameDesc)),
-                      PopupMenuItem(
-                          value: 'size:descending',
-                          child: Text(loc.sortSizeDesc)),
-                      PopupMenuItem(
-                          value: 'size:ascending',
-                          child: Text(loc.sortSizeAsc)),
-                    ];
-                  },
-                ),
-                const SizedBox(width: AppSpacing.xs),
-                IconButton(
-                  icon: const Icon(Icons.search),
-                  tooltip: AppLocalizations.of(context).search,
-                  onPressed: () => _showSearch(context),
-                ),
-                const SizedBox(width: AppSpacing.xs),
-                IconButton(
-                  icon: const Icon(Icons.settings_outlined),
-                  tooltip: AppLocalizations.of(context).settings,
-                  onPressed: () => _openSettings(context),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-              ],
-            ),
-            body: _buildBody(context, state),
-            // 多选模式底栏
+            appBar: state.isSelectionMode
+                ? _buildSelectionAppBar(context, state, cs)
+                : _buildNormalAppBar(context, state, cs),
+            body: _buildBody(context, state, cs),
             bottomNavigationBar: state.isSelectionMode
-                ? _buildSelectionBottomBar(context, state)
-                : const SizedBox.shrink(),
-            // FAB: 导入（多选模式下隐藏）
-            floatingActionButton: state.isSelectionMode
-                ? const SizedBox.shrink()
-                : FloatingActionButton(
-                    onPressed: () => _showImportMenu(context),
-                    tooltip: AppLocalizations.of(context).importMedia,
-                    child: const Icon(Icons.add_photo_alternate),
-                  ),
+                ? _buildSelectionBottomBar(context, state, cs)
+                : null,
+            floatingActionButton:
+                state.isSelectionMode ? null : _buildImportFAB(context, cs),
           ),
         );
       },
     );
   }
 
-  /// 右上角过滤菜单
-  ///
-  /// 将“全部/图片/视频/有标签/无标签/有相册/无相册”收敛到右上角按钮。
-  Widget _buildFilterMenuButton(BuildContext context, MediaState state) {
+  // ── Normal AppBar ───────────────────────────────────────────────
+  PreferredSizeWidget _buildNormalAppBar(
+      BuildContext context, MediaState state, ColorScheme cs) {
     final loc = AppLocalizations.of(context);
     final isFiltered =
         state.currentFilter != null || state.currentFilterMode != null;
 
-    return PopupMenuButton<String>(
-      icon: Badge(
-        isLabelVisible: isFiltered,
-        smallSize: 8,
-        child: const Icon(Icons.filter_list),
+    return AppBar(
+      title: Text(loc.tabAllMedia),
+      actions: [
+        // Filter chip
+        _buildFilterChip(context, state, cs, loc, isFiltered),
+        const SizedBox(width: AppSpacing.xs),
+        // Sort
+        PopupMenuButton<String>(
+          icon: Icon(Icons.sort_rounded, color: cs.onSurfaceVariant),
+          tooltip: loc.sort,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
+          onSelected: (val) {
+            final parts = val.split(':');
+            final field =
+                SortField.values.firstWhere((f) => f.name == parts[0]);
+            final order =
+                SortOrder.values.firstWhere((o) => o.name == parts[1]);
+            context.read<MediaBloc>().add(MediaSortEvent(field, order));
+          },
+          itemBuilder: (_) => [
+            PopupMenuItem(
+              value: 'date:descending',
+              child: _SortMenuItem(
+                  icon: Icons.arrow_downward, label: loc.sortNewestFirst),
+            ),
+            PopupMenuItem(
+              value: 'date:ascending',
+              child: _SortMenuItem(
+                  icon: Icons.arrow_upward, label: loc.sortOldestFirst),
+            ),
+            PopupMenuItem(
+              value: 'name:ascending',
+              child: _SortMenuItem(
+                  icon: Icons.sort_by_alpha, label: loc.sortNameAsc),
+            ),
+            PopupMenuItem(
+              value: 'name:descending',
+              child: _SortMenuItem(
+                  icon: Icons.sort_by_alpha, label: loc.sortNameDesc),
+            ),
+            PopupMenuItem(
+              value: 'size:descending',
+              child: _SortMenuItem(
+                  icon: Icons.arrow_downward, label: loc.sortSizeDesc),
+            ),
+            PopupMenuItem(
+              value: 'size:ascending',
+              child: _SortMenuItem(
+                  icon: Icons.arrow_upward, label: loc.sortSizeAsc),
+            ),
+          ],
+        ),
+        IconButton(
+          icon: Icon(Icons.search_rounded, color: cs.onSurfaceVariant),
+          tooltip: loc.search,
+          onPressed: () =>
+              AppRouter.pushOverlay(context, page: const SearchScreen()),
+        ),
+        IconButton(
+          icon: Icon(Icons.settings_outlined, color: cs.onSurfaceVariant),
+          tooltip: loc.settings,
+          onPressed: () =>
+              AppRouter.pushOverlay(context, page: const SettingsScreen()),
+        ),
+        const SizedBox(width: AppSpacing.xs),
+      ],
+    );
+  }
+
+  // ── Selection AppBar ────────────────────────────────────────────
+  PreferredSizeWidget _buildSelectionAppBar(
+      BuildContext context, MediaState state, ColorScheme cs) {
+    final loc = AppLocalizations.of(context);
+    return AppBar(
+      leading: IconButton(
+        icon: const Icon(Icons.close_rounded),
+        onPressed: () {
+          context.read<MediaBloc>().add(const MediaClearSelectionEvent());
+          context.read<MediaBloc>().add(const MediaToggleSelectionModeEvent());
+        },
       ),
-      tooltip: loc.filter,
+      title: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: cs.primaryContainer,
+          borderRadius: BorderRadius.circular(AppRadius.full),
+        ),
+        child: Text(
+          '${loc.selected} ${state.selectedMediaIds.length}',
+          style: TextStyle(
+            color: cs.onPrimaryContainer,
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+        ),
+      ),
+      actions: [
+        IconButton(
+          icon: Icon(
+            _isAllSelected(state)
+                ? Icons.deselect_rounded
+                : Icons.select_all_rounded,
+          ),
+          tooltip: _isAllSelected(state) ? loc.deselectAll : loc.selectAll,
+          onPressed: state.filteredList.isEmpty
+              ? null
+              : () => context
+                  .read<MediaBloc>()
+                  .add(const MediaToggleSelectAllEvent()),
+        ),
+        const SizedBox(width: AppSpacing.xs),
+      ],
+    );
+  }
+
+  // ── Filter chip in appbar ───────────────────────────────────────
+  Widget _buildFilterChip(BuildContext context, MediaState state,
+      ColorScheme cs, AppLocalizations loc, bool isFiltered) {
+    return PopupMenuButton<String>(
+      offset: const Offset(0, 44),
       shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.lg)),
-      position: PopupMenuPosition.under,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      menuPadding: const EdgeInsets.symmetric(vertical: 4),
       onSelected: (value) {
         final bloc = context.read<MediaBloc>();
         bloc.add(const MediaClearSelectionEvent());
@@ -172,50 +223,82 @@ class _MediaScreenState extends State<MediaScreen> {
       },
       itemBuilder: (context) {
         return [
-          CheckedPopupMenuItem(
-            value: 'all',
-            checked:
-                state.currentFilter == null && state.currentFilterMode == null,
-            child: Text(loc.filterAll),
-          ),
+          _filterMenuItem('all', loc.filterAll,
+              state.currentFilter == null && state.currentFilterMode == null,
+              icon: Icons.all_inclusive_rounded),
           const PopupMenuDivider(),
-          CheckedPopupMenuItem(
-            value: 'image',
-            checked: state.currentFilter == MediaType.image,
-            child: Text(loc.filterImages),
-          ),
-          CheckedPopupMenuItem(
-            value: 'video',
-            checked: state.currentFilter == MediaType.video,
-            child: Text(loc.filterVideos),
-          ),
+          _filterMenuItem(
+              'image', loc.filterImages, state.currentFilter == MediaType.image,
+              icon: Icons.image_rounded),
+          _filterMenuItem(
+              'video', loc.filterVideos, state.currentFilter == MediaType.video,
+              icon: Icons.videocam_rounded),
           const PopupMenuDivider(),
-          CheckedPopupMenuItem(
-            value: 'withTags',
-            checked: state.currentFilterMode == FilterMode.withTags,
-            child: Text(loc.filterWithTags),
-          ),
-          CheckedPopupMenuItem(
-            value: 'withoutTags',
-            checked: state.currentFilterMode == FilterMode.withoutTags,
-            child: Text(loc.filterWithoutTags),
-          ),
-          CheckedPopupMenuItem(
-            value: 'withAlbums',
-            checked: state.currentFilterMode == FilterMode.withAlbums,
-            child: Text(loc.filterWithAlbums),
-          ),
-          CheckedPopupMenuItem(
-            value: 'withoutAlbums',
-            checked: state.currentFilterMode == FilterMode.withoutAlbums,
-            child: Text(loc.filterWithoutAlbums),
-          ),
+          _filterMenuItem('withTags', loc.filterWithTags,
+              state.currentFilterMode == FilterMode.withTags,
+              icon: Icons.label_rounded),
+          _filterMenuItem('withoutTags', loc.filterWithoutTags,
+              state.currentFilterMode == FilterMode.withoutTags,
+              icon: Icons.label_off_rounded),
+          _filterMenuItem('withAlbums', loc.filterWithAlbums,
+              state.currentFilterMode == FilterMode.withAlbums,
+              icon: Icons.photo_album_rounded),
+          _filterMenuItem('withoutAlbums', loc.filterWithoutAlbums,
+              state.currentFilterMode == FilterMode.withoutAlbums,
+              icon: Icons.hide_image_rounded),
         ];
       },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isFiltered
+              ? cs.primaryContainer
+              : cs.surfaceContainerHighest.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.tune_rounded,
+              size: 18,
+              color: isFiltered ? cs.onPrimaryContainer : cs.onSurfaceVariant,
+            ),
+            if (isFiltered) ...[
+              const SizedBox(width: 4),
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: cs.primary,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 
-  /// 判断当前过滤结果是否已全部选中
+  PopupMenuItem<String> _filterMenuItem(
+      String value, String label, bool checked,
+      {required IconData icon}) {
+    final cs = Theme.of(context).colorScheme;
+    return PopupMenuItem(
+      value: value,
+      child: Row(
+        children: [
+          Icon(icon,
+              size: 18, color: checked ? cs.primary : cs.onSurfaceVariant),
+          const SizedBox(width: 12),
+          Expanded(child: Text(label)),
+          if (checked) Icon(Icons.check_rounded, size: 18, color: cs.primary),
+        ],
+      ),
+    );
+  }
+
   bool _isAllSelected(MediaState state) {
     if (state.filteredList.isEmpty) return false;
     return state.selectedMediaIds.containsAll(
@@ -223,35 +306,71 @@ class _MediaScreenState extends State<MediaScreen> {
     );
   }
 
-  Widget _buildBody(BuildContext context, MediaState state) {
+  // ── Body ────────────────────────────────────────────────────────
+  Widget _buildBody(BuildContext context, MediaState state, ColorScheme cs) {
     switch (state.status) {
       case MediaStatus.initial:
       case MediaStatus.loading:
-        return const Center(child: CircularProgressIndicator());
-      case MediaStatus.error:
         return Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline,
-                  size: AppSize.iconXLarge,
-                  color: Theme.of(context).colorScheme.error),
+              SizedBox(
+                width: 40,
+                height: 40,
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  color: cs.primary,
+                ),
+              ),
               const SizedBox(height: AppSpacing.md),
               Text(
-                  '${AppLocalizations.of(context).error}: ${state.errorMessage ?? AppLocalizations.of(context).unknown}',
-                  textAlign: TextAlign.center),
-              const SizedBox(height: AppSpacing.md),
-              ElevatedButton(
-                onPressed: () =>
-                    context.read<MediaBloc>().add(const MediaLoadAllEvent()),
-                child: Text(AppLocalizations.of(context).retry),
+                AppLocalizations.of(context).loading,
+                style: AppTextStyles.body.copyWith(
+                  color: cs.onSurfaceVariant,
+                ),
               ),
             ],
           ),
         );
+      case MediaStatus.error:
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: cs.errorContainer.withValues(alpha: 0.3),
+                    shape: BoxShape.circle,
+                  ),
+                  child:
+                      Icon(Icons.cloud_off_rounded, size: 48, color: cs.error),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                Text(
+                  '${AppLocalizations.of(context).error}: ${state.errorMessage ?? AppLocalizations.of(context).unknown}',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.body.copyWith(
+                    color: cs.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                FilledButton.icon(
+                  onPressed: () =>
+                      context.read<MediaBloc>().add(const MediaLoadAllEvent()),
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: Text(AppLocalizations.of(context).retry),
+                ),
+              ],
+            ),
+          ),
+        );
       case MediaStatus.loaded:
         if (state.filteredList.isEmpty) {
-          return _buildEmptyState();
+          return _buildEmptyState(context, cs);
         }
         return MediaGrid(
           mediaList: state.filteredList,
@@ -263,34 +382,54 @@ class _MediaScreenState extends State<MediaScreen> {
     }
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context, ColorScheme cs) {
     final loc = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xxl),
-        child: EmptyState(
-          icon: Icons.photo_library_outlined,
-          title: loc.noMedia,
-          subtitle: loc.noMediaDesc,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: cs.primaryContainer.withValues(alpha: 0.3),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.photo_library_outlined,
+                  size: 56, color: cs.primary),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              loc.noMedia,
+              style: AppTextStyles.title.copyWith(color: cs.onSurface),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              loc.noMediaDesc,
+              style: AppTextStyles.body.copyWith(
+                color: cs.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
     );
   }
 
-  /// 多选模式底栏
-  Widget _buildSelectionBottomBar(BuildContext context, MediaState state) {
+  // ── Selection bottom bar ────────────────────────────────────────
+  Widget _buildSelectionBottomBar(
+      BuildContext context, MediaState state, ColorScheme cs) {
     final loc = AppLocalizations.of(context);
     final selectedCount = state.selectedMediaIds.length;
-    final cs = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: cs.surface,
-        boxShadow: [
-          BoxShadow(
-              color: cs.scrim.withValues(alpha: 0.1),
-              blurRadius: 8,
-              offset: const Offset(0, -2)),
-        ],
+        color: cs.surfaceContainerLow,
+        border: Border(
+          top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3)),
+        ),
       ),
       child: SafeArea(
         top: false,
@@ -299,63 +438,28 @@ class _MediaScreenState extends State<MediaScreen> {
               horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
           child: Row(
             children: [
-              IconButton(
-                icon: const Icon(Icons.close),
-                tooltip: loc.cancel,
-                onPressed: () {
-                  context
-                      .read<MediaBloc>()
-                      .add(const MediaClearSelectionEvent());
-                  context
-                      .read<MediaBloc>()
-                      .add(const MediaToggleSelectionModeEvent());
-                },
+              _selectionActionButton(
+                icon: Icons.delete_outline_rounded,
+                label: loc.delete,
+                color: cs.error,
+                enabled: selectedCount > 0,
+                onTap: () => _batchDelete(context, state.selectedMediaIds),
               ),
-              const SizedBox(width: AppSpacing.sm),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: cs.primaryContainer,
-                  borderRadius: BorderRadius.circular(AppRadius.full),
-                ),
-                child: Text('${loc.selected} $selectedCount',
-                    style: TextStyle(
-                        color: cs.onPrimaryContainer,
-                        fontWeight: FontWeight.bold)),
+              const SizedBox(width: AppSpacing.xs),
+              _selectionActionButton(
+                icon: Icons.label_outline_rounded,
+                label: loc.addTag,
+                color: cs.primary,
+                enabled: selectedCount > 0,
+                onTap: () => _batchAddTags(context, state.selectedMediaIds),
               ),
-              const Spacer(),
-              IconButton(
-                icon: Icon(
-                    _isAllSelected(state) ? Icons.deselect : Icons.select_all),
-                tooltip:
-                    _isAllSelected(state) ? loc.deselectAll : loc.selectAll,
-                onPressed: state.filteredList.isEmpty
-                    ? null
-                    : () => context
-                        .read<MediaBloc>()
-                        .add(const MediaToggleSelectAllEvent()),
-              ),
-              IconButton(
-                icon: Icon(Icons.delete_outline, color: cs.error),
-                tooltip: loc.delete,
-                onPressed: selectedCount > 0
-                    ? () => _batchDelete(context, state.selectedMediaIds)
-                    : null,
-              ),
-              IconButton(
-                icon: const Icon(Icons.label_outline),
-                tooltip: loc.addTag,
-                onPressed: selectedCount > 0
-                    ? () => _batchAddTags(context, state.selectedMediaIds)
-                    : null,
-              ),
-              IconButton(
-                icon: const Icon(Icons.photo_album_outlined),
-                tooltip: loc.addToAlbum,
-                onPressed: selectedCount > 0
-                    ? () => _batchAddToAlbum(context, state.selectedMediaIds)
-                    : null,
+              const SizedBox(width: AppSpacing.xs),
+              _selectionActionButton(
+                icon: Icons.camera_alt_outlined,
+                label: loc.addToAlbum,
+                color: cs.tertiary,
+                enabled: selectedCount > 0,
+                onTap: () => _batchAddToAlbum(context, state.selectedMediaIds),
               ),
             ],
           ),
@@ -364,58 +468,133 @@ class _MediaScreenState extends State<MediaScreen> {
     );
   }
 
-  /// 显示导入方式选择底部菜单（Skill-10 §3.1）
-  ///
-  /// 提供两个选项：
-  /// 1. 从设备选择文件 - 打开 [openFileBrowser] 多选文件
-  /// 2. 从文件夹导入 - 打开 [openDirectoryBrowser] 选择整个目录批量导入
-  void _showImportMenu(BuildContext context) {
-    final loc = AppLocalizations.of(context);
-    showModalBottomSheet(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Row(
-                children: [
-                  Icon(Icons.file_download,
-                      color: Theme.of(ctx).colorScheme.primary),
-                  const SizedBox(width: 12),
-                  Text(loc.importMedia,
-                      style: Theme.of(ctx).textTheme.titleMedium),
-                ],
-              ),
+  Widget _selectionActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required bool enabled,
+    required VoidCallback onTap,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    return Expanded(
+      child: Material(
+        color: enabled
+            ? color.withValues(alpha: 0.1)
+            : cs.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        child: InkWell(
+          onTap: enabled ? onTap : null,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon,
+                    size: 22, color: enabled ? color : cs.onSurfaceVariant),
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  style: AppTextStyles.caption.copyWith(
+                    color: enabled ? color : cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
-            const Divider(height: 1),
-            ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
-              title: Text(loc.importFromDevice),
-              subtitle: Text(loc.noFilesDesc),
-              onTap: () {
-                Navigator.pop(ctx);
-                _openFileBrowser(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.folder_open),
-              title: Text(loc.importFromDirectory),
-              subtitle: const Text('批量导入整个文件夹中的媒体文件'),
-              onTap: () {
-                Navigator.pop(ctx);
-                _openDirectoryBrowser(context);
-              },
-            ),
-            const SizedBox(height: 8),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  /// 打开目录浏览器并递归导入所有媒体
+  // ── Import FAB ──────────────────────────────────────────────────
+  Widget _buildImportFAB(BuildContext context, ColorScheme cs) {
+    final loc = AppLocalizations.of(context);
+    return FloatingActionButton.extended(
+      onPressed: () => _showImportSheet(context, cs, loc),
+      icon: const Icon(Icons.add_photo_alternate_rounded, size: 20),
+      label: Text(loc.importMedia),
+    );
+  }
+
+  // ── Import bottom sheet ─────────────────────────────────────────
+  void _showImportSheet(
+      BuildContext context, ColorScheme cs, AppLocalizations loc) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: cs.onSurfaceVariant.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              // Title
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: cs.primaryContainer,
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                      ),
+                      child: Icon(Icons.file_download_outlined,
+                          size: 20, color: cs.onPrimaryContainer),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Text(loc.importMedia, style: AppTextStyles.title),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              const Divider(height: 1),
+              const SizedBox(height: AppSpacing.sm),
+              // Option 1: From device
+              _ImportOptionTile(
+                icon: Icons.perm_media_outlined,
+                iconColor: cs.primary,
+                title: loc.importFromDevice,
+                subtitle: loc.noFilesDesc,
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _openFileBrowser(context);
+                },
+              ),
+              // Option 2: From directory
+              _ImportOptionTile(
+                icon: Icons.folder_open_outlined,
+                iconColor: cs.tertiary,
+                title: loc.importFromDirectory,
+                subtitle: '批量导入整个文件夹中的媒体文件',
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _openDirectoryBrowser(context);
+                },
+              ),
+              const SizedBox(height: AppSpacing.sm),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Directory import ────────────────────────────────────────────
   Future<void> _openDirectoryBrowser(BuildContext context) async {
     final loc = AppLocalizations.of(context);
     final dirPath = await openDirectoryBrowser(context);
@@ -424,13 +603,14 @@ class _MediaScreenState extends State<MediaScreen> {
 
     final dir = Directory(dirPath);
     if (!await dir.exists()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(loc.error)),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(loc.error)),
+        );
+      }
       return;
     }
 
-    // 递归扫描目录中的媒体文件
     final mediaFiles = <File>[];
     final mediaExtensions = {
       'jpg',
@@ -469,18 +649,20 @@ class _MediaScreenState extends State<MediaScreen> {
         }
       }
     } catch (e) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${loc.error}: $e')),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${loc.error}: $e')),
+        );
+      }
       return;
     }
 
     if (mediaFiles.isEmpty) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(loc.noFilesDesc)),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(loc.noFilesDesc)),
+        );
+      }
       return;
     }
 
@@ -512,32 +694,10 @@ class _MediaScreenState extends State<MediaScreen> {
     } catch (_) {}
 
     context.read<MediaBloc>().add(const MediaLoadAllEvent());
-
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text(AppLocalizations.of(context).importComplete),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('✅ ${AppLocalizations.of(context).success}: $successCount'),
-            if (failCount > 0)
-              Text('❌ ${AppLocalizations.of(context).importFailed}: $failCount',
-                  style: TextStyle(color: Theme.of(context).colorScheme.error)),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(AppLocalizations.of(context).confirm),
-          ),
-        ],
-      ),
-    );
+    _showImportResult(context, successCount, failCount);
   }
 
-  /// 打开文件浏览器
+  // ── File import ─────────────────────────────────────────────────
   Future<void> _openFileBrowser(BuildContext context) async {
     final filePaths = await openFileBrowser(context);
     if (filePaths.isEmpty) return;
@@ -560,7 +720,7 @@ class _MediaScreenState extends State<MediaScreen> {
         }
         await importSingleFile(filePath: path);
         successCount++;
-      } catch (e) {
+      } catch (_) {
         failCount++;
       }
     }
@@ -571,60 +731,72 @@ class _MediaScreenState extends State<MediaScreen> {
     } catch (_) {}
 
     context.read<MediaBloc>().add(const MediaLoadAllEvent());
+    _showImportResult(context, successCount, failCount);
+  }
 
+  void _showImportResult(BuildContext context, int success, int fail) {
+    final loc = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text(AppLocalizations.of(context).importComplete),
+        icon: Icon(Icons.check_circle_rounded, size: 40, color: cs.primary),
+        title: Text(loc.importComplete),
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('✅ ${AppLocalizations.of(context).success}: $successCount'),
-            if (failCount > 0)
-              Text('❌ ${AppLocalizations.of(context).importFailed}: $failCount',
-                  style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            _resultRow(
+                Icons.check_rounded, cs.primary, '${loc.success}: $success'),
+            if (fail > 0) ...[
+              const SizedBox(height: 8),
+              _resultRow(Icons.error_outline_rounded, cs.error,
+                  '${loc.importFailed}: $fail'),
+            ],
           ],
         ),
         actions: [
-          TextButton(
+          FilledButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(AppLocalizations.of(context).confirm),
+            child: Text(loc.confirm),
           ),
         ],
       ),
     );
   }
 
-  /// 搜索
-  void _showSearch(BuildContext context) {
-    AppRouter.pushOverlay(context, page: const SearchScreen());
+  Widget _resultRow(IconData icon, Color color, String text) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: color),
+        const SizedBox(width: 8),
+        Text(text),
+      ],
+    );
   }
 
-  /// 打开设置
-  void _openSettings(BuildContext context) {
-    AppRouter.pushOverlay(context, page: const SettingsScreen());
-  }
-
+  // ── Batch operations ────────────────────────────────────────────
   Future<void> _batchDelete(BuildContext context, Set<String> ids) async {
     final loc = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
     final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-              title: Text(loc.confirmBatchDelete),
-              content: Text(loc.confirmBatchDelete),
-              actions: [
-                TextButton(
-                    onPressed: () => Navigator.pop(ctx, false),
-                    child: Text(loc.cancel)),
-                TextButton(
-                  style: TextButton.styleFrom(
-                      foregroundColor: Theme.of(context).colorScheme.error),
-                  onPressed: () => Navigator.pop(ctx, true),
-                  child: Text(loc.delete),
-                ),
-              ],
-            ));
+      context: context,
+      builder: (ctx) => AlertDialog(
+        icon: Icon(Icons.delete_outline_rounded, size: 40, color: cs.error),
+        title: Text(loc.confirmBatchDelete),
+        content: Text(loc.confirmBatchDelete),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(loc.cancel),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: cs.error),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(loc.delete),
+          ),
+        ],
+      ),
+    );
     if (confirmed != true) return;
     for (final id in ids) {
       context.read<MediaBloc>().add(MediaDeleteEvent(id));
@@ -642,9 +814,10 @@ class _MediaScreenState extends State<MediaScreen> {
       final tags = await getAllTags();
       if (!context.mounted) return;
       final result = await showDialog<Set<String>>(
-          context: context,
-          builder: (ctx) => _TagSelectionDialog(
-              tags: tags, preselectedIds: const <String>{}));
+        context: context,
+        builder: (ctx) =>
+            _TagSelectionDialog(tags: tags, preselectedIds: const <String>{}),
+      );
       if (result == null || result.isEmpty) return;
       int successCount = 0;
       for (final mediaId in mediaIds) {
@@ -674,7 +847,9 @@ class _MediaScreenState extends State<MediaScreen> {
     try {
       if (!context.mounted) return;
       final selectedAlbum = await showDialog<String>(
-          context: context, builder: (ctx) => const _AddToAlbumDialog());
+        context: context,
+        builder: (ctx) => const _AddToAlbumDialog(),
+      );
       if (selectedAlbum == null) return;
       await addMediaToAlbum(
           mediaIds: mediaIds.toList(), albumId: selectedAlbum);
@@ -689,7 +864,96 @@ class _MediaScreenState extends State<MediaScreen> {
   }
 }
 
-/// 添加到相册对话框 - 支持子相册导航
+// ═══════════════════════════════════════════════════════════════════════
+// Helper widgets
+// ═══════════════════════════════════════════════════════════════════════
+
+class _SortMenuItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  const _SortMenuItem({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: cs.onSurfaceVariant),
+        const SizedBox(width: 12),
+        Text(label),
+      ],
+    );
+  }
+}
+
+class _ImportOptionTile extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _ImportOptionTile({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
+      child: Material(
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: iconColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                  ),
+                  child: Icon(icon, size: 22, color: iconColor),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: AppTextStyles.subtitle),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: AppTextStyles.caption.copyWith(
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_right_rounded,
+                    size: 20, color: cs.onSurfaceVariant),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Album dialog ──────────────────────────────────────────────────
+
 class _AddToAlbumDialog extends StatefulWidget {
   const _AddToAlbumDialog();
 
@@ -702,7 +966,7 @@ class _AddToAlbumDialogState extends State<_AddToAlbumDialog> {
   bool _loading = true;
   String? _currentParentId;
   String _currentParentName = '';
-  final List<MapEntry<String?, String>> _history = []; // parentId, name
+  final List<MapEntry<String?, String>> _history = [];
 
   @override
   void initState() {
@@ -740,22 +1004,16 @@ class _AddToAlbumDialogState extends State<_AddToAlbumDialog> {
     }
   }
 
-  void _navigateToRoot() {
-    _history.clear();
-    _currentParentId = null;
-    _currentParentName = '';
-    _loadAlbums();
-  }
-
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
     return AlertDialog(
       title: Row(
         children: [
           if (_currentParentId != null)
             IconButton(
-              icon: const Icon(Icons.arrow_back, size: 20),
+              icon: const Icon(Icons.arrow_back_rounded, size: 20),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
               onPressed: _navigateBack,
@@ -774,68 +1032,43 @@ class _AddToAlbumDialogState extends State<_AddToAlbumDialog> {
         height: 400,
         child: _loading
             ? const Center(child: CircularProgressIndicator())
-            : Column(
-                children: [
-                  // 面包屑
-                  if (_history.isNotEmpty)
-                    Container(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Row(
-                        children: [
-                          InkWell(
-                            onTap: _navigateToRoot,
-                            child: Text(
-                              loc.tabAlbums,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            ),
-                          ),
-                          ..._history.skip(1).map((e) => Row(
-                                children: [
-                                  const Icon(Icons.chevron_right, size: 14),
-                                  Text(e.value,
-                                      style: const TextStyle(fontSize: 12)),
-                                ],
-                              )),
-                        ],
-                      ),
+            : _albums.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.photo_album_outlined,
+                            size: 48, color: cs.onSurfaceVariant),
+                        const SizedBox(height: AppSpacing.md),
+                        Text(loc.noAlbums,
+                            style: AppTextStyles.body
+                                .copyWith(color: cs.onSurfaceVariant)),
+                      ],
                     ),
-                  const Divider(height: 1),
-                  Expanded(
-                    child: _albums.isEmpty
-                        ? Center(child: Text(loc.noAlbums))
-                        : ListView.builder(
-                            itemCount: _albums.length,
-                            itemBuilder: (ctx, index) {
-                              final info = _albums[index];
-                              return ListTile(
-                                leading: const Icon(Icons.photo_album),
-                                title: Text(info.album.name),
-                                subtitle:
-                                    Text('${info.mediaCount} ${loc.files}'),
-                                trailing: const Icon(Icons.chevron_right),
-                                onTap: () {
-                                  _navigateTo(info.album.id, info.album.name);
-                                },
-                                onLongPress: () {
-                                  // 长按直接选中该相册
-                                  Navigator.pop(ctx, info.album.id);
-                                },
-                              );
-                            },
-                          ),
+                  )
+                : ListView.builder(
+                    itemCount: _albums.length,
+                    itemBuilder: (ctx, index) {
+                      final info = _albums[index];
+                      return ListTile(
+                        leading:
+                            Icon(Icons.photo_album_rounded, color: cs.primary),
+                        title: Text(info.album.name),
+                        subtitle: Text('${info.mediaCount} ${loc.files}'),
+                        trailing: Icon(Icons.chevron_right_rounded,
+                            color: cs.onSurfaceVariant),
+                        onTap: () =>
+                            _navigateTo(info.album.id, info.album.name),
+                        onLongPress: () => Navigator.pop(ctx, info.album.id),
+                      );
+                    },
                   ),
-                ],
-              ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: Text(loc.cancel),
         ),
-        // 在子相册层级时显示"选择当前相册"按钮
         if (_currentParentId != null)
           FilledButton(
             onPressed: () => Navigator.pop(context, _currentParentId),
@@ -846,28 +1079,40 @@ class _AddToAlbumDialogState extends State<_AddToAlbumDialog> {
   }
 }
 
+// ── Progress dialog ───────────────────────────────────────────────
+
 class _ImportProgressDialog extends StatelessWidget {
   final int totalCount;
   const _ImportProgressDialog({required this.totalCount});
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return AlertDialog(
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const CircularProgressIndicator(),
-          const SizedBox(height: 16),
-          Text('${AppLocalizations.of(context).importing} ($totalCount)'),
-          const SizedBox(height: 8),
-          Text(AppLocalizations.of(context).loading,
-              style: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          SizedBox(
+            width: 40,
+            height: 40,
+            child: CircularProgressIndicator(strokeWidth: 3, color: cs.primary),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Text('${AppLocalizations.of(context).importing} ($totalCount)',
+              style: AppTextStyles.subtitle),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            AppLocalizations.of(context).loading,
+            style: AppTextStyles.caption.copyWith(
+              color: cs.onSurfaceVariant,
+            ),
+          ),
         ],
       ),
     );
   }
 }
+
+// ── Tag selection dialog ──────────────────────────────────────────
 
 class _TagSelectionDialog extends StatefulWidget {
   final List<Tag> tags;
@@ -888,12 +1133,24 @@ class _TagSelectionDialogState extends State<_TagSelectionDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return AlertDialog(
       title: Text(AppLocalizations.of(context).addTag),
       content: SizedBox(
         width: double.maxFinite,
         child: widget.tags.isEmpty
-            ? Text(AppLocalizations.of(context).noTags)
+            ? Padding(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.label_off_outlined,
+                        size: 48, color: cs.onSurfaceVariant),
+                    const SizedBox(height: AppSpacing.md),
+                    Text(AppLocalizations.of(context).noTags),
+                  ],
+                ),
+              )
             : ListView.builder(
                 shrinkWrap: true,
                 itemCount: widget.tags.length,
@@ -901,11 +1158,20 @@ class _TagSelectionDialogState extends State<_TagSelectionDialog> {
                   final tag = widget.tags[i];
                   final isSelected = _selectedIds.contains(tag.id);
                   return ListTile(
-                    leading: Icon(
-                      isSelected ? Icons.check_circle : Icons.circle_outlined,
-                      color: isSelected
-                          ? Theme.of(context).colorScheme.primary
-                          : null,
+                    leading: AnimatedContainer(
+                      duration: AppAnimation.fast,
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? cs.primary
+                            : cs.surfaceContainerHighest,
+                        shape: BoxShape.circle,
+                      ),
+                      padding: const EdgeInsets.all(4),
+                      child: Icon(
+                        isSelected ? Icons.check_rounded : null,
+                        size: 16,
+                        color: isSelected ? cs.onPrimary : cs.onSurfaceVariant,
+                      ),
                     ),
                     title: Text(tag.name),
                     onTap: () {
@@ -923,8 +1189,9 @@ class _TagSelectionDialogState extends State<_TagSelectionDialog> {
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(AppLocalizations.of(context).cancel)),
+          onPressed: () => Navigator.pop(context),
+          child: Text(AppLocalizations.of(context).cancel),
+        ),
         FilledButton(
           onPressed: () => Navigator.pop(context, _selectedIds),
           child: Text(AppLocalizations.of(context).confirm),

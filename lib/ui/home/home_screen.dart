@@ -32,18 +32,18 @@ class HomeScreen extends StatelessWidget {
             },
             destinations: [
               NavigationDestination(
-                icon: const Icon(Icons.photo_library_outlined),
-                selectedIcon: const Icon(Icons.photo_library),
+                icon: const Icon(Icons.perm_media_outlined),
+                selectedIcon: const Icon(Icons.perm_media_rounded),
                 label: AppLocalizations.of(context).tabAllMedia,
               ),
               NavigationDestination(
-                icon: const Icon(Icons.photo_camera_outlined),
-                selectedIcon: const Icon(Icons.photo_camera),
+                icon: const Icon(Icons.camera_alt_outlined),
+                selectedIcon: const Icon(Icons.camera_alt_rounded),
                 label: AppLocalizations.of(context).tabAlbums,
               ),
               NavigationDestination(
-                icon: const Icon(Icons.label_outlined),
-                selectedIcon: const Icon(Icons.label),
+                icon: const Icon(Icons.label_outline_rounded),
+                selectedIcon: const Icon(Icons.label_rounded),
                 label: AppLocalizations.of(context).tabTags,
               ),
             ],
