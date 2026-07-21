@@ -5,49 +5,29 @@ import 'package:flutter_media_manager/ui/viewer/viewer_page.dart';
 import 'package:flutter_media_manager/bridge/native/api/media.dart'
     as media_api;
 
-/// Skill-09: 应用壳与导航规范
-/// 覆盖层路由管理器 - 非主页面以卡片覆盖层/全屏覆盖层形式呈现
+/// 应用路由管理器
+/// 统一所有页面过渡动画：底部向上滑入 + 淡入
 
 class AppRouter {
   AppRouter._();
 
-  /// 全屏覆盖层导航 - 从右侧滑入（媒体查看器等需要全屏的页面）
-  static Future<T?> pushOverlay<T>(
+  /// 标准子页面导航 - 底部向上滑入
+  static Future<T?> push<T>(
     BuildContext context, {
     required Widget page,
     bool fullscreenDialog = false,
   }) {
     return Navigator.of(context).push<T>(
-      _buildFullScreenOverlayRoute(page, fullscreenDialog: fullscreenDialog),
+      _buildRoute(page, fullscreenDialog: fullscreenDialog),
     );
   }
 
-  /// 非全屏卡片覆盖层导航 - 从右侧滑入，圆角矩形
-  static Future<T?> pushCardOverlay<T>(
-    BuildContext context, {
-    required Widget page,
-  }) {
-    return Navigator.of(context).push<T>(
-      _buildCardOverlayRoute(page),
-    );
-  }
-
-  /// 带路由名称的覆盖层导航
-  static Future<T?> pushNamedOverlay<T>(
-    BuildContext context,
-    String routeName, {
-    Object? arguments,
-  }) {
-    return Navigator.of(context).pushNamed<T>(routeName, arguments: arguments);
-  }
-
-  /// 关闭当前覆盖层
+  /// 关闭当前页面
   static void pop<T>(BuildContext context, [T? result]) {
     Navigator.of(context).pop<T>(result);
   }
 }
 
-/// Skill-09 §3 - 路由定义
 /// 路由路径表
 class AppRoutes {
   AppRoutes._();
@@ -55,25 +35,18 @@ class AppRoutes {
   static const String home = '/';
   static const String settings = '/settings';
   static const String mediaViewer = '/media_viewer';
-  static const String fileBrowser = '/file_browser';
 }
 
-/// 路由生成器 - 支持覆盖层动画（Skill-09 §3）
-///
-/// 路由表：
-/// - '/'              → HomeScreen（全屏）
-/// - '/search'        → SearchScreen（卡片覆盖层）
-/// - '/settings'      → SettingsScreen（卡片覆盖层）
-/// - '/media_viewer'  → ViewerPage（全屏覆盖层，需 arguments: media + mediaList）
+/// 路由生成器
 Route<dynamic>? generateRoute(RouteSettings settings) {
   switch (settings.name) {
     case AppRoutes.home:
-      return _buildFullScreenOverlayRoute(const HomeScreen());
+      return _buildRoute(const HomeScreen());
     case AppRoutes.settings:
-      return _buildCardOverlayRoute(const SettingsScreen());
+      return _buildRoute(const SettingsScreen());
     case AppRoutes.mediaViewer:
       final args = settings.arguments as Map<String, dynamic>?;
-      return _buildFullScreenOverlayRoute(
+      return _buildRoute(
         ViewerPage(
           initialMedia: args?['media'] as dynamic,
           mediaList: (args?['mediaList'] as List<dynamic>?)
@@ -87,13 +60,12 @@ Route<dynamic>? generateRoute(RouteSettings settings) {
   }
 }
 
-/// 内部辅助：全屏覆盖层
-Route<T> _buildFullScreenOverlayRoute<T>(Widget page,
-    {bool fullscreenDialog = false}) {
+/// 统一页面过渡动画 - 底部向上滑入 + 淡入
+Route<T> _buildRoute<T>(Widget page, {bool fullscreenDialog = false}) {
   return PageRouteBuilder<T>(
     fullscreenDialog: fullscreenDialog,
-    transitionDuration: const Duration(milliseconds: 250),
-    reverseTransitionDuration: const Duration(milliseconds: 200),
+    transitionDuration: const Duration(milliseconds: 300),
+    reverseTransitionDuration: const Duration(milliseconds: 250),
     pageBuilder: (_, __, ___) => page,
     transitionsBuilder: (_, animation, __, child) {
       final curved = CurvedAnimation(
@@ -103,157 +75,19 @@ Route<T> _buildFullScreenOverlayRoute<T>(Widget page,
       );
       return SlideTransition(
         position: Tween<Offset>(
-          begin: const Offset(1.0, 0.0),
+          begin: const Offset(0.0, 0.3),
           end: Offset.zero,
         ).animate(curved),
         child: FadeTransition(
-          opacity: CurvedAnimation(
-            parent: animation,
-            curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
-          ).drive(Tween<double>(begin: 0.0, end: 1.0)),
-          child: child,
-        ),
-      );
-    },
-  );
-}
-
-/// 内部辅助：非全屏圆角卡片覆盖层
-Route<T> _buildCardOverlayRoute<T>(Widget page) {
-  const double radius = 20.0;
-  const double margin = 12.0;
-
-  return PageRouteBuilder<T>(
-    opaque: false,
-    barrierDismissible: true,
-    transitionDuration: const Duration(milliseconds: 250),
-    reverseTransitionDuration: const Duration(milliseconds: 200),
-    pageBuilder: (context, animation, secondaryAnimation) {
-      final cs = Theme.of(context).colorScheme;
-      final mq = MediaQuery.of(context);
-      return GestureDetector(
-        onTap: () => Navigator.of(context).pop(),
-        child: Material(
-          color: cs.scrim.withOpacity(0.35),
-          child: SafeArea(
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: Padding(
-                padding: const EdgeInsets.all(margin),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(radius),
-                  child: GestureDetector(
-                    onTap: () {},
-                    child: Container(
-                      width: mq.size.width - margin * 2,
-                      height: mq.size.height - margin * 2 - mq.padding.vertical,
-                      color: cs.surface,
-                      child: page,
-                    ),
-                  ),
-                ),
-              ),
+          opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+            CurvedAnimation(
+              parent: animation,
+              curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
             ),
           ),
-        ),
-      );
-    },
-    transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      final curved = CurvedAnimation(
-        parent: animation,
-        curve: Curves.easeOutCubic,
-        reverseCurve: Curves.easeInCubic,
-      );
-      return SlideTransition(
-        position: Tween<Offset>(
-          begin: const Offset(1.0, 0.0),
-          end: Offset.zero,
-        ).animate(curved),
-        child: FadeTransition(
-          opacity: CurvedAnimation(
-            parent: animation,
-            curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
-          ).drive(Tween<double>(begin: 0.0, end: 1.0)),
           child: child,
         ),
       );
     },
-  );
-}
-
-/// Skill-09 §6 - TopAppBar 组件
-enum TopAppBarMode { normal, multiSelect, overlay }
-
-/// 普通模式 TopAppBar
-PreferredSizeWidget buildNormalAppBar(
-  BuildContext context, {
-  required String title,
-  VoidCallback? onSearchTap,
-  VoidCallback? onSettingsTap,
-}) {
-  final colorScheme = Theme.of(context).colorScheme;
-
-  return AppBar(
-    leading: Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Icon(Icons.photo_camera, color: colorScheme.primary),
-    ),
-    title: Text(title),
-    actions: [
-      if (onSearchTap != null)
-        IconButton(
-          icon: const Icon(Icons.search),
-          onPressed: onSearchTap,
-        ),
-      if (onSettingsTap != null)
-        IconButton(
-          icon: const Icon(Icons.more_vert),
-          onPressed: onSettingsTap,
-        ),
-    ],
-  );
-}
-
-/// 多选模式 TopAppBar
-PreferredSizeWidget buildMultiSelectAppBar(
-  BuildContext context, {
-  required int selectedCount,
-  VoidCallback? onSelectAll,
-  VoidCallback? onCancel,
-}) {
-  return AppBar(
-    leading: IconButton(
-      icon: const Icon(Icons.arrow_back),
-      onPressed: onCancel ?? () => Navigator.of(context).pop(),
-    ),
-    title: Text('已选中 $selectedCount 项'),
-    actions: [
-      if (onSelectAll != null)
-        TextButton(
-          onPressed: onSelectAll,
-          child: const Text('全选'),
-        ),
-      if (onCancel != null)
-        TextButton(
-          onPressed: onCancel,
-          child: const Text('取消'),
-        ),
-    ],
-  );
-}
-
-/// 覆盖层模式 TopAppBar
-PreferredSizeWidget buildOverlayAppBar(
-  BuildContext context, {
-  required String title,
-  List<Widget>? actions,
-}) {
-  return AppBar(
-    leading: IconButton(
-      icon: const Icon(Icons.arrow_back),
-      onPressed: () => Navigator.of(context).pop(),
-    ),
-    title: Text(title),
-    actions: actions,
   );
 }

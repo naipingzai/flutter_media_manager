@@ -15,7 +15,7 @@ import 'package:flutter_media_manager/ui/viewer/widgets/video_player_widget.dart
 import 'package:flutter_media_manager/functionality/media/media_bloc.dart';
 import 'package:path_provider/path_provider.dart';
 
-/// 统一媒体查看器页面
+/// 统一媒体查看器页面 - 全屏沉浸式
 class ViewerPage extends StatefulWidget {
   final MediaItem initialMedia;
   final List<MediaItem> mediaList;
@@ -30,7 +30,7 @@ class ViewerPage extends StatefulWidget {
   State<ViewerPage> createState() => _ViewerPageState();
 }
 
-class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
+class _ViewerPageState extends State<ViewerPage> {
   late final PageController _pageController;
   late MediaItem _currentMedia;
   int _currentIndex = 0;
@@ -43,25 +43,22 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _currentIndex =
         widget.mediaList.indexWhere((m) => m.id == widget.initialMedia.id);
     if (_currentIndex < 0) _currentIndex = 0;
     _currentMedia = widget.mediaList[_currentIndex];
     _pageController = PageController(initialPage: _currentIndex);
     _loadMediaData();
+    // 沉浸式全屏
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
     _pageController.dispose();
+    // 恢复系统UI
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    // 页面暂停时不控制视频/音频，组件自身处理
   }
 
   Future<void> _loadMediaData() async {
@@ -92,66 +89,49 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
   void _rotateImage() =>
       setState(() => _imageRotation = (_imageRotation + 1) % 4);
 
+  void _goBack() {
+    // 恢复系统UI后返回
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    Navigator.pop(context);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final bottomPadding = MediaQuery.of(context).padding.bottom + 80;
-    final cs = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: isDark
-          ? SystemUiOverlayStyle.light.copyWith(
-              statusBarColor: Colors.black,
-              systemNavigationBarColor: Colors.black,
-              systemNavigationBarIconBrightness: Brightness.light,
-            )
-          : SystemUiOverlayStyle.dark.copyWith(
-              statusBarColor: cs.surface,
-              systemNavigationBarColor: cs.surface,
-              systemNavigationBarIconBrightness: Brightness.dark,
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // 媒体内容
+          GestureDetector(
+            onTap: _toggleOverlay,
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: widget.mediaList.length,
+              onPageChanged: _switchMedia,
+              itemBuilder: (context, index) {
+                return _buildMediaContent(widget.mediaList[index]);
+              },
             ),
-      child: Scaffold(
-        backgroundColor: isDark ? Colors.black : cs.surface,
-        extendBodyBehindAppBar: true,
-        body: SafeArea(
-          top: false,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              GestureDetector(
-                onTap: _toggleOverlay,
-                behavior: HitTestBehavior.translucent,
-                child: PageView.builder(
-                  controller: _pageController,
-                  itemCount: widget.mediaList.length,
-                  onPageChanged: _switchMedia,
-                  itemBuilder: (context, index) {
-                    return _buildMediaContent(
-                        widget.mediaList[index], bottomPadding);
-                  },
-                ),
-              ),
-              if (_showOverlay) _buildTopOverlay(),
-              if (_showOverlay) _buildBottomActionBar(),
-            ],
           ),
-        ),
+          // 顶部信息栏
+          if (_showOverlay) _buildTopBar(),
+          // 底部操作栏
+          if (_showOverlay) _buildBottomBar(),
+        ],
       ),
     );
   }
 
-  Widget _buildMediaContent(MediaItem media, double bottomPadding) {
+  Widget _buildMediaContent(MediaItem media) {
     switch (media.mediaType) {
       case MediaType.image:
-        return _ImageViewer(
-          media: media,
-          rotation: _imageRotation,
-        );
+        return _ImageViewer(media: media, rotation: _imageRotation);
       case MediaType.video:
         return VideoPlayerWidget(
           key: ValueKey(media.id),
           filePath: media.filePath,
-          bottomPadding: bottomPadding,
+          bottomPadding: MediaQuery.of(context).padding.bottom + 80,
         );
       case MediaType.audio:
         return AudioPlayerWidget(
@@ -165,172 +145,125 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
     }
   }
 
-  Widget _buildTopOverlay() {
-    final cs = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isImage = _currentMedia.mediaType == MediaType.image;
+  Widget _buildTopBar() {
     final hasMultiple = widget.mediaList.length > 1;
-
     return Positioned(
       top: 0,
       left: 0,
       right: 0,
       child: Container(
         decoration: BoxDecoration(
-          color: isDark
-              ? Colors.black.withOpacity(0.7)
-              : cs.surface.withOpacity(0.9),
-          border: Border(
-            bottom: BorderSide(
-              color: cs.outlineVariant.withOpacity(0.2),
-            ),
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.black.withOpacity(0.7), Colors.transparent],
           ),
         ),
         padding: EdgeInsets.only(
-          top: MediaQuery.of(context).padding.top + AppSpacing.sm,
-          left: AppSpacing.sm,
-          right: AppSpacing.sm,
-          bottom: AppSpacing.md,
+          top: MediaQuery.of(context).padding.top + 8,
+          left: 8,
+          right: 8,
+          bottom: 16,
         ),
-        child: SafeArea(
-          top: false,
-          bottom: false,
-          child: Row(
-            children: [
-              _buildTopButton(Icons.arrow_back_rounded,
-                  () => Navigator.pop(context), isDark, cs),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
+        child: Row(
+          children: [
+            _iconButton(Icons.arrow_back_rounded, _goBack),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _currentMedia.originalName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500),
+                  ),
+                  if (hasMultiple)
                     Text(
-                      _currentMedia.originalName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      '${_currentIndex + 1} / ${widget.mediaList.length}',
                       style: TextStyle(
-                        color: isDark ? Colors.white : cs.onSurface,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
+                          color: Colors.white.withOpacity(0.7), fontSize: 12),
                     ),
-                    if (hasMultiple)
-                      Text(
-                        '${_currentIndex + 1} / ${widget.mediaList.length}',
-                        style: TextStyle(
-                          color: isDark ? Colors.white70 : cs.onSurfaceVariant,
-                          fontSize: 12,
-                        ),
-                      ),
-                  ],
-                ),
+                ],
               ),
-              if (isImage) ...[
-                _buildTopButton(
-                    Icons.rotate_right_rounded, _rotateImage, isDark, cs),
-                const SizedBox(width: AppSpacing.xs),
-              ],
-              _buildTopButton(Icons.close_rounded, () => Navigator.pop(context),
-                  isDark, cs),
+            ),
+            if (_currentMedia.mediaType == MediaType.image) ...[
+              _iconButton(Icons.rotate_right_rounded, _rotateImage),
+              const SizedBox(width: 4),
             ],
-          ),
+            _iconButton(Icons.close_rounded, _goBack),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildTopButton(
-      IconData icon, VoidCallback onTap, bool isDark, ColorScheme cs) {
-    final btn = Material(
-      color: isDark
-          ? Colors.white.withOpacity(0.15)
-          : cs.surfaceContainerHighest.withOpacity(0.5),
-      borderRadius: BorderRadius.circular(AppRadius.md),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        child: Container(
-          width: 36,
-          height: 36,
-          alignment: Alignment.center,
-          child:
-              Icon(icon, color: isDark ? Colors.white : cs.onSurface, size: 20),
-        ),
-      ),
-    );
-    return btn;
-  }
-
-  Widget _buildBottomActionBar() {
-    final cs = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  Widget _buildBottomBar() {
     final loc = AppLocalizations.of(context);
-
     return Positioned(
       bottom: 0,
       left: 0,
       right: 0,
       child: Container(
         decoration: BoxDecoration(
-          color: isDark
-              ? Colors.black.withOpacity(0.7)
-              : cs.surface.withOpacity(0.9),
-          border: Border(
-            top: BorderSide(
-              color: cs.outlineVariant.withOpacity(0.2),
-            ),
+          gradient: LinearGradient(
+            begin: Alignment.bottomCenter,
+            end: Alignment.topCenter,
+            colors: [Colors.black.withOpacity(0.8), Colors.transparent],
           ),
         ),
         padding: EdgeInsets.fromLTRB(
-          AppSpacing.lg,
-          AppSpacing.md,
-          AppSpacing.lg,
-          MediaQuery.of(context).padding.bottom + AppSpacing.sm,
-        ),
-        child: SafeArea(
-          top: false,
-          bottom: false,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildActionItem(Icons.photo_album_outlined, loc.album,
-                  _showAlbumPicker, isDark, cs),
-              _buildActionItem(
-                  Icons.label_outlined, loc.tags, _showTagManager, isDark, cs),
-              _buildActionItem(Icons.delete_outline_rounded, loc.delete,
-                  _showDeleteConfirm, isDark, cs,
-                  color: cs.error),
-              _buildActionItem(Icons.more_horiz_rounded, loc.more,
-                  _showMorePanel, isDark, cs),
-            ],
-          ),
+            16, 24, 16, MediaQuery.of(context).padding.bottom + 12),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _actionButton(
+                Icons.photo_album_outlined, loc.album, _showAlbumPicker),
+            _actionButton(Icons.label_outlined, loc.tags, _showTagManager),
+            _actionButton(
+                Icons.delete_outline_rounded, loc.delete, _showDeleteConfirm,
+                color: Colors.red),
+            _actionButton(Icons.more_horiz_rounded, loc.more, _showMorePanel),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildActionItem(IconData icon, String label, VoidCallback onTap,
-      bool isDark, ColorScheme cs,
+  Widget _iconButton(IconData icon, VoidCallback onTap) {
+    return Material(
+      color: Colors.white.withOpacity(0.15),
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: SizedBox(
+            width: 36,
+            height: 36,
+            child: Icon(icon, color: Colors.white, size: 20)),
+      ),
+    );
+  }
+
+  Widget _actionButton(IconData icon, String label, VoidCallback onTap,
       {Color? color}) {
-    final iconColor = color ?? (isDark ? Colors.white : cs.onSurface);
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.md),
-      child: Container(
+      borderRadius: BorderRadius.circular(12),
+      child: SizedBox(
         width: 64,
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: iconColor, size: 24),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              label,
-              style: TextStyle(color: iconColor, fontSize: 11),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+            Icon(icon, color: color ?? Colors.white, size: 24),
+            const SizedBox(height: 4),
+            Text(label,
+                style: TextStyle(color: color ?? Colors.white, fontSize: 11)),
           ],
         ),
       ),
@@ -339,12 +272,10 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
 
   void _showMorePanel() {
     final loc = AppLocalizations.of(context);
-    final cs = Theme.of(context).colorScheme;
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
-        borderRadius:
-            BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) => SafeArea(
         child: Column(
@@ -353,51 +284,50 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
             Container(
               width: 36,
               height: 4,
-              margin: const EdgeInsets.only(top: AppSpacing.md),
+              margin: const EdgeInsets.only(top: 12),
               decoration: BoxDecoration(
-                color: cs.onSurfaceVariant.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2)),
             ),
-            const SizedBox(height: AppSpacing.md),
-            _buildMoreTile(Icons.edit_outlined, loc.rename, _showRenameDialog),
-            _buildMoreTile(
-                Icons.save_alt_rounded, loc.saveToGallery, _saveMedia),
-            _buildMoreTile(Icons.link, loc.copyPath, _copyPath),
-            _buildMoreTile(
-                Icons.info_outline, loc.details, _showFileInfoDialog),
-            const SizedBox(height: AppSpacing.sm),
+            const SizedBox(height: 12),
+            _moreTile(Icons.edit_outlined, loc.rename, () {
+              Navigator.pop(ctx);
+              _showRenameDialog();
+            }),
+            _moreTile(Icons.save_alt_rounded, loc.saveToGallery, () {
+              Navigator.pop(ctx);
+              _saveMedia();
+            }),
+            _moreTile(Icons.link, loc.copyPath, () {
+              Navigator.pop(ctx);
+              _copyPath();
+            }),
+            _moreTile(Icons.info_outline, loc.details, () {
+              Navigator.pop(ctx);
+              _showFileInfoDialog();
+            }),
+            SizedBox(height: MediaQuery.of(ctx).padding.bottom + 8),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildMoreTile(IconData icon, String title, VoidCallback onTap) {
-    final cs = Theme.of(context).colorScheme;
-    return ListTile(
-      leading: Icon(icon, color: cs.onSurface),
-      title: Text(title),
-      onTap: () {
-        Navigator.pop(context);
-        onTap();
-      },
-    );
+  Widget _moreTile(IconData icon, String title, VoidCallback onTap) {
+    return ListTile(leading: Icon(icon), title: Text(title), onTap: onTap);
   }
 
   void _showRenameDialog() {
     final loc = AppLocalizations.of(context);
-    final cs = Theme.of(context).colorScheme;
     final controller = TextEditingController(text: _currentMedia.originalName);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(loc.rename),
         content: TextField(
-          controller: controller,
-          decoration: InputDecoration(labelText: loc.newName),
-          autofocus: true,
-        ),
+            controller: controller,
+            decoration: InputDecoration(labelText: loc.newName),
+            autofocus: true),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx), child: Text(loc.cancel)),
@@ -436,38 +366,19 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
     );
   }
 
-  String _formatDuration(int? milliseconds) {
-    if (milliseconds == null || milliseconds <= 0) return '0:00';
-    final d = Duration(milliseconds: milliseconds);
-    final hours = d.inHours;
-    final minutes = d.inMinutes.remainder(60);
-    final seconds = d.inSeconds.remainder(60);
-    if (hours > 0) {
-      return '$hours:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-    }
-    return '$minutes:${seconds.toString().padLeft(2, '0')}';
-  }
-
   Future<void> _saveMedia() async {
     final loc = AppLocalizations.of(context);
     try {
       final sourceFile = File(_currentMedia.filePath);
       if (!await sourceFile.exists()) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(loc.saveFileFailed)),
-          );
-        }
+        if (mounted)
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(loc.saveFileFailed)));
         return;
       }
-
-      // Get the app's documents directory as a safe save location
       final appDir = await getApplicationDocumentsDirectory();
       final saveDir = Directory('${appDir.path}/saved_media');
-      if (!await saveDir.exists()) {
-        await saveDir.create(recursive: true);
-      }
-
+      if (!await saveDir.exists()) await saveDir.create(recursive: true);
       final ext = _currentMedia.filePath.split('.').last;
       final baseName = _currentMedia.originalName.contains('.')
           ? _currentMedia.originalName.split('.').first
@@ -478,28 +389,21 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
         savePath = '${saveDir.path}/${baseName}_$counter.$ext';
         counter++;
       }
-
       await sourceFile.copy(savePath);
-
-      if (mounted) {
+      if (mounted)
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${loc.saveSuccess}: $savePath')),
-        );
-      }
+            SnackBar(content: Text('${loc.saveSuccess}: $savePath')));
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${loc.saveFileFailed}: $e')),
-        );
-      }
+      if (mounted)
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('${loc.saveFileFailed}: $e')));
     }
   }
 
   void _copyPath() {
     Clipboard.setData(ClipboardData(text: _currentMedia.filePath));
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(AppLocalizations.of(context).filePathCopied)),
-    );
+        SnackBar(content: Text(AppLocalizations.of(context).filePathCopied)));
   }
 
   Future<void> _showTagManager() async {
@@ -508,11 +412,10 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
     await showDialog(
       context: context,
       builder: (ctx) => _TagManagerDialog(
-        allTags: allTags,
-        currentTags: _mediaTags,
-        mediaId: _currentMedia.id,
-        onChanged: _loadMediaData,
-      ),
+          allTags: allTags,
+          currentTags: _mediaTags,
+          mediaId: _currentMedia.id,
+          onChanged: _loadMediaData),
     );
   }
 
@@ -522,9 +425,8 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
     final albums = await album_api.getRootAlbums();
     if (!mounted) return;
     if (albums.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(loc.noAlbums)),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(loc.noAlbums)));
       return;
     }
     await showDialog(
@@ -544,16 +446,12 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
                 subtitle: Text('${album.mediaCount} ${loc.files}'),
                 onTap: () async {
                   await album_api.addMediaToAlbum(
-                    mediaIds: [_currentMedia.id],
-                    albumId: album.album.id,
-                  );
+                      mediaIds: [_currentMedia.id], albumId: album.album.id);
                   if (ctx.mounted) {
                     Navigator.pop(ctx);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content:
-                              Text('${loc.addToAlbum}: ${album.album.name}')),
-                    );
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content:
+                            Text('${loc.addToAlbum}: ${album.album.name}')));
                   }
                 },
               );
@@ -586,25 +484,25 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
               context.read<MediaBloc>().add(const MediaLoadAllEvent());
               if (widget.mediaList.length == 1) {
                 Navigator.pop(context);
-              } else {
-                final newList = widget.mediaList
-                    .where((m) => m.id != _currentMedia.id)
-                    .toList();
-                if (newList.isEmpty) {
-                  Navigator.pop(context);
-                } else {
-                  final newIndex = math.min(_currentIndex, newList.length - 1);
-                  setState(() {
-                    _currentMedia = newList[newIndex];
-                    _currentIndex = newIndex;
-                    _imageRotation = 0;
-                    _noteContent = null;
-                    _mediaTags = [];
-                  });
-                  _pageController.jumpToPage(newIndex);
-                  _loadMediaData();
-                }
+                return;
               }
+              final newList = widget.mediaList
+                  .where((m) => m.id != _currentMedia.id)
+                  .toList();
+              if (newList.isEmpty) {
+                Navigator.pop(context);
+                return;
+              }
+              final newIndex = math.min(_currentIndex, newList.length - 1);
+              setState(() {
+                _currentMedia = newList[newIndex];
+                _currentIndex = newIndex;
+                _imageRotation = 0;
+                _noteContent = null;
+                _mediaTags = [];
+              });
+              _pageController.jumpToPage(newIndex);
+              _loadMediaData();
             },
             child: Text(loc.delete),
           ),
@@ -615,7 +513,6 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
 
   void _showFileInfoDialog() {
     final loc = AppLocalizations.of(context);
-    final cs = Theme.of(context).colorScheme;
     final info = [
       _infoRow(loc.fileName, _currentMedia.originalName),
       _infoRow(loc.filePath, _currentMedia.filePath),
@@ -635,23 +532,20 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
               ? loc.none
               : _mediaTags.map((t) => t.name).join(', ')),
     ];
-
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(loc.details),
         content: SizedBox(
-          width: double.maxFinite,
-          child: ListView.separated(
-            shrinkWrap: true,
-            itemCount: info.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
-            itemBuilder: (_, index) => info[index],
-          ),
-        ),
+            width: double.maxFinite,
+            child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: info.length,
+                separatorBuilder: (_, __) => const Divider(height: 1),
+                itemBuilder: (_, index) => info[index])),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx), child: Text(loc.close)),
+              onPressed: () => Navigator.pop(ctx), child: Text(loc.close))
         ],
       ),
     );
@@ -660,34 +554,35 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
   Widget _infoRow(String label, String value) {
     final cs = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        SizedBox(
             width: 80,
-            child: Text(
-              label,
-              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
-            ),
-          ),
-          Expanded(
-            child: SelectableText(
-              value,
-              style: TextStyle(color: cs.onSurface, fontSize: 13),
-            ),
-          ),
-        ],
-      ),
+            child: Text(label,
+                style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13))),
+        Expanded(
+            child: SelectableText(value,
+                style: TextStyle(color: cs.onSurface, fontSize: 13))),
+      ]),
     );
+  }
+
+  String _formatDuration(int? ms) {
+    if (ms == null || ms <= 0) return '0:00';
+    final d = Duration(milliseconds: ms);
+    final h = d.inHours,
+        m = d.inMinutes.remainder(60),
+        s = d.inSeconds.remainder(60);
+    return h > 0
+        ? '$h:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}'
+        : '$m:${s.toString().padLeft(2, '0')}';
   }
 
   String _formatBytes(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024) {
+    if (bytes < 1024 * 1024 * 1024)
       return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-    }
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 }
@@ -696,12 +591,10 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
 class _ImageViewer extends StatelessWidget {
   final MediaItem media;
   final int rotation;
-
   const _ImageViewer({required this.media, required this.rotation});
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return InteractiveViewer(
       minScale: 0.5,
       maxScale: 4,
@@ -711,18 +604,12 @@ class _ImageViewer extends StatelessWidget {
           File(media.filePath),
           fit: BoxFit.contain,
           errorBuilder: (_, __, ___) => Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.broken_image_rounded,
-                    size: 64, color: cs.onSurfaceVariant.withOpacity(0.5)),
-                const SizedBox(height: AppSpacing.md),
-                Text(
-                  media.originalName,
-                  style: TextStyle(color: cs.onSurfaceVariant, fontSize: 14),
-                ),
-              ],
-            ),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Icons.broken_image_rounded, size: 64, color: Colors.white54),
+              const SizedBox(height: 12),
+              Text(media.originalName,
+                  style: const TextStyle(color: Colors.white54, fontSize: 14)),
+            ]),
           ),
         ),
       ),
@@ -733,39 +620,25 @@ class _ImageViewer extends StatelessWidget {
 // ─── 文档占位 ───
 class _DocumentContent extends StatelessWidget {
   final MediaItem media;
-
   const _DocumentContent({required this.media});
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.insert_drive_file_rounded,
-                size: 72, color: isDark ? Colors.white54 : cs.onSurfaceVariant),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              media.originalName,
+        padding: const EdgeInsets.all(24),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Icons.insert_drive_file_rounded,
+              size: 72, color: Colors.white54),
+          const SizedBox(height: 16),
+          Text(media.originalName,
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+              textAlign: TextAlign.center),
+          const SizedBox(height: 8),
+          Text(media.mimeType,
               style: TextStyle(
-                  color: isDark ? Colors.white : cs.onSurface, fontSize: 16),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              media.mimeType,
-              style: TextStyle(
-                  color: isDark
-                      ? Colors.white.withOpacity(0.5)
-                      : cs.onSurfaceVariant,
-                  fontSize: 13),
-            ),
-          ],
-        ),
+                  color: Colors.white.withOpacity(0.5), fontSize: 13)),
+        ]),
       ),
     );
   }
@@ -777,13 +650,11 @@ class _TagManagerDialog extends StatefulWidget {
   final List<tag_api.Tag> currentTags;
   final String mediaId;
   final VoidCallback onChanged;
-
-  const _TagManagerDialog({
-    required this.allTags,
-    required this.currentTags,
-    required this.mediaId,
-    required this.onChanged,
-  });
+  const _TagManagerDialog(
+      {required this.allTags,
+      required this.currentTags,
+      required this.mediaId,
+      required this.onChanged});
 
   @override
   State<_TagManagerDialog> createState() => _TagManagerDialogState();
@@ -823,16 +694,12 @@ class _TagManagerDialogState extends State<_TagManagerDialog> {
         width: double.maxFinite,
         child: widget.allTags.isEmpty
             ? Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.label_off_outlined,
-                        size: 48, color: cs.onSurfaceVariant),
-                    const SizedBox(height: AppSpacing.md),
-                    Text(loc.noTags),
-                  ],
-                ),
-              )
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.label_off_outlined,
+                    size: 48, color: cs.onSurfaceVariant),
+                const SizedBox(height: 12),
+                Text(loc.noTags)
+              ]))
             : ListView.builder(
                 shrinkWrap: true,
                 itemCount: widget.allTags.length,
@@ -844,27 +711,24 @@ class _TagManagerDialogState extends State<_TagManagerDialog> {
                       : cs.primary;
                   return ListTile(
                     leading: AnimatedContainer(
-                      duration: AppAnimation.fast,
+                      duration: const Duration(milliseconds: 200),
                       decoration: BoxDecoration(
-                        color: selected ? tagColor : cs.surfaceContainerHighest,
-                        shape: BoxShape.circle,
-                      ),
+                          color:
+                              selected ? tagColor : cs.surfaceContainerHighest,
+                          shape: BoxShape.circle),
                       padding: const EdgeInsets.all(4),
-                      child: Icon(
-                        selected ? Icons.check_rounded : null,
-                        size: 16,
-                        color: selected ? Colors.white : cs.onSurfaceVariant,
-                      ),
+                      child: Icon(selected ? Icons.check_rounded : null,
+                          size: 16,
+                          color: selected ? Colors.white : cs.onSurfaceVariant),
                     ),
                     title: Text(tag.name),
                     onTap: () => _toggleTag(tag),
                   );
-                },
-              ),
+                }),
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context), child: Text(loc.close)),
+            onPressed: () => Navigator.pop(context), child: Text(loc.close))
       ],
     );
   }

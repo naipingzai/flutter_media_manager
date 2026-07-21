@@ -34,7 +34,7 @@ class _NoteListScreenState extends State<NoteListScreen> {
   }
 
   Future<void> _openEditor({note_api.Note? note}) async {
-    final result = await AppRouter.pushOverlay<bool>(
+    final result = await AppRouter.push<bool>(
       context,
       page: NoteEditScreen(note: note, mediaId: note?.mediaId ?? ''),
     );
@@ -177,10 +177,7 @@ class _NoteListItem extends StatelessWidget {
                       ),
                       Text(
                         _formatRelative(note.updatedAt),
-                        style: Theme.of(context)
-                            .textTheme
-                            .labelSmall
-                            ?.copyWith(
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
                               color: colorScheme.onSurfaceVariant,
                             ),
                       ),

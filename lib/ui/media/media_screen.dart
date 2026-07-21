@@ -80,14 +80,13 @@ class _MediaScreenState extends State<MediaScreen> {
         IconButton(
           icon: Icon(Icons.search_rounded, color: cs.onSurfaceVariant),
           tooltip: loc.search,
-          onPressed: () =>
-              AppRouter.pushOverlay(context, page: const SearchScreen()),
+          onPressed: () => AppRouter.push(context, page: const SearchScreen()),
         ),
         IconButton(
           icon: Icon(Icons.settings_outlined, color: cs.onSurfaceVariant),
           tooltip: loc.settings,
           onPressed: () =>
-              AppRouter.pushOverlay(context, page: const SettingsScreen()),
+              AppRouter.push(context, page: const SettingsScreen()),
         ),
         const SizedBox(width: AppSpacing.xs),
       ],
