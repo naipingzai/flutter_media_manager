@@ -962,27 +962,8 @@ int Database::import_media(const std::string& fp, const std::string& ad) {
     int rc = sqlite3_step(s);
     // 释放语句
     sqlite3_finalize(s);
-    // 导入成功后自动分配到默认相册和默认标签
-    if (rc == SQLITE_DONE) {
-        // 获取默认相册 id
-        std::string album_id = get_or_create_default_album(db_);
-        // 获取默认标签 id
-        std::string tag_id = get_or_create_default_tag(db_);
-        // 插入相册-媒体关联
-        sqlite3_prepare_v2(db_, "INSERT OR IGNORE INTO album_media(album_id,media_id,added_at) VALUES(?,?,?)", -1, &s, nullptr);
-        bind_text(s, 1, album_id);
-        bind_text(s, 2, id);
-        sqlite3_bind_int64(s, 3, now);
-        sqlite3_step(s);
-        sqlite3_finalize(s);
-        // 插入媒体-标签关联
-        sqlite3_prepare_v2(db_, "INSERT OR IGNORE INTO media_tags(media_id,tag_id,created_at) VALUES(?,?,?)", -1, &s, nullptr);
-        bind_text(s, 1, id);
-        bind_text(s, 2, tag_id);
-        sqlite3_bind_int64(s, 3, now);
-        sqlite3_step(s);
-        sqlite3_finalize(s);
-    }
+    // 导入成功后不再自动分配到默认相册和默认标签
+    // 用户可以手动将媒体添加到相册或标签
     return rc;
 }
 

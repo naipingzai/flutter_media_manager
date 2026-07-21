@@ -259,6 +259,10 @@ class AppLocalizations {
   String get filePathCopied => _get('filePathCopied');
   String get exportedTo => _get('exportedTo');
   String get exportFailed => _get('exportFailed');
+  String get saveToGallery => _get('saveToGallery');
+  String get saveSuccess => _get('saveSuccess');
+  String get saveFileFailed => _get('saveFailed2');
+  String get filterSort => _get('filterSort');
   String get noTagsCreateFirst => _get('noTagsCreateFirst');
   String get confirmDeleteMediaMsg => _get('confirmDeleteMediaMsg');
   String get contentPreview => _get('contentPreview');
@@ -668,4 +672,8 @@ const Map<String, String> _zhStrings = {
   'unreferencedFound': '发现 %d 个未引用文件',
   'unreferencedDeleted': '已删除 %d 个未引用文件',
   'allDataCleared': '所有数据已清除',
+  'saveToGallery': '保存到相册',
+  'saveSuccess': '保存成功',
+  'saveFailed2': '保存失败',
+  'filterSort': '筛选与排序',
 };

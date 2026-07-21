@@ -68,8 +68,14 @@ class _TagScreenState extends State<TagScreen> {
     return PopScope(
       canPop: !_isMediaSelectionMode,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && _isMediaSelectionMode) {
+        if (didPop) return;
+        if (_isMediaSelectionMode) {
           _clearMediaSelection();
+        } else {
+          final tagState = context.read<TagBloc>().state;
+          if (tagState.currentParentId != null) {
+            context.read<TagBloc>().add(const TagNavigateUpEvent());
+          }
         }
       },
       child: Scaffold(
@@ -78,28 +84,34 @@ class _TagScreenState extends State<TagScreen> {
             : PreferredSize(
                 preferredSize: const Size.fromHeight(kToolbarHeight),
                 child: BlocBuilder<TagBloc, TagState>(
-                buildWhen: (prev, curr) => prev.currentParentId != curr.currentParentId,
-                builder: (context, state) {
-                  return AppBar(
-                    title: Text(state.breadcrumb.isNotEmpty ? state.breadcrumb.last.name : loc.tabTags),
-                    leading: state.currentParentId != null
-                        ? IconButton(
-                            icon: const Icon(Icons.arrow_back_rounded),
-                            onPressed: () => context.read<TagBloc>().add(const TagNavigateUpEvent()),
-                          )
-                        : null,
-                    automaticallyImplyLeading: state.currentParentId == null,
-                    actions: [
-                      if (_filteredMedia != null)
-                        IconButton(
-                          icon: Icon(Icons.clear_all_rounded, color: cs.onSurfaceVariant),
-                          tooltip: loc.clearAll,
-                          onPressed: _clearFilter,
-                        ),
-                    ],
-                  );
-                },
-              ),
+                  buildWhen: (prev, curr) =>
+                      prev.currentParentId != curr.currentParentId,
+                  builder: (context, state) {
+                    return AppBar(
+                      title: Text(state.breadcrumb.isNotEmpty
+                          ? state.breadcrumb.last.name
+                          : loc.tabTags),
+                      leading: state.currentParentId != null
+                          ? IconButton(
+                              icon: const Icon(Icons.arrow_back_rounded),
+                              onPressed: () => context
+                                  .read<TagBloc>()
+                                  .add(const TagNavigateUpEvent()),
+                            )
+                          : null,
+                      automaticallyImplyLeading: state.currentParentId == null,
+                      actions: [
+                        if (_filteredMedia != null)
+                          IconButton(
+                            icon: Icon(Icons.clear_all_rounded,
+                                color: cs.onSurfaceVariant),
+                            tooltip: loc.clearAll,
+                            onPressed: _clearFilter,
+                          ),
+                      ],
+                    );
+                  },
+                ),
               ),
         body: BlocBuilder<TagBloc, TagState>(
           builder: (context, state) {
@@ -121,11 +133,12 @@ class _TagScreenState extends State<TagScreen> {
             ? null
             : BlocBuilder<TagBloc, TagState>(
                 builder: (context, state) {
-                  if (_filteredMedia != null || state.currentParentId != null) return const SizedBox.shrink();
-                  return FloatingActionButton.extended(
+                  if (_filteredMedia != null || state.currentParentId != null)
+                    return const SizedBox.shrink();
+                  return FloatingActionButton(
                     onPressed: () => _showCreateTagDialog(context),
-                    icon: const Icon(Icons.new_label_rounded, size: 20),
-                    label: Text(loc.createTag),
+                    tooltip: loc.createTag,
+                    child: const Icon(Icons.new_label_rounded),
                   );
                 },
               ),

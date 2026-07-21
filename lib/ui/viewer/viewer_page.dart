@@ -8,13 +8,12 @@ import 'package:flutter_media_manager/core/i18n/app_localizations.dart';
 import 'package:flutter_media_manager/bridge/native/api/album.dart'
     as album_api;
 import 'package:flutter_media_manager/bridge/native/api/media.dart';
-import 'package:flutter_media_manager/bridge/native/api/note.dart'
-    as note_api;
-import 'package:flutter_media_manager/bridge/native/api/tag.dart'
-    as tag_api;
+import 'package:flutter_media_manager/bridge/native/api/note.dart' as note_api;
+import 'package:flutter_media_manager/bridge/native/api/tag.dart' as tag_api;
 import 'package:flutter_media_manager/ui/viewer/widgets/audio_player_widget.dart';
 import 'package:flutter_media_manager/ui/viewer/widgets/video_player_widget.dart';
 import 'package:flutter_media_manager/functionality/media/media_bloc.dart';
+import 'package:path_provider/path_provider.dart';
 
 /// 统一媒体查看器页面
 class ViewerPage extends StatefulWidget {
@@ -62,9 +61,7 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused) {
-      // 页面暂停时不控制视频/音频，组件自身处理
-    }
+    // 页面暂停时不控制视频/音频，组件自身处理
   }
 
   Future<void> _loadMediaData() async {
@@ -98,35 +95,46 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).padding.bottom + 80;
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(
-        statusBarColor: Colors.white,
-        systemNavigationBarColor: Colors.white,
-        systemNavigationBarIconBrightness: Brightness.dark,
-      ),
-      child: Scaffold(
-        backgroundColor: Colors.black,
-        extendBodyBehindAppBar: true,
-        body: Stack(
-          fit: StackFit.expand,
-          children: [
-            GestureDetector(
-              onTap: _toggleOverlay,
-              behavior: HitTestBehavior.translucent,
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: widget.mediaList.length,
-                onPageChanged: _switchMedia,
-                itemBuilder: (context, index) {
-                  return _buildMediaContent(
-                      widget.mediaList[index], bottomPadding);
-                },
-              ),
+      value: isDark
+          ? SystemUiOverlayStyle.light.copyWith(
+              statusBarColor: Colors.black,
+              systemNavigationBarColor: Colors.black,
+              systemNavigationBarIconBrightness: Brightness.light,
+            )
+          : SystemUiOverlayStyle.dark.copyWith(
+              statusBarColor: cs.surface,
+              systemNavigationBarColor: cs.surface,
+              systemNavigationBarIconBrightness: Brightness.dark,
             ),
-            if (_showOverlay) _buildTopOverlay(),
-            if (_showOverlay) _buildBottomActionBar(),
-          ],
+      child: Scaffold(
+        backgroundColor: isDark ? Colors.black : cs.surface,
+        extendBodyBehindAppBar: true,
+        body: SafeArea(
+          top: false,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              GestureDetector(
+                onTap: _toggleOverlay,
+                behavior: HitTestBehavior.translucent,
+                child: PageView.builder(
+                  controller: _pageController,
+                  itemCount: widget.mediaList.length,
+                  onPageChanged: _switchMedia,
+                  itemBuilder: (context, index) {
+                    return _buildMediaContent(
+                        widget.mediaList[index], bottomPadding);
+                  },
+                ),
+              ),
+              if (_showOverlay) _buildTopOverlay(),
+              if (_showOverlay) _buildBottomActionBar(),
+            ],
+          ),
         ),
       ),
     );
@@ -158,7 +166,8 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
   }
 
   Widget _buildTopOverlay() {
-    final loc = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isImage = _currentMedia.mediaType == MediaType.image;
     final hasMultiple = widget.mediaList.length > 1;
 
@@ -167,7 +176,16 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
       left: 0,
       right: 0,
       child: Container(
-        color: Colors.white,
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.black.withOpacity(0.7)
+              : cs.surface.withOpacity(0.9),
+          border: Border(
+            bottom: BorderSide(
+              color: cs.outlineVariant.withOpacity(0.2),
+            ),
+          ),
+        ),
         padding: EdgeInsets.only(
           top: MediaQuery.of(context).padding.top + AppSpacing.sm,
           left: AppSpacing.sm,
@@ -179,7 +197,8 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
           bottom: false,
           child: Row(
             children: [
-              _buildTopButton(Icons.arrow_back, () => Navigator.pop(context)),
+              _buildTopButton(Icons.arrow_back_rounded,
+                  () => Navigator.pop(context), isDark, cs),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Column(
@@ -190,8 +209,8 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
                       _currentMedia.originalName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.black87,
+                      style: TextStyle(
+                        color: isDark ? Colors.white : cs.onSurface,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
@@ -199,8 +218,8 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
                     if (hasMultiple)
                       Text(
                         '${_currentIndex + 1} / ${widget.mediaList.length}',
-                        style: const TextStyle(
-                          color: Colors.black54,
+                        style: TextStyle(
+                          color: isDark ? Colors.white70 : cs.onSurfaceVariant,
                           fontSize: 12,
                         ),
                       ),
@@ -208,11 +227,12 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
                 ),
               ),
               if (isImage) ...[
-                _buildTopButton(Icons.rotate_right, _rotateImage,
-                    tooltip: loc.rotate),
-                const SizedBox(width: AppSpacing.sm),
+                _buildTopButton(
+                    Icons.rotate_right_rounded, _rotateImage, isDark, cs),
+                const SizedBox(width: AppSpacing.xs),
               ],
-              _buildTopButton(Icons.close, () => Navigator.pop(context)),
+              _buildTopButton(Icons.close_rounded, () => Navigator.pop(context),
+                  isDark, cs),
             ],
           ),
         ),
@@ -220,9 +240,12 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildTopButton(IconData icon, VoidCallback onTap, {String? tooltip}) {
+  Widget _buildTopButton(
+      IconData icon, VoidCallback onTap, bool isDark, ColorScheme cs) {
     final btn = Material(
-      color: Colors.black.withOpacity(0.08),
+      color: isDark
+          ? Colors.white.withOpacity(0.15)
+          : cs.surfaceContainerHighest.withOpacity(0.5),
       borderRadius: BorderRadius.circular(AppRadius.md),
       child: InkWell(
         onTap: onTap,
@@ -231,15 +254,17 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
           width: 36,
           height: 36,
           alignment: Alignment.center,
-          child: Icon(icon, color: Colors.black87, size: 20),
+          child:
+              Icon(icon, color: isDark ? Colors.white : cs.onSurface, size: 20),
         ),
       ),
     );
-    if (tooltip != null) return Tooltip(message: tooltip, child: btn);
     return btn;
   }
 
   Widget _buildBottomActionBar() {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final loc = AppLocalizations.of(context);
 
     return Positioned(
@@ -247,10 +272,19 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
       left: 0,
       right: 0,
       child: Container(
-        color: Colors.white,
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.black.withOpacity(0.7)
+              : cs.surface.withOpacity(0.9),
+          border: Border(
+            top: BorderSide(
+              color: cs.outlineVariant.withOpacity(0.2),
+            ),
+          ),
+        ),
         padding: EdgeInsets.fromLTRB(
           AppSpacing.lg,
-          AppSpacing.lg,
+          AppSpacing.md,
           AppSpacing.lg,
           MediaQuery.of(context).padding.bottom + AppSpacing.sm,
         ),
@@ -260,13 +294,15 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
+              _buildActionItem(Icons.photo_album_outlined, loc.album,
+                  _showAlbumPicker, isDark, cs),
               _buildActionItem(
-                  Icons.photo_album_outlined, loc.album, _showAlbumPicker),
-              _buildActionItem(Icons.label_outlined, loc.tags, _showTagManager),
-              _buildActionItem(
-                  Icons.delete_outline, loc.delete, _showDeleteConfirm,
-                  color: Colors.red),
-              _buildActionItem(Icons.more_horiz, loc.more, _showMorePanel),
+                  Icons.label_outlined, loc.tags, _showTagManager, isDark, cs),
+              _buildActionItem(Icons.delete_outline_rounded, loc.delete,
+                  _showDeleteConfirm, isDark, cs,
+                  color: cs.error),
+              _buildActionItem(Icons.more_horiz_rounded, loc.more,
+                  _showMorePanel, isDark, cs),
             ],
           ),
         ),
@@ -275,7 +311,9 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
   }
 
   Widget _buildActionItem(IconData icon, String label, VoidCallback onTap,
+      bool isDark, ColorScheme cs,
       {Color? color}) {
+    final iconColor = color ?? (isDark ? Colors.white : cs.onSurface);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.md),
@@ -285,11 +323,11 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color ?? Colors.black87, size: 24),
+            Icon(icon, color: iconColor, size: 24),
             const SizedBox(height: AppSpacing.xs),
             Text(
               label,
-              style: TextStyle(color: color ?? Colors.black87, fontSize: 11),
+              style: TextStyle(color: iconColor, fontSize: 11),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -301,9 +339,9 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
 
   void _showMorePanel() {
     final loc = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
     showModalBottomSheet(
       context: context,
-      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius:
             BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
@@ -312,11 +350,23 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildMoreTile(Icons.edit, loc.rename, _showRenameDialog),
-            _buildMoreTile(Icons.download, loc.exportToDownload, _exportMedia),
+            Container(
+              width: 36,
+              height: 4,
+              margin: const EdgeInsets.only(top: AppSpacing.md),
+              decoration: BoxDecoration(
+                color: cs.onSurfaceVariant.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _buildMoreTile(Icons.edit_outlined, loc.rename, _showRenameDialog),
+            _buildMoreTile(
+                Icons.save_alt_rounded, loc.saveToGallery, _saveMedia),
             _buildMoreTile(Icons.link, loc.copyPath, _copyPath),
             _buildMoreTile(
                 Icons.info_outline, loc.details, _showFileInfoDialog),
+            const SizedBox(height: AppSpacing.sm),
           ],
         ),
       ),
@@ -324,8 +374,9 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
   }
 
   Widget _buildMoreTile(IconData icon, String title, VoidCallback onTap) {
+    final cs = Theme.of(context).colorScheme;
     return ListTile(
-      leading: Icon(icon, color: Theme.of(context).colorScheme.onSurface),
+      leading: Icon(icon, color: cs.onSurface),
       title: Text(title),
       onTap: () {
         Navigator.pop(context);
@@ -336,6 +387,7 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
 
   void _showRenameDialog() {
     final loc = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
     final controller = TextEditingController(text: _currentMedia.originalName);
     showDialog(
       context: context,
@@ -349,7 +401,7 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx), child: Text(loc.cancel)),
-          TextButton(
+          FilledButton(
             onPressed: () async {
               final newName = controller.text.trim();
               if (newName.isNotEmpty) {
@@ -396,14 +448,50 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
 
-  Future<void> _exportMedia() async {
+  Future<void> _saveMedia() async {
     final loc = AppLocalizations.of(context);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content:
-                Text('${loc.exportFailed}: import_export API not available')),
-      );
+    try {
+      final sourceFile = File(_currentMedia.filePath);
+      if (!await sourceFile.exists()) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(loc.saveFileFailed)),
+          );
+        }
+        return;
+      }
+
+      // Get the app's documents directory as a safe save location
+      final appDir = await getApplicationDocumentsDirectory();
+      final saveDir = Directory('${appDir.path}/saved_media');
+      if (!await saveDir.exists()) {
+        await saveDir.create(recursive: true);
+      }
+
+      final ext = _currentMedia.filePath.split('.').last;
+      final baseName = _currentMedia.originalName.contains('.')
+          ? _currentMedia.originalName.split('.').first
+          : _currentMedia.originalName;
+      var savePath = '${saveDir.path}/${baseName}.$ext';
+      int counter = 1;
+      while (File(savePath).existsSync()) {
+        savePath = '${saveDir.path}/${baseName}_$counter.$ext';
+        counter++;
+      }
+
+      await sourceFile.copy(savePath);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${loc.saveSuccess}: $savePath')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${loc.saveFileFailed}: $e')),
+        );
+      }
     }
   }
 
@@ -430,6 +518,7 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
 
   Future<void> _showAlbumPicker() async {
     final loc = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
     final albums = await album_api.getRootAlbums();
     if (!mounted) return;
     if (albums.isEmpty) {
@@ -450,6 +539,7 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
             itemBuilder: (context, index) {
               final album = albums[index];
               return ListTile(
+                leading: Icon(Icons.photo_album_rounded, color: cs.primary),
                 title: Text(album.album.name),
                 subtitle: Text('${album.mediaCount} ${loc.files}'),
                 onTap: () async {
@@ -476,20 +566,23 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
 
   void _showDeleteConfirm() {
     final loc = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        icon: Icon(Icons.delete_outline_rounded, size: 40, color: cs.error),
         title: Text(loc.confirmDeleteMedia),
         content: Text(
             '${loc.confirmDeleteMediaMsg} "${_currentMedia.originalName}"'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx), child: Text(loc.cancel)),
-          TextButton(
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: cs.error),
             onPressed: () async {
+              Navigator.pop(ctx);
               await deleteMedia(id: _currentMedia.id);
               if (!mounted) return;
-              Navigator.pop(context);
               context.read<MediaBloc>().add(const MediaLoadAllEvent());
               if (widget.mediaList.length == 1) {
                 Navigator.pop(context);
@@ -513,7 +606,6 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
                 }
               }
             },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: Text(loc.delete),
           ),
         ],
@@ -523,6 +615,7 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
 
   void _showFileInfoDialog() {
     final loc = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
     final info = [
       _infoRow(loc.fileName, _currentMedia.originalName),
       _infoRow(loc.filePath, _currentMedia.filePath),
@@ -565,6 +658,7 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
   }
 
   Widget _infoRow(String label, String value) {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       child: Row(
@@ -574,16 +668,13 @@ class _ViewerPageState extends State<ViewerPage> with WidgetsBindingObserver {
             width: 80,
             child: Text(
               label,
-              style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontSize: 13),
+              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
             ),
           ),
           Expanded(
             child: SelectableText(
               value,
-              style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface, fontSize: 13),
+              style: TextStyle(color: cs.onSurface, fontSize: 13),
             ),
           ),
         ],
@@ -610,6 +701,7 @@ class _ImageViewer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return InteractiveViewer(
       minScale: 0.5,
       maxScale: 4,
@@ -618,6 +710,20 @@ class _ImageViewer extends StatelessWidget {
         child: Image.file(
           File(media.filePath),
           fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.broken_image_rounded,
+                    size: 64, color: cs.onSurfaceVariant.withOpacity(0.5)),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  media.originalName,
+                  style: TextStyle(color: cs.onSurfaceVariant, fontSize: 14),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -632,25 +738,31 @@ class _DocumentContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.insert_drive_file,
-                size: 72, color: Colors.white54),
+            Icon(Icons.insert_drive_file_rounded,
+                size: 72, color: isDark ? Colors.white54 : cs.onSurfaceVariant),
             const SizedBox(height: AppSpacing.lg),
             Text(
               media.originalName,
-              style: const TextStyle(color: Colors.white, fontSize: 16),
+              style: TextStyle(
+                  color: isDark ? Colors.white : cs.onSurface, fontSize: 16),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
               media.mimeType,
               style: TextStyle(
-                  color: Colors.white.withOpacity(0.5), fontSize: 13),
+                  color: isDark
+                      ? Colors.white.withOpacity(0.5)
+                      : cs.onSurfaceVariant,
+                  fontSize: 13),
             ),
           ],
         ),
@@ -704,26 +816,51 @@ class _TagManagerDialogState extends State<_TagManagerDialog> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
     return AlertDialog(
       title: Text(loc.tags),
       content: SizedBox(
         width: double.maxFinite,
-        child: ListView.builder(
-          shrinkWrap: true,
-          itemCount: widget.allTags.length,
-          itemBuilder: (context, index) {
-            final tag = widget.allTags[index];
-            final selected = _selectedIds.contains(tag.id);
-            return ListTile(
-              leading: selected
-                  ? const Icon(Icons.check_circle, color: Colors.blue)
-                  : const Icon(Icons.radio_button_unchecked,
-                      color: Colors.grey),
-              title: Text(tag.name),
-              onTap: () => _toggleTag(tag),
-            );
-          },
-        ),
+        child: widget.allTags.isEmpty
+            ? Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.label_off_outlined,
+                        size: 48, color: cs.onSurfaceVariant),
+                    const SizedBox(height: AppSpacing.md),
+                    Text(loc.noTags),
+                  ],
+                ),
+              )
+            : ListView.builder(
+                shrinkWrap: true,
+                itemCount: widget.allTags.length,
+                itemBuilder: (context, index) {
+                  final tag = widget.allTags[index];
+                  final selected = _selectedIds.contains(tag.id);
+                  final tagColor = tag.color != null
+                      ? Color(int.parse(tag.color!.replaceFirst('#', '0xFF')))
+                      : cs.primary;
+                  return ListTile(
+                    leading: AnimatedContainer(
+                      duration: AppAnimation.fast,
+                      decoration: BoxDecoration(
+                        color: selected ? tagColor : cs.surfaceContainerHighest,
+                        shape: BoxShape.circle,
+                      ),
+                      padding: const EdgeInsets.all(4),
+                      child: Icon(
+                        selected ? Icons.check_rounded : null,
+                        size: 16,
+                        color: selected ? Colors.white : cs.onSurfaceVariant,
+                      ),
+                    ),
+                    title: Text(tag.name),
+                    onTap: () => _toggleTag(tag),
+                  );
+                },
+              ),
       ),
       actions: [
         TextButton(

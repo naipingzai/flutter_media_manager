@@ -41,14 +41,18 @@ Future<void> saveSettings({required AppSettings settings}) async {
 
 /// Get storage statistics.
 Future<StorageStats> getStorageStats() async {
-  // FFI doesn't expose this yet; return defaults.
-  return const StorageStats();
+  final data = SettingsFfi.instance.getStorageStats();
+  return StorageStats(
+    totalMediaCount: data.totalMediaCount,
+    totalSize: data.totalSize,
+    thumbnailCacheSize: data.thumbnailCacheSize,
+    databaseSize: data.databaseSize,
+  );
 }
 
 /// Clear thumbnail cache. Returns number of files removed.
 Future<int> clearThumbnailCache() async {
-  // FFI doesn't expose this yet; return 0.
-  return 0;
+  return SettingsFfi.instance.clearThumbnailCache();
 }
 
 /// Import data from a file path.

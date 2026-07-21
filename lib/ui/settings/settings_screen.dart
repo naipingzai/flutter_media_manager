@@ -73,12 +73,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const Divider(),
                 _SectionHeader(title: AppLocalizations.of(context).display),
                 ListTile(
-                  leading: const Icon(Icons.photo_size_select_small),
-                  title: Text(loc.thumbnailQualityLabel),
-                  subtitle: Text('${settings.thumbnailQuality}%'),
-                  onTap: () => _showThumbnailQualityDialog(context, settings),
-                ),
-                ListTile(
                   leading: const Icon(Icons.grid_view),
                   title: Text(loc.gridColumns),
                   subtitle: Text('${settings.gridColumns} ${loc.columns}'),
@@ -97,14 +91,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     leading: const Icon(Icons.storage),
                     title: Text(loc.storageStats),
                     subtitle: Text(_buildStatsText(context)),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.cleaning_services),
-                    title: Text(loc.clearThumbnailCache),
-                    subtitle: Text(_stats != null
-                        ? _formatSize(_stats!.thumbnailCacheSize)
-                        : loc.clickToClearUnreferenced),
-                    onTap: () => _clearThumbnailCache(context),
                   ),
                 ],
                 const Divider(),
@@ -235,47 +221,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 },
               ),
             ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _showThumbnailQualityDialog(
-      BuildContext context, native_api.AppSettings settings) {
-    final loc = AppLocalizations.of(context);
-    final qualities = [50, 60, 70, 80, 85, 90, 95, 100];
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(loc.thumbnailQualityLabel),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: qualities.map((q) {
-              return RadioListTile<int>(
-                title: Text('$q%'),
-                value: q,
-                groupValue: settings.thumbnailQuality,
-                onChanged: (value) {
-                  if (value != null) {
-                    final newSettings = native_api.AppSettings(
-                      themeMode: settings.themeMode,
-                      gridColumns: settings.gridColumns,
-                      albumGridColumns: settings.albumGridColumns,
-                      thumbnailQuality: value,
-                      language: settings.language,
-                      dynamicColor: settings.dynamicColor,
-                      lastScanPath: settings.lastScanPath,
-                    );
-                    context
-                        .read<AppBloc>()
-                        .add(AppSettingsUpdatedEvent(newSettings));
-                    Navigator.pop(context);
-                  }
-                },
-              );
-            }).toList(),
           ),
         );
       },

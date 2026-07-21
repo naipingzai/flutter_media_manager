@@ -70,56 +70,12 @@ class _MediaScreenState extends State<MediaScreen> {
     return AppBar(
       title: Text(loc.tabAllMedia),
       actions: [
-        // Filter chip
-        _buildFilterChip(context, state, cs, loc, isFiltered),
-        const SizedBox(width: AppSpacing.xs),
-        // Sort
-        PopupMenuButton<String>(
-          icon: Icon(Icons.sort_rounded, color: cs.onSurfaceVariant),
-          tooltip: loc.sort,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.md),
-          ),
-          onSelected: (val) {
-            final parts = val.split(':');
-            final field =
-                SortField.values.firstWhere((f) => f.name == parts[0]);
-            final order =
-                SortOrder.values.firstWhere((o) => o.name == parts[1]);
-            context.read<MediaBloc>().add(MediaSortEvent(field, order));
-          },
-          itemBuilder: (_) => [
-            PopupMenuItem(
-              value: 'date:descending',
-              child: _SortMenuItem(
-                  icon: Icons.arrow_downward, label: loc.sortNewestFirst),
-            ),
-            PopupMenuItem(
-              value: 'date:ascending',
-              child: _SortMenuItem(
-                  icon: Icons.arrow_upward, label: loc.sortOldestFirst),
-            ),
-            PopupMenuItem(
-              value: 'name:ascending',
-              child: _SortMenuItem(
-                  icon: Icons.sort_by_alpha, label: loc.sortNameAsc),
-            ),
-            PopupMenuItem(
-              value: 'name:descending',
-              child: _SortMenuItem(
-                  icon: Icons.sort_by_alpha, label: loc.sortNameDesc),
-            ),
-            PopupMenuItem(
-              value: 'size:descending',
-              child: _SortMenuItem(
-                  icon: Icons.arrow_downward, label: loc.sortSizeDesc),
-            ),
-            PopupMenuItem(
-              value: 'size:ascending',
-              child: _SortMenuItem(
-                  icon: Icons.arrow_upward, label: loc.sortSizeAsc),
-            ),
-          ],
+        // Filter & Sort button
+        IconButton(
+          icon: Icon(Icons.tune_rounded,
+              color: isFiltered ? cs.primary : cs.onSurfaceVariant),
+          tooltip: loc.filterSort,
+          onPressed: () => _showFilterSortDialog(context, state, cs, loc),
         ),
         IconButton(
           icon: Icon(Icons.search_rounded, color: cs.onSurfaceVariant),
@@ -509,13 +465,175 @@ class _MediaScreenState extends State<MediaScreen> {
     );
   }
 
+  // ── Filter & Sort Dialog ─────────────────────────────────────────
+  void _showFilterSortDialog(BuildContext context, MediaState state,
+      ColorScheme cs, AppLocalizations loc) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(top: AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: cs.onSurfaceVariant.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                child: Text(loc.filterSort,
+                    style: AppTextStyles.title.copyWith(color: cs.onSurface)),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              // Filter section
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(loc.filter,
+                      style:
+                          AppTextStyles.subtitle.copyWith(color: cs.primary)),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              _filterOption(
+                  ctx,
+                  loc.filterAll,
+                  Icons.all_inclusive_rounded,
+                  state.currentFilter == null &&
+                      state.currentFilterMode == null, () {
+                context.read<MediaBloc>().add(const MediaClearSelectionEvent());
+                context.read<MediaBloc>().add(const MediaLoadAllEvent());
+                Navigator.pop(ctx);
+              }, cs),
+              _filterOption(ctx, loc.filterImages, Icons.image_rounded,
+                  state.currentFilter == MediaType.image, () {
+                context.read<MediaBloc>().add(const MediaClearSelectionEvent());
+                context
+                    .read<MediaBloc>()
+                    .add(const MediaFilterByTypeEvent(MediaType.image));
+                Navigator.pop(ctx);
+              }, cs),
+              _filterOption(ctx, loc.filterVideos, Icons.videocam_rounded,
+                  state.currentFilter == MediaType.video, () {
+                context.read<MediaBloc>().add(const MediaClearSelectionEvent());
+                context
+                    .read<MediaBloc>()
+                    .add(const MediaFilterByTypeEvent(MediaType.video));
+                Navigator.pop(ctx);
+              }, cs),
+              _filterOption(ctx, loc.filterWithTags, Icons.label_rounded,
+                  state.currentFilterMode == FilterMode.withTags, () {
+                context.read<MediaBloc>().add(const MediaClearSelectionEvent());
+                context.read<MediaBloc>().add(
+                    const MediaFilterByFilterModeEvent(FilterMode.withTags));
+                Navigator.pop(ctx);
+              }, cs),
+              _filterOption(ctx, loc.filterWithoutTags, Icons.label_off_rounded,
+                  state.currentFilterMode == FilterMode.withoutTags, () {
+                context.read<MediaBloc>().add(const MediaClearSelectionEvent());
+                context.read<MediaBloc>().add(
+                    const MediaFilterByFilterModeEvent(FilterMode.withoutTags));
+                Navigator.pop(ctx);
+              }, cs),
+              _filterOption(
+                  ctx,
+                  loc.filterWithAlbums,
+                  Icons.photo_album_rounded,
+                  state.currentFilterMode == FilterMode.withAlbums, () {
+                context.read<MediaBloc>().add(const MediaClearSelectionEvent());
+                context.read<MediaBloc>().add(
+                    const MediaFilterByFilterModeEvent(FilterMode.withAlbums));
+                Navigator.pop(ctx);
+              }, cs),
+              _filterOption(
+                  ctx,
+                  loc.filterWithoutAlbums,
+                  Icons.hide_image_rounded,
+                  state.currentFilterMode == FilterMode.withoutAlbums, () {
+                context.read<MediaBloc>().add(const MediaClearSelectionEvent());
+                context.read<MediaBloc>().add(
+                    const MediaFilterByFilterModeEvent(
+                        FilterMode.withoutAlbums));
+                Navigator.pop(ctx);
+              }, cs),
+              const Divider(indent: AppSpacing.lg, endIndent: AppSpacing.lg),
+              // Sort section
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(loc.sort,
+                      style:
+                          AppTextStyles.subtitle.copyWith(color: cs.primary)),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              _sortOption(ctx, loc.sortNewestFirst,
+                  Icons.arrow_downward_rounded, 'date', 'descending', cs),
+              _sortOption(ctx, loc.sortOldestFirst, Icons.arrow_upward_rounded,
+                  'date', 'ascending', cs),
+              _sortOption(ctx, loc.sortNameAsc, Icons.sort_by_alpha_rounded,
+                  'name', 'ascending', cs),
+              _sortOption(ctx, loc.sortNameDesc, Icons.sort_by_alpha_rounded,
+                  'name', 'descending', cs),
+              _sortOption(ctx, loc.sortSizeDesc, Icons.arrow_downward_rounded,
+                  'size', 'descending', cs),
+              _sortOption(ctx, loc.sortSizeAsc, Icons.arrow_upward_rounded,
+                  'size', 'ascending', cs),
+              SizedBox(
+                  height: MediaQuery.of(ctx).padding.bottom + AppSpacing.md),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _filterOption(BuildContext ctx, String label, IconData icon,
+      bool selected, VoidCallback onTap, ColorScheme cs) {
+    return ListTile(
+      leading: Icon(icon,
+          size: 20, color: selected ? cs.primary : cs.onSurfaceVariant),
+      title: Text(label),
+      trailing: selected
+          ? Icon(Icons.check_rounded, size: 20, color: cs.primary)
+          : null,
+      onTap: onTap,
+    );
+  }
+
+  Widget _sortOption(BuildContext ctx, String label, IconData icon,
+      String field, String order, ColorScheme cs) {
+    return ListTile(
+      leading: Icon(icon, size: 20, color: cs.onSurfaceVariant),
+      title: Text(label),
+      onTap: () {
+        final f = SortField.values.firstWhere((sf) => sf.name == field);
+        final o = SortOrder.values.firstWhere((so) => so.name == order);
+        context.read<MediaBloc>().add(MediaSortEvent(f, o));
+        Navigator.pop(ctx);
+      },
+    );
+  }
+
   // ── Import FAB ──────────────────────────────────────────────────
   Widget _buildImportFAB(BuildContext context, ColorScheme cs) {
     final loc = AppLocalizations.of(context);
-    return FloatingActionButton.extended(
+    return FloatingActionButton(
       onPressed: () => _showImportSheet(context, cs, loc),
-      icon: const Icon(Icons.add_photo_alternate_rounded, size: 20),
-      label: Text(loc.importMedia),
+      tooltip: loc.importMedia,
+      child: const Icon(Icons.add_photo_alternate_rounded),
     );
   }
 

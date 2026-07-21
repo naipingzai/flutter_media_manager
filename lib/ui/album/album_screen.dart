@@ -65,18 +65,18 @@ class _AlbumScreenState extends State<AlbumScreen> {
       floatingActionButton: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          FloatingActionButton.extended(
+          FloatingActionButton(
             heroTag: 'album_import',
             onPressed: () => _showImportMediaDialog(context),
-            icon: const Icon(Icons.add_photo_alternate_rounded, size: 20),
-            label: Text(loc.addToAlbum),
+            tooltip: loc.addToAlbum,
+            child: const Icon(Icons.add_photo_alternate_rounded),
           ),
           const SizedBox(width: AppSpacing.sm),
-          FloatingActionButton.extended(
+          FloatingActionButton(
             heroTag: 'album_create',
             onPressed: () => _showCreateAlbumDialog(context),
-            icon: const Icon(Icons.create_new_folder_rounded, size: 20),
-            label: Text(loc.createAlbum),
+            tooltip: loc.createAlbum,
+            child: const Icon(Icons.create_new_folder_rounded),
           ),
         ],
       ),

@@ -64,6 +64,21 @@ class SettingsData {
 }
 
 /// C++ FFI wrapper for settings operations
+class StorageStatsData {
+  final int totalMediaCount;
+  final int totalSize;
+  final int thumbnailCacheSize;
+  final int databaseSize;
+  StorageStatsData(this.totalMediaCount, this.totalSize,
+      this.thumbnailCacheSize, this.databaseSize);
+}
+
+// Storage stats callback: void cb(int count, int64 size, int64 thumb, int64 db)
+typedef _StorageStatsCb = Void Function(Int32, Int64, Int64, Int64);
+typedef _GetStorageStatsFn = Int32 Function(
+    Pointer<Int32>, Pointer<Int64>, Pointer<Int64>, Pointer<Int64>);
+typedef _ClearThumbnailCacheFn = Int32 Function();
+
 class SettingsFfi {
   static SettingsFfi? _instance;
   late final DynamicLibrary _lib;
@@ -130,6 +145,36 @@ class SettingsFfi {
     calloc.free(l);
     calloc.free(s);
     return r;
+  }
+
+  /// Get storage statistics via FFI
+  StorageStatsData getStorageStats() {
+    final countPtr = calloc<Int32>();
+    final sizePtr = calloc<Int64>();
+    final thumbPtr = calloc<Int64>();
+    final dbPtr = calloc<Int64>();
+    _lib.lookupFunction<
+            _GetStorageStatsFn,
+            int Function(Pointer<Int32>, Pointer<Int64>, Pointer<Int64>,
+                Pointer<Int64>)>('amkb_get_storage_stats')(
+        countPtr, sizePtr, thumbPtr, dbPtr);
+    final result = StorageStatsData(
+      countPtr.value,
+      sizePtr.value,
+      thumbPtr.value,
+      dbPtr.value,
+    );
+    calloc.free(countPtr);
+    calloc.free(sizePtr);
+    calloc.free(thumbPtr);
+    calloc.free(dbPtr);
+    return result;
+  }
+
+  /// Clear thumbnail cache via FFI
+  int clearThumbnailCache() {
+    return _lib.lookupFunction<_ClearThumbnailCacheFn, int Function()>(
+        'amkb_clear_thumbnail_cache')();
   }
 
   /// Delete all data
