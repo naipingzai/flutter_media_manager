@@ -96,12 +96,23 @@ class _TagScreenState extends State<TagScreen> {
                           tooltip: loc.clearAll,
                           onPressed: _clearFilter,
                         )
-                      else if (state.currentParentId == null)
+                      else if (state.currentParentId == null) ...[
                         IconButton(
                           icon: Icon(Icons.filter_list_rounded, color: cs.onSurfaceVariant),
                           tooltip: loc.tagFilter,
                           onPressed: _showTagFilterDialog,
                         ),
+                        IconButton(
+                          icon: Icon(Icons.search_rounded, color: cs.onSurfaceVariant),
+                          tooltip: loc.search,
+                          onPressed: () {},
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.settings_outlined, color: cs.onSurfaceVariant),
+                          tooltip: loc.settings,
+                          onPressed: () {},
+                        ),
+                      ],
                     ],
                   );
                 },

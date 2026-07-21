@@ -60,6 +60,19 @@ class _AlbumScreenState extends State<AlbumScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(loc.tabAlbums),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.search_rounded, color: cs.onSurfaceVariant),
+            tooltip: loc.search,
+            onPressed: () {},
+          ),
+          IconButton(
+            icon: Icon(Icons.settings_outlined, color: cs.onSurfaceVariant),
+            tooltip: loc.settings,
+            onPressed: () {},
+          ),
+          const SizedBox(width: AppSpacing.xs),
+        ],
       ),
       body: _buildBody(context, loc, cs),
       floatingActionButton: Row(
