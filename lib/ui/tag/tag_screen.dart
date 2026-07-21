@@ -81,7 +81,7 @@ class _TagScreenState extends State<TagScreen> {
                 buildWhen: (prev, curr) => prev.currentParentId != curr.currentParentId,
                 builder: (context, state) {
                   return AppBar(
-                    title: Text(loc.tabTags),
+                    title: Text(state.breadcrumb.isNotEmpty ? state.breadcrumb.last.name : loc.tabTags),
                     leading: state.currentParentId != null
                         ? IconButton(
                             icon: const Icon(Icons.arrow_back_rounded),
@@ -127,7 +127,7 @@ class _TagScreenState extends State<TagScreen> {
             ? null
             : BlocBuilder<TagBloc, TagState>(
                 builder: (context, state) {
-                  if (_filteredMedia != null) return const SizedBox.shrink();
+                  if (_filteredMedia != null || state.currentParentId != null) return const SizedBox.shrink();
                   return FloatingActionButton.extended(
                     onPressed: () => _showCreateTagDialog(context),
                     icon: const Icon(Icons.new_label_rounded, size: 20),
