@@ -267,10 +267,6 @@ class _TagScreenState extends State<TagScreen> {
 
     return CustomScrollView(
       slivers: [
-        if (state.breadcrumb.isNotEmpty)
-          SliverToBoxAdapter(
-            child: _buildBreadcrumb(context, state),
-          ),
         if (hasTags) ...[
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
@@ -406,31 +402,6 @@ class _TagScreenState extends State<TagScreen> {
           content: Text('${loc.success} ${_selectedMediaIds.length}')));
       _executeFilter();
     }
-  }
-
-  // ── Breadcrumb ──────────────────────────────────────────────────
-  Widget _buildBreadcrumb(BuildContext context, TagState state) {
-    final loc = AppLocalizations.of(context);
-    final nodes = <BreadcrumbNode>[
-      BreadcrumbNode(label: loc.tabTags, id: '', icon: Icons.home_rounded),
-      ...state.breadcrumb.asMap().entries.map((e) => BreadcrumbNode(
-            label: e.value.name,
-            id: e.value.id,
-            icon: e.key == state.breadcrumb.length - 1
-                ? Icons.label_important_rounded
-                : Icons.label_rounded,
-          )),
-    ];
-    return BreadcrumbBar(
-      nodes: nodes,
-      onTap: (index) {
-        if (index == 0) {
-          context.read<TagBloc>().add(const TagNavigateToRootEvent());
-        } else {
-          context.read<TagBloc>().add(TagNavigateToEvent(nodes[index].id));
-        }
-      },
-    );
   }
 
   // ── Filtered media view ─────────────────────────────────────────
