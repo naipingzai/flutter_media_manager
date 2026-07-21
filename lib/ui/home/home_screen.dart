@@ -5,8 +5,9 @@ import 'package:flutter_media_manager/core/i18n/app_localizations.dart';
 import 'package:flutter_media_manager/ui/media/media_screen.dart';
 import 'package:flutter_media_manager/ui/album/album_screen.dart';
 import 'package:flutter_media_manager/ui/tag/tag_screen.dart';
+import 'package:flutter_media_manager/ui/settings/settings_screen.dart';
 
-/// 主屏幕，包含底部导航栏（3 个 Tab：媒体/相册/标签）
+/// 主屏幕，包含底部导航栏（4 个 Tab：媒体/相册/标签/设置）
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -23,6 +24,7 @@ class HomeScreen extends StatelessWidget {
               MediaScreen(),
               AlbumScreen(),
               TagScreen(),
+              SettingsScreen(),
             ],
           ),
           bottomNavigationBar: NavigationBar(
@@ -45,6 +47,11 @@ class HomeScreen extends StatelessWidget {
                 icon: const Icon(Icons.label_outline_rounded),
                 selectedIcon: const Icon(Icons.label_rounded),
                 label: AppLocalizations.of(context).tabTags,
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.settings_outlined),
+                selectedIcon: const Icon(Icons.settings_rounded),
+                label: AppLocalizations.of(context).settings,
               ),
             ],
           ),

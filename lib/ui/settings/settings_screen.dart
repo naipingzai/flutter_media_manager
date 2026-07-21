@@ -78,6 +78,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   subtitle: Text('${settings.gridColumns} ${loc.columns}'),
                   onTap: () => _showGridColumnsDialog(context, settings),
                 ),
+                ListTile(
+                  leading: const Icon(Icons.sort_rounded),
+                  title: Text(loc.sort),
+                  subtitle: Text(loc.sortNewestFirst),
+                  onTap: () => _showSortDialog(context),
+                ),
                 const Divider(),
                 _SectionHeader(title: loc.storageSection),
                 if (_loadingStats)
@@ -280,6 +286,57 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Text(loc.delete),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showSortDialog(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(loc.sort),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RadioListTile<String>(
+              title: Text(loc.sortNewestFirst),
+              value: 'date_desc',
+              groupValue: 'date_desc',
+              onChanged: (_) => Navigator.pop(ctx),
+            ),
+            RadioListTile<String>(
+              title: Text(loc.sortOldestFirst),
+              value: 'date_asc',
+              groupValue: 'date_desc',
+              onChanged: (_) => Navigator.pop(ctx),
+            ),
+            RadioListTile<String>(
+              title: Text(loc.sortNameAsc),
+              value: 'name_asc',
+              groupValue: 'date_desc',
+              onChanged: (_) => Navigator.pop(ctx),
+            ),
+            RadioListTile<String>(
+              title: Text(loc.sortNameDesc),
+              value: 'name_desc',
+              groupValue: 'date_desc',
+              onChanged: (_) => Navigator.pop(ctx),
+            ),
+            RadioListTile<String>(
+              title: Text(loc.sortSizeDesc),
+              value: 'size_desc',
+              groupValue: 'date_desc',
+              onChanged: (_) => Navigator.pop(ctx),
+            ),
+            RadioListTile<String>(
+              title: Text(loc.sortSizeAsc),
+              value: 'size_asc',
+              groupValue: 'date_desc',
+              onChanged: (_) => Navigator.pop(ctx),
+            ),
+          ],
+        ),
       ),
     );
   }

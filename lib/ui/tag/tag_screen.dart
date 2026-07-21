@@ -406,9 +406,9 @@ class _TagScreenState extends State<TagScreen> {
         padding: const EdgeInsets.all(AppSpacing.sm),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: _tagColumns,
-            crossAxisSpacing: AppSpacing.xs,
-            mainAxisSpacing: AppSpacing.xs,
-            childAspectRatio: 0.78),
+            crossAxisSpacing: AppSpacing.sm,
+            mainAxisSpacing: AppSpacing.sm,
+            childAspectRatio: 1.0),
         itemCount: _filteredMedia!.length,
         itemBuilder: (context, index) {
           final media = _filteredMedia![index];

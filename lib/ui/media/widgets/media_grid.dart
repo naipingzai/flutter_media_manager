@@ -45,9 +45,9 @@ class MediaGrid extends StatelessWidget {
       padding: const EdgeInsets.all(AppSpacing.sm),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
-        crossAxisSpacing: AppSpacing.xs,
-        mainAxisSpacing: AppSpacing.xs,
-        childAspectRatio: 0.78,
+        crossAxisSpacing: AppSpacing.sm,
+        mainAxisSpacing: AppSpacing.sm,
+        childAspectRatio: 1.0,
       ),
       itemCount: mediaList.length,
       itemBuilder: (context, index) {
@@ -334,4 +334,3 @@ class _MediaListTile extends StatelessWidget {
     );
   }
 }
-

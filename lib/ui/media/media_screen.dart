@@ -53,7 +53,7 @@ class _MediaScreenState extends State<MediaScreen> {
                 ? _buildSelectionBottomBar(context, state, cs)
                 : null,
             floatingActionButton:
-                state.isSelectionMode ? null : _buildImportFAB(context, cs),
+                state.isSelectionMode ? null : _buildFABs(context, cs),
           ),
         );
       },
@@ -64,32 +64,8 @@ class _MediaScreenState extends State<MediaScreen> {
   PreferredSizeWidget _buildNormalAppBar(
       BuildContext context, MediaState state, ColorScheme cs) {
     final loc = AppLocalizations.of(context);
-    final isFiltered =
-        state.currentFilter != null || state.currentFilterMode != null;
-
     return AppBar(
       title: Text(loc.tabAllMedia),
-      actions: [
-        // Filter & Sort button
-        IconButton(
-          icon: Icon(Icons.tune_rounded,
-              color: isFiltered ? cs.primary : cs.onSurfaceVariant),
-          tooltip: loc.filterSort,
-          onPressed: () => _showFilterSortDialog(context, state, cs, loc),
-        ),
-        IconButton(
-          icon: Icon(Icons.search_rounded, color: cs.onSurfaceVariant),
-          tooltip: loc.search,
-          onPressed: () => AppRouter.push(context, page: const SearchScreen()),
-        ),
-        IconButton(
-          icon: Icon(Icons.settings_outlined, color: cs.onSurfaceVariant),
-          tooltip: loc.settings,
-          onPressed: () =>
-              AppRouter.push(context, page: const SettingsScreen()),
-        ),
-        const SizedBox(width: AppSpacing.xs),
-      ],
     );
   }
 
@@ -262,33 +238,33 @@ class _MediaScreenState extends State<MediaScreen> {
     );
   }
 
+  // ── Loading ─────────────────────────────────────────────────────
+  Widget _buildLoading(BuildContext context, ColorScheme cs) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 40,
+            height: 40,
+            child: CircularProgressIndicator(strokeWidth: 3, color: cs.primary),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            AppLocalizations.of(context).loading,
+            style: AppTextStyles.body.copyWith(color: cs.onSurfaceVariant),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ── Body ────────────────────────────────────────────────────────
   Widget _buildBody(BuildContext context, MediaState state, ColorScheme cs) {
     switch (state.status) {
       case MediaStatus.initial:
       case MediaStatus.loading:
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SizedBox(
-                width: 40,
-                height: 40,
-                child: CircularProgressIndicator(
-                  strokeWidth: 3,
-                  color: cs.primary,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                AppLocalizations.of(context).loading,
-                style: AppTextStyles.body.copyWith(
-                  color: cs.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        );
+        return _buildLoading(context, cs);
       case MediaStatus.error:
         return Center(
           child: Padding(
@@ -464,175 +440,26 @@ class _MediaScreenState extends State<MediaScreen> {
     );
   }
 
-  // ── Filter & Sort Dialog ─────────────────────────────────────────
-  void _showFilterSortDialog(BuildContext context, MediaState state,
-      ColorScheme cs, AppLocalizations loc) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.only(top: AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: cs.onSurfaceVariant.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                child: Text(loc.filterSort,
-                    style: AppTextStyles.title.copyWith(color: cs.onSurface)),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              // Filter section
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(loc.filter,
-                      style:
-                          AppTextStyles.subtitle.copyWith(color: cs.primary)),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              _filterOption(
-                  ctx,
-                  loc.filterAll,
-                  Icons.all_inclusive_rounded,
-                  state.currentFilter == null &&
-                      state.currentFilterMode == null, () {
-                context.read<MediaBloc>().add(const MediaClearSelectionEvent());
-                context.read<MediaBloc>().add(const MediaLoadAllEvent());
-                Navigator.pop(ctx);
-              }, cs),
-              _filterOption(ctx, loc.filterImages, Icons.image_rounded,
-                  state.currentFilter == MediaType.image, () {
-                context.read<MediaBloc>().add(const MediaClearSelectionEvent());
-                context
-                    .read<MediaBloc>()
-                    .add(const MediaFilterByTypeEvent(MediaType.image));
-                Navigator.pop(ctx);
-              }, cs),
-              _filterOption(ctx, loc.filterVideos, Icons.videocam_rounded,
-                  state.currentFilter == MediaType.video, () {
-                context.read<MediaBloc>().add(const MediaClearSelectionEvent());
-                context
-                    .read<MediaBloc>()
-                    .add(const MediaFilterByTypeEvent(MediaType.video));
-                Navigator.pop(ctx);
-              }, cs),
-              _filterOption(ctx, loc.filterWithTags, Icons.label_rounded,
-                  state.currentFilterMode == FilterMode.withTags, () {
-                context.read<MediaBloc>().add(const MediaClearSelectionEvent());
-                context.read<MediaBloc>().add(
-                    const MediaFilterByFilterModeEvent(FilterMode.withTags));
-                Navigator.pop(ctx);
-              }, cs),
-              _filterOption(ctx, loc.filterWithoutTags, Icons.label_off_rounded,
-                  state.currentFilterMode == FilterMode.withoutTags, () {
-                context.read<MediaBloc>().add(const MediaClearSelectionEvent());
-                context.read<MediaBloc>().add(
-                    const MediaFilterByFilterModeEvent(FilterMode.withoutTags));
-                Navigator.pop(ctx);
-              }, cs),
-              _filterOption(
-                  ctx,
-                  loc.filterWithAlbums,
-                  Icons.camera_alt_rounded,
-                  state.currentFilterMode == FilterMode.withAlbums, () {
-                context.read<MediaBloc>().add(const MediaClearSelectionEvent());
-                context.read<MediaBloc>().add(
-                    const MediaFilterByFilterModeEvent(FilterMode.withAlbums));
-                Navigator.pop(ctx);
-              }, cs),
-              _filterOption(
-                  ctx,
-                  loc.filterWithoutAlbums,
-                  Icons.hide_image_rounded,
-                  state.currentFilterMode == FilterMode.withoutAlbums, () {
-                context.read<MediaBloc>().add(const MediaClearSelectionEvent());
-                context.read<MediaBloc>().add(
-                    const MediaFilterByFilterModeEvent(
-                        FilterMode.withoutAlbums));
-                Navigator.pop(ctx);
-              }, cs),
-              const Divider(indent: AppSpacing.lg, endIndent: AppSpacing.lg),
-              // Sort section
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(loc.sort,
-                      style:
-                          AppTextStyles.subtitle.copyWith(color: cs.primary)),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              _sortOption(ctx, loc.sortNewestFirst,
-                  Icons.arrow_downward_rounded, 'date', 'descending', cs),
-              _sortOption(ctx, loc.sortOldestFirst, Icons.arrow_upward_rounded,
-                  'date', 'ascending', cs),
-              _sortOption(ctx, loc.sortNameAsc, Icons.sort_by_alpha_rounded,
-                  'name', 'ascending', cs),
-              _sortOption(ctx, loc.sortNameDesc, Icons.sort_by_alpha_rounded,
-                  'name', 'descending', cs),
-              _sortOption(ctx, loc.sortSizeDesc, Icons.arrow_downward_rounded,
-                  'size', 'descending', cs),
-              _sortOption(ctx, loc.sortSizeAsc, Icons.arrow_upward_rounded,
-                  'size', 'ascending', cs),
-              SizedBox(
-                  height: MediaQuery.of(ctx).padding.bottom + AppSpacing.md),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _filterOption(BuildContext ctx, String label, IconData icon,
-      bool selected, VoidCallback onTap, ColorScheme cs) {
-    return ListTile(
-      leading: Icon(icon,
-          size: 20, color: selected ? cs.primary : cs.onSurfaceVariant),
-      title: Text(label),
-      trailing: selected
-          ? Icon(Icons.check_rounded, size: 20, color: cs.primary)
-          : null,
-      onTap: onTap,
-    );
-  }
-
-  Widget _sortOption(BuildContext ctx, String label, IconData icon,
-      String field, String order, ColorScheme cs) {
-    return ListTile(
-      leading: Icon(icon, size: 20, color: cs.onSurfaceVariant),
-      title: Text(label),
-      onTap: () {
-        final f = SortField.values.firstWhere((sf) => sf.name == field);
-        final o = SortOrder.values.firstWhere((so) => so.name == order);
-        context.read<MediaBloc>().add(MediaSortEvent(f, o));
-        Navigator.pop(ctx);
-      },
-    );
-  }
-
-  // ── Import FAB ──────────────────────────────────────────────────
-  Widget _buildImportFAB(BuildContext context, ColorScheme cs) {
+  // ── FABs: Search + Import ────────────────────────────────────────
+  Widget _buildFABs(BuildContext context, ColorScheme cs) {
     final loc = AppLocalizations.of(context);
-    return FloatingActionButton(
-      onPressed: () => _showImportSheet(context, cs, loc),
-      tooltip: loc.importMedia,
-      child: const Icon(Icons.add_photo_alternate_rounded),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        FloatingActionButton(
+          heroTag: 'search_fab',
+          onPressed: () => AppRouter.push(context, page: const SearchScreen()),
+          tooltip: loc.search,
+          child: const Icon(Icons.search_rounded),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        FloatingActionButton(
+          heroTag: 'import_fab',
+          onPressed: () => _showImportSheet(context, cs, loc),
+          tooltip: loc.importMedia,
+          child: const Icon(Icons.add_photo_alternate_rounded),
+        ),
+      ],
     );
   }
 
