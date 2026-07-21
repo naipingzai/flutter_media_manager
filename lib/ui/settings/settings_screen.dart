@@ -94,6 +94,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ],
                 const Divider(),
+                _SectionHeader(title: loc.dataSection),
+                ListTile(
+                  leading: Icon(Icons.delete_forever_rounded,
+                      color: Theme.of(context).colorScheme.error),
+                  title: Text(loc.clearAllData,
+                      style: TextStyle(
+                          color: Theme.of(context).colorScheme.error)),
+                  subtitle: Text(loc.clearDataDesc),
+                  onTap: () => _showClearDataDialog(context),
+                ),
+                const Divider(),
                 _SectionHeader(title: loc.devSection),
                 ListTile(
                   leading: const Icon(Icons.bug_report),
@@ -224,6 +235,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         );
       },
+    );
+  }
+
+  void _showClearDataDialog(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        icon: Icon(Icons.delete_forever_rounded, size: 40, color: cs.error),
+        title: Text(loc.clearAllData),
+        content: Text(loc.clearDataConfirmContent),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(loc.cancel),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: cs.error),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await native_api.deleteAllData();
+                await _loadStats();
+                if (!mounted) return;
+                context.read<AppBloc>().add(const AppInitializeEvent());
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(loc.allDataCleared)),
+                );
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                      content: Text('${loc.clearFailed}: ${e.toString()}')),
+                );
+              }
+            },
+            child: Text(loc.delete),
+          ),
+        ],
+      ),
     );
   }
 
