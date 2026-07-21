@@ -198,7 +198,7 @@ class _MediaScreenState extends State<MediaScreen> {
               icon: Icons.label_off_rounded),
           _filterMenuItem('withAlbums', loc.filterWithAlbums,
               state.currentFilterMode == FilterMode.withAlbums,
-              icon: Icons.photo_album_rounded),
+              icon: Icons.camera_alt_rounded),
           _filterMenuItem('withoutAlbums', loc.filterWithoutAlbums,
               state.currentFilterMode == FilterMode.withoutAlbums,
               icon: Icons.hide_image_rounded),
@@ -411,7 +411,7 @@ class _MediaScreenState extends State<MediaScreen> {
               ),
               const SizedBox(width: AppSpacing.xs),
               _selectionActionButton(
-                icon: Icons.photo_album_outlined,
+                icon: Icons.camera_alt_outlined,
                 label: loc.addToAlbum,
                 color: cs.tertiary,
                 enabled: selectedCount > 0,
@@ -548,7 +548,7 @@ class _MediaScreenState extends State<MediaScreen> {
               _filterOption(
                   ctx,
                   loc.filterWithAlbums,
-                  Icons.photo_album_rounded,
+                  Icons.camera_alt_rounded,
                   state.currentFilterMode == FilterMode.withAlbums, () {
                 context.read<MediaBloc>().add(const MediaClearSelectionEvent());
                 context.read<MediaBloc>().add(
@@ -1093,7 +1093,7 @@ class _AddToAlbumDialogState extends State<_AddToAlbumDialog> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.photo_album_outlined,
+                        Icon(Icons.camera_alt_outlined,
                             size: 48, color: cs.onSurfaceVariant),
                         const SizedBox(height: AppSpacing.md),
                         Text(loc.noAlbums,
@@ -1108,7 +1108,7 @@ class _AddToAlbumDialogState extends State<_AddToAlbumDialog> {
                       final info = _albums[index];
                       return ListTile(
                         leading:
-                            Icon(Icons.photo_album_rounded, color: cs.primary),
+                            Icon(Icons.camera_alt_rounded, color: cs.primary),
                         title: Text(info.album.name),
                         subtitle: Text('${info.mediaCount} ${loc.files}'),
                         trailing: Icon(Icons.chevron_right_rounded,

@@ -129,7 +129,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
               decoration: BoxDecoration(
                   color: cs.primaryContainer.withOpacity(0.3),
                   shape: BoxShape.circle),
-              child: Icon(Icons.photo_album_outlined,
+              child: Icon(Icons.camera_alt_outlined,
                   size: 56, color: cs.primary)),
           const SizedBox(height: AppSpacing.lg),
           Text(loc.noAlbums,
@@ -409,7 +409,7 @@ class _SelectAlbumDialogState extends State<_SelectAlbumDialog> {
                       itemBuilder: (ctx, index) {
                         final info = _albums[index];
                         return ListTile(
-                          leading: Icon(Icons.photo_album_rounded,
+                          leading: Icon(Icons.camera_alt_rounded,
                               color: cs.primary),
                           title: Text(info.album.name),
                           subtitle: Text('${info.mediaCount} ${loc.files}'),

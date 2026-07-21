@@ -433,7 +433,7 @@ class _AdvancedSearchDialogState extends State<AdvancedSearchDialog> {
             value: _selectedAlbum,
             decoration: InputDecoration(
               hintText: loc.selectAlbum,
-              prefixIcon: const Icon(Icons.photo_album, size: 20),
+              prefixIcon: const Icon(Icons.camera_alt, size: 20),
             ),
             items: [
               DropdownMenuItem<album_api.AlbumWithInfo>(
