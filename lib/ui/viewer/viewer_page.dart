@@ -1,24 +1,28 @@
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:video_player/video_player.dart';
 import 'package:flutter_media_manager/core/i18n/app_localizations.dart';
 import 'package:flutter_media_manager/bridge/native/api/album.dart'
     as album_api;
 import 'package:flutter_media_manager/bridge/native/api/media.dart';
 import 'package:flutter_media_manager/bridge/native/api/note.dart' as note_api;
 import 'package:flutter_media_manager/bridge/native/api/tag.dart' as tag_api;
-import 'package:flutter_media_manager/ui/viewer/widgets/audio_player_widget.dart';
-import 'package:flutter_media_manager/ui/viewer/widgets/video_player_widget.dart';
 import 'package:flutter_media_manager/functionality/media/media_bloc.dart';
 
-/// 统一媒体查看器页面 - 全屏沉浸式
+/// 媒体查看器页面 - 全屏沉浸式
 ///
-/// 按钮设计:
-/// - 顶部栏：返回 / 文件名+页码 / 旋转(图片) / 更多菜单
-/// - 底部栏：3 个核心按钮（相册 / 标签 / 删除）
-/// - 更多菜单：重命名 / 复制路径 / 详情
+/// 功能设计（产品经理视角）：
+/// - 图片：双指缩放 + 拖拽平移 + 双击缩放 + 旋转
+/// - 视频：播放/暂停 + 进度条 + 全屏 + 倍速
+/// - 底部操作栏：相册管理、标签管理、删除（3个核心按钮）
+/// - 顶部信息栏：返回、文件名、页码指示、更多菜单
+/// - 更多菜单：重命名、文件详情
+/// - 点击屏幕：切换 overlay 显示/隐藏
+/// - 滑动翻页切换媒体
 class ViewerPage extends StatefulWidget {
   final MediaItem initialMedia;
   final List<MediaItem> mediaList;
@@ -43,6 +47,17 @@ class _ViewerPageState extends State<ViewerPage> {
   int _imageRotation = 0;
   bool _showOverlay = true;
 
+  // 视频播放器状态
+  VideoPlayerController? _videoController;
+  bool _videoInitialized = false;
+  bool _videoPlaying = false;
+  bool _videoShowControls = true;
+  Duration _videoPosition = Duration.zero;
+  Duration _videoDuration = Duration.zero;
+  double _videoPlaybackSpeed = 1.0;
+  Timer? _hideControlsTimer;
+  List<StreamSubscription> _videoSubscriptions = [];
+
   @override
   void initState() {
     super.initState();
@@ -52,17 +67,24 @@ class _ViewerPageState extends State<ViewerPage> {
     _currentMedia = widget.mediaList[_currentIndex];
     _pageController = PageController(initialPage: _currentIndex);
     _loadMediaData();
-    // 沉浸式全屏
+    if (_currentMedia.mediaType == MediaType.video) {
+      _initVideo(_currentMedia.filePath);
+    }
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   }
 
   @override
   void dispose() {
     _pageController.dispose();
-    // 恢复系统UI
+    _disposeVideo();
+    _hideControlsTimer?.cancel();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
   }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 数据加载
+  // ═══════════════════════════════════════════════════════════════
 
   Future<void> _loadMediaData() async {
     final note = await note_api.getNoteByMediaId(mediaId: _currentMedia.id);
@@ -77,23 +99,133 @@ class _ViewerPageState extends State<ViewerPage> {
 
   void _switchMedia(int index) {
     if (index < 0 || index >= widget.mediaList.length) return;
+    final newMedia = widget.mediaList[index];
     setState(() {
       _currentIndex = index;
-      _currentMedia = widget.mediaList[index];
+      _currentMedia = newMedia;
       _imageRotation = 0;
       _noteContent = null;
       _mediaTags = [];
+      _showOverlay = true;
     });
     _loadMediaData();
+    // 切换视频播放器
+    if (newMedia.mediaType == MediaType.video) {
+      _initVideo(newMedia.filePath);
+    } else {
+      _disposeVideo();
+    }
   }
 
-  void _toggleOverlay() => setState(() => _showOverlay = !_showOverlay);
+  // ═══════════════════════════════════════════════════════════════
+  // 视频播放器管理
+  // ═══════════════════════════════════════════════════════════════
+
+  Future<void> _initVideo(String filePath) async {
+    _disposeVideo();
+    final controller = VideoPlayerController.file(File(filePath));
+    _videoController = controller;
+    try {
+      await controller.initialize();
+      if (!mounted) return;
+      setState(() => _videoInitialized = true);
+      controller.addListener(_onVideoUpdate);
+    } catch (e) {
+      debugPrint('Video init failed: $e');
+    }
+  }
+
+  void _onVideoUpdate() {
+    final c = _videoController;
+    if (c == null || !mounted) return;
+    setState(() {
+      _videoPlaying = c.value.isPlaying;
+      _videoPosition = c.value.position;
+      _videoDuration = c.value.duration;
+      if (c.value.isCompleted) {
+        _videoPlaying = false;
+      }
+    });
+  }
+
+  void _disposeVideo() {
+    for (final sub in _videoSubscriptions) {
+      sub.cancel();
+    }
+    _videoSubscriptions.clear();
+    _videoController?.removeListener(_onVideoUpdate);
+    _videoController?.dispose();
+    _videoController = null;
+    _videoInitialized = false;
+    _videoPlaying = false;
+    _videoPosition = Duration.zero;
+    _videoDuration = Duration.zero;
+  }
+
+  void _togglePlayPause() {
+    final c = _videoController;
+    if (c == null || !_videoInitialized) return;
+    if (_videoPlaying) {
+      c.pause();
+    } else {
+      if (c.value.isCompleted) {
+        c.seekTo(Duration.zero);
+      }
+      c.play();
+    }
+    setState(() => _videoPlaying = !_videoPlaying);
+    _resetHideTimer();
+  }
+
+  void _seekVideo(double ms) {
+    _videoController?.seekTo(Duration(milliseconds: ms.toInt()));
+  }
+
+  void _changeSpeed() {
+    final speeds = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
+    final currentIdx = speeds.indexOf(_videoPlaybackSpeed);
+    final nextIdx = (currentIdx + 1) % speeds.length;
+    _videoPlaybackSpeed = speeds[nextIdx];
+    _videoController?.setPlaybackSpeed(_videoPlaybackSpeed);
+    setState(() {});
+  }
+
+  String _formatVideoDuration(Duration d) {
+    final h = d.inHours;
+    final m = d.inMinutes.remainder(60);
+    final s = d.inSeconds.remainder(60);
+    if (h > 0) {
+      return '$h:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+    }
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+
+  void _resetHideTimer() {
+    _hideControlsTimer?.cancel();
+    setState(() => _videoShowControls = true);
+    _hideControlsTimer = Timer(const Duration(seconds: 4), () {
+      if (mounted && _videoPlaying) {
+        setState(() => _videoShowControls = false);
+      }
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 通用操作
+  // ═══════════════════════════════════════════════════════════════
+
+  void _toggleOverlay() {
+    if (_currentMedia.mediaType == MediaType.video) {
+      _togglePlayPause();
+    } else {
+      setState(() => _showOverlay = !_showOverlay);
+    }
+  }
 
   void _rotateImage() =>
       setState(() => _imageRotation = (_imageRotation + 1) % 4);
 
   void _goBack() {
-    // 恢复系统UI后返回
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     Navigator.pop(context);
   }
@@ -126,29 +258,203 @@ class _ViewerPageState extends State<ViewerPage> {
     );
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  // 媒体内容构建
+  // ═══════════════════════════════════════════════════════════════
+
   Widget _buildMediaContent(MediaItem media) {
     switch (media.mediaType) {
       case MediaType.image:
-        return _ImageViewer(media: media, rotation: _imageRotation);
+        return _buildImageViewer();
       case MediaType.video:
-        return VideoPlayerWidget(
-          key: ValueKey(media.id),
-          filePath: media.filePath,
-          bottomPadding: MediaQuery.of(context).padding.bottom + 80,
-        );
-      case MediaType.audio:
-        return AudioPlayerWidget(
-          key: ValueKey(media.id),
-          filePath: media.filePath,
-          title: media.originalName,
-        );
-      case MediaType.document:
-      case MediaType.other:
-        return _DocumentContent(media: media);
+        return _buildVideoViewer();
+      default:
+        return _buildUnsupportedContent(media);
     }
   }
 
-  // ── 顶部栏 ────────────────────────────────────────────────────
+  Widget _buildImageViewer() {
+    return InteractiveViewer(
+      minScale: 0.5,
+      maxScale: 4.0,
+      child: Center(
+        child: RotatedBox(
+          quarterTurns: _imageRotation,
+          child: Image.file(
+            File(_currentMedia.filePath),
+            fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) => Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.broken_image_rounded,
+                      size: 64, color: Colors.white54),
+                  const SizedBox(height: 12),
+                  Text(_currentMedia.originalName,
+                      style:
+                          const TextStyle(color: Colors.white54, fontSize: 14)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVideoViewer() {
+    if (!_videoInitialized || _videoController == null) {
+      return const Center(
+        child: CircularProgressIndicator(color: Colors.white),
+      );
+    }
+    final cs = Theme.of(context).colorScheme;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // 视频画面
+        GestureDetector(
+          onDoubleTap: _togglePlayPause,
+          child: Center(
+            child: AspectRatio(
+              aspectRatio: _videoController!.value.aspectRatio,
+              child: VideoPlayer(_videoController!),
+            ),
+          ),
+        ),
+        // 播放/暂停大图标（播放中隐藏）
+        if (!_videoPlaying && _showOverlay)
+          Center(
+            child: GestureDetector(
+              onTap: _togglePlayPause,
+              child: Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.play_arrow_rounded,
+                    color: Colors.white, size: 40),
+              ),
+            ),
+          ),
+        // 底部进度条和控制栏
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: _buildVideoControls(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVideoControls() {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.bottomCenter,
+          end: Alignment.topCenter,
+          colors: [Colors.black.withOpacity(0.9), Colors.transparent],
+        ),
+      ),
+      padding: EdgeInsets.fromLTRB(
+          16, 32, 16, MediaQuery.of(context).padding.bottom + 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 进度条
+          SliderTheme(
+            data: SliderThemeData(
+              trackHeight: 3,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 10),
+              activeTrackColor: cs.primary,
+              inactiveTrackColor: Colors.white24,
+              thumbColor: cs.primary,
+              overlayColor: cs.primary.withOpacity(0.2),
+            ),
+            child: Slider(
+              value: _videoPosition.inMilliseconds.toDouble().clamp(
+                  0.0,
+                  _videoDuration.inMilliseconds
+                      .toDouble()
+                      .clamp(1.0, double.infinity)),
+              max: _videoDuration.inMilliseconds
+                  .toDouble()
+                  .clamp(1.0, double.infinity),
+              onChanged: _seekVideo,
+            ),
+          ),
+          // 控制按钮行
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              children: [
+                // 时间显示
+                Text(
+                  '${_formatVideoDuration(_videoPosition)} / ${_formatVideoDuration(_videoDuration)}',
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                ),
+                const Spacer(),
+                // 倍速按钮
+                GestureDetector(
+                  onTap: _changeSpeed,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _videoPlaybackSpeed != 1.0
+                          ? cs.primary.withOpacity(0.3)
+                          : Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      '${_videoPlaybackSpeed}x',
+                      style: TextStyle(
+                        color: _videoPlaybackSpeed != 1.0
+                            ? cs.primary
+                            : Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUnsupportedContent(MediaItem media) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.insert_drive_file_rounded,
+              size: 72, color: Colors.white38),
+          const SizedBox(height: 16),
+          Text(media.originalName,
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+              textAlign: TextAlign.center),
+          const SizedBox(height: 8),
+          Text(media.mimeType,
+              style: TextStyle(
+                  color: Colors.white.withOpacity(0.4), fontSize: 13)),
+        ],
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 顶部栏
+  // ═══════════════════════════════════════════════════════════════
+
   Widget _buildTopBar() {
     final loc = AppLocalizations.of(context);
     final hasMultiple = widget.mediaList.length > 1;
@@ -201,19 +507,17 @@ class _ViewerPageState extends State<ViewerPage> {
                 ],
               ),
             ),
-            // 图片才能旋转
-            if (_currentMedia.mediaType == MediaType.image) ...[
+            // 图片旋转按钮
+            if (_currentMedia.mediaType == MediaType.image)
               _iconButton(
                 icon: Icons.rotate_right_rounded,
                 onTap: _rotateImage,
                 tooltip: loc.rotate,
               ),
-              const SizedBox(width: 4),
-            ],
-            // 次要操作菜单
+            // 更多菜单
             _iconButton(
               icon: Icons.more_vert_rounded,
-              onTap: _showTopMoreMenu,
+              onTap: _showMoreMenu,
               tooltip: loc.more,
             ),
           ],
@@ -222,7 +526,10 @@ class _ViewerPageState extends State<ViewerPage> {
     );
   }
 
-  // ── 底部栏（核心 3 个操作）──────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+  // 底部栏
+  // ═══════════════════════════════════════════════════════════════
+
   Widget _buildBottomBar() {
     final loc = AppLocalizations.of(context);
     return Positioned(
@@ -247,22 +554,19 @@ class _ViewerPageState extends State<ViewerPage> {
               icon: Icons.camera_alt_outlined,
               label: loc.addToAlbum,
               onTap: _showAlbumPicker,
-              tooltip: loc.addToAlbum,
             ),
             // 标签管理
             _actionButton(
               icon: Icons.label_outlined,
               label: loc.tags,
               onTap: _showTagManager,
-              tooltip: loc.tags,
             ),
-            // 删除（红色警示色）
+            // 删除
             _actionButton(
               icon: Icons.delete_outline_rounded,
               label: loc.delete,
-              onTap: _showDeleteConfirm,
               color: Colors.red,
-              tooltip: loc.delete,
+              onTap: _showDeleteConfirm,
             ),
           ],
         ),
@@ -270,7 +574,10 @@ class _ViewerPageState extends State<ViewerPage> {
     );
   }
 
-  // ── 辅助 UI 组件 ─────────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+  // UI 辅助组件
+  // ═══════════════════════════════════════════════════════════════
+
   Widget _iconButton({
     required IconData icon,
     required VoidCallback onTap,
@@ -289,10 +596,7 @@ class _ViewerPageState extends State<ViewerPage> {
         ),
       ),
     );
-    if (tooltip != null) {
-      return Tooltip(message: tooltip, child: btn);
-    }
-    return btn;
+    return tooltip != null ? Tooltip(message: tooltip, child: btn) : btn;
   }
 
   Widget _actionButton({
@@ -300,9 +604,8 @@ class _ViewerPageState extends State<ViewerPage> {
     required String label,
     required VoidCallback onTap,
     Color? color,
-    String? tooltip,
   }) {
-    final btn = InkWell(
+    return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: SizedBox(
@@ -318,14 +621,13 @@ class _ViewerPageState extends State<ViewerPage> {
         ),
       ),
     );
-    if (tooltip != null) {
-      return Tooltip(message: tooltip, child: btn);
-    }
-    return btn;
   }
 
-  // ── 更多菜单（顶部栏右侧，PopupMenu 形式）─────────────────────────
-  void _showTopMoreMenu() {
+  // ═══════════════════════════════════════════════════════════════
+  // 更多菜单
+  // ═══════════════════════════════════════════════════════════════
+
+  void _showMoreMenu() {
     final loc = AppLocalizations.of(context);
     showModalBottomSheet(
       context: context,
@@ -349,10 +651,6 @@ class _ViewerPageState extends State<ViewerPage> {
               Navigator.pop(ctx);
               _showRenameDialog();
             }),
-            _moreTile(Icons.link, loc.copyPath, () {
-              Navigator.pop(ctx);
-              _copyPath();
-            }),
             _moreTile(Icons.info_outline, loc.details, () {
               Navigator.pop(ctx);
               _showFileInfoDialog();
@@ -368,7 +666,10 @@ class _ViewerPageState extends State<ViewerPage> {
     return ListTile(leading: Icon(icon), title: Text(title), onTap: onTap);
   }
 
-  // ── 重命名对话框 ─────────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+  // 功能方法
+  // ═══════════════════════════════════════════════════════════════
+
   void _showRenameDialog() {
     final loc = AppLocalizations.of(context);
     final controller = TextEditingController(text: _currentMedia.originalName);
@@ -421,16 +722,6 @@ class _ViewerPageState extends State<ViewerPage> {
     );
   }
 
-  // ── 复制路径 ────────────────────────────────────────────────────
-  void _copyPath() {
-    final loc = AppLocalizations.of(context);
-    Clipboard.setData(ClipboardData(text: _currentMedia.filePath));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(loc.filePathCopied)),
-    );
-  }
-
-  // ── 标签管理 ────────────────────────────────────────────────────
   Future<void> _showTagManager() async {
     final allTags = await tag_api.getAllTags();
     if (!mounted) return;
@@ -445,16 +736,14 @@ class _ViewerPageState extends State<ViewerPage> {
     );
   }
 
-  // ── 添加到相册 ────────────────────────────────────────────────────
   Future<void> _showAlbumPicker() async {
     final loc = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     final albums = await album_api.getRootAlbums();
     if (!mounted) return;
     if (albums.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(loc.noAlbums)),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(loc.noAlbums)));
       return;
     }
     await showDialog(
@@ -477,11 +766,9 @@ class _ViewerPageState extends State<ViewerPage> {
                       mediaIds: [_currentMedia.id], albumId: album.album.id);
                   if (ctx.mounted) {
                     Navigator.pop(ctx);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content:
-                              Text('${loc.addToAlbum}: ${album.album.name}')),
-                    );
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content:
+                            Text('${loc.addToAlbum}: ${album.album.name}')));
                   }
                 },
               );
@@ -492,7 +779,6 @@ class _ViewerPageState extends State<ViewerPage> {
     );
   }
 
-  // ── 删除确认 ────────────────────────────────────────────────────
   void _showDeleteConfirm() {
     final loc = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
@@ -544,12 +830,10 @@ class _ViewerPageState extends State<ViewerPage> {
     );
   }
 
-  // ── 文件详情对话框 ──────────────────────────────────────────────
   void _showFileInfoDialog() {
     final loc = AppLocalizations.of(context);
     final info = [
       _infoRow(loc.fileName, _currentMedia.originalName),
-      _infoRow(loc.filePath, _currentMedia.filePath),
       _infoRow(loc.mimeType, _currentMedia.mimeType),
       _infoRow(loc.fileSize, _formatBytes(_currentMedia.size)),
       if (_currentMedia.width != null && _currentMedia.height != null)
@@ -557,9 +841,6 @@ class _ViewerPageState extends State<ViewerPage> {
             loc.resolution, '${_currentMedia.width} x ${_currentMedia.height}'),
       if (_currentMedia.duration != null)
         _infoRow(loc.duration, _formatDuration(_currentMedia.duration!)),
-      _infoRow(loc.hash, _currentMedia.sha256Hash),
-      _infoRow(
-          loc.note, _noteContent?.isEmpty == false ? _noteContent! : loc.none),
       _infoRow(
           loc.tags,
           _mediaTags.isEmpty
@@ -597,7 +878,7 @@ class _ViewerPageState extends State<ViewerPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 80,
+            width: 70,
             child: Text(label,
                 style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13)),
           ),
@@ -630,72 +911,10 @@ class _ViewerPageState extends State<ViewerPage> {
   }
 }
 
-// ─── 图片查看器 ───
-class _ImageViewer extends StatelessWidget {
-  final MediaItem media;
-  final int rotation;
-  const _ImageViewer({required this.media, required this.rotation});
+// ═══════════════════════════════════════════════════════════════
+// 标签管理对话框
+// ═══════════════════════════════════════════════════════════════
 
-  @override
-  Widget build(BuildContext context) {
-    return InteractiveViewer(
-      minScale: 0.5,
-      maxScale: 4,
-      child: RotatedBox(
-        quarterTurns: rotation,
-        child: Image.file(
-          File(media.filePath),
-          fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) => Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.broken_image_rounded,
-                    size: 64, color: Colors.white54),
-                const SizedBox(height: 12),
-                Text(media.originalName,
-                    style:
-                        const TextStyle(color: Colors.white54, fontSize: 14)),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─── 文档占位 ───
-class _DocumentContent extends StatelessWidget {
-  final MediaItem media;
-  const _DocumentContent({required this.media});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.insert_drive_file_rounded,
-                size: 72, color: Colors.white54),
-            const SizedBox(height: 16),
-            Text(media.originalName,
-                style: const TextStyle(color: Colors.white, fontSize: 16),
-                textAlign: TextAlign.center),
-            const SizedBox(height: 8),
-            Text(media.mimeType,
-                style: TextStyle(
-                    color: Colors.white.withOpacity(0.5), fontSize: 13)),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─── 标签管理对话框 ───
 class _TagManagerDialog extends StatefulWidget {
   final List<tag_api.Tag> allTags;
   final List<tag_api.Tag> currentTags;
@@ -782,8 +1001,7 @@ class _TagManagerDialogState extends State<_TagManagerDialog> {
                     title: Text(tag.name),
                     onTap: () => _toggleTag(tag),
                   );
-                },
-              ),
+                }),
       ),
       actions: [
         TextButton(

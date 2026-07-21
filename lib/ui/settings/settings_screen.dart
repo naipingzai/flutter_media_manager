@@ -154,7 +154,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final loc = AppLocalizations.of(context);
     if (_stats == null) return loc.storageStats;
     final s = _stats!;
-    return '${s.totalMediaCount} ${loc.files} · ${_formatSize(s.totalSize)} · DB ${_formatSize(s.databaseSize)}';
+    return '${s.totalMediaCount} ${loc.files} · ${_formatSize(s.totalSize)}';
   }
 
   String _formatSize(dynamic size) {
