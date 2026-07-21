@@ -537,19 +537,10 @@ class _AlbumCard extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(name,
-                    style: AppTextStyles.subtitle.copyWith(color: cs.onSurface),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
-              ),
-              Text('$mediaCount',
-                  style: AppTextStyles.caption
-                      .copyWith(color: cs.onSurfaceVariant)),
-            ],
-          ),
+          child: Text(name,
+              style: AppTextStyles.subtitle.copyWith(color: cs.onSurface),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis),
         ),
       ),
     );

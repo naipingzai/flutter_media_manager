@@ -975,25 +975,12 @@ class _TagCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-          child: Row(
-            children: [
-              Icon(Icons.label_rounded, size: 20, color: tagColor),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Text(
-                  tag.name,
-                  style: AppTextStyles.subtitle.copyWith(color: cs.onSurface),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              if (tagInfo.mediaCount != null)
-                Text(
-                  '${tagInfo.mediaCount}',
-                  style: AppTextStyles.caption.copyWith(color: cs.onSurfaceVariant),
-                ),
-            ],
-          ),
+          child: Text(
+              tag.name,
+              style: AppTextStyles.subtitle.copyWith(color: cs.onSurface),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
         ),
       ),
     );
