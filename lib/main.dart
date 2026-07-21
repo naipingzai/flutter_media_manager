@@ -111,6 +111,18 @@ class ErrorApp extends StatelessWidget {
   }
 }
 
+ThemeMode _getThemeMode(dynamic themeMode) {
+    switch (themeMode) {
+      case null:
+        return ThemeMode.system;
+      default:
+        // Compare with native ThemeMode enum
+        if (themeMode.toString().contains('light')) return ThemeMode.light;
+        if (themeMode.toString().contains('dark')) return ThemeMode.dark;
+        return ThemeMode.system;
+    }
+  }
+
 // --------------------------------------------------------------------
 class FlutterMediaDB extends StatelessWidget {
   const FlutterMediaDB({super.key});
@@ -125,14 +137,18 @@ class FlutterMediaDB extends StatelessWidget {
         BlocProvider<MediaBloc>(create: (context) => MediaBloc()),
         BlocProvider<TagBloc>(create: (context) => TagBloc()),
       ],
-      child: MaterialApp(
-        title: 'Flutter Media Manager',
-        debugShowCheckedModeBanner: false,
-        theme: _buildLightTheme(),
-        darkTheme: _buildDarkTheme(),
-        themeMode: ThemeMode.system,
-        onGenerateRoute: (settings) => generateRoute(settings),
-        home: const HomeScreen(),
+      child: BlocBuilder<AppBloc, AppState>(
+        builder: (context, appState) {
+          return MaterialApp(
+            title: 'Flutter Media Manager',
+            debugShowCheckedModeBanner: false,
+            theme: _buildLightTheme(),
+            darkTheme: _buildDarkTheme(),
+            themeMode: _getThemeMode(appState.settings?.themeMode),
+            onGenerateRoute: (settings) => generateRoute(settings),
+            home: const HomeScreen(),
+          );
+        },
       ),
     );
   }
