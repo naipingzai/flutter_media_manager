@@ -65,8 +65,6 @@ docs/*.pdf
 **/CMakeCache.txt
 
 # SQLite source (should be fetched as dependency, not committed)
-native/third_party/sqlite3.c
-native/third_party/sqlite3.h
 
 # Rust build artifacts
 rust/target/
