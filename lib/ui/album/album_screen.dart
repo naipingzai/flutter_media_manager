@@ -573,7 +573,6 @@ class _MediaSelectionDialogState extends State<_MediaSelectionDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final loc = AppLocalizations.of(context);
     return AlertDialog(
       title: Text(loc.importMedia),
@@ -596,8 +595,10 @@ class _MediaSelectionDialogState extends State<_MediaSelectionDialog> {
                   }
                 });
               },
-              title: Text(media.originalName, maxLines: 1, overflow: TextOverflow.ellipsis),
-              subtitle: Text(formatFileSize(media.size), style: AppTextStyles.caption),
+              title: Text(media.originalName,
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+              subtitle: Text(formatFileSize(media.size),
+                  style: AppTextStyles.caption),
             );
           },
         ),
