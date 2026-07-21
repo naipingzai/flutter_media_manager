@@ -522,78 +522,7 @@ class _MediaScreenState extends State<MediaScreen> {
   // ── Import bottom sheet ─────────────────────────────────────────
   void _showImportSheet(
       BuildContext context, ColorScheme cs, AppLocalizations loc) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Handle bar
-              Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: cs.onSurfaceVariant.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              // Title
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: cs.primaryContainer,
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                      ),
-                      child: Icon(Icons.file_download_outlined,
-                          size: 20, color: cs.onPrimaryContainer),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Text(loc.importMedia, style: AppTextStyles.title),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              const Divider(height: 1),
-              const SizedBox(height: AppSpacing.sm),
-              // Option 1: From device
-              _ImportOptionTile(
-                icon: Icons.perm_media_outlined,
-                iconColor: cs.primary,
-                title: loc.importFromDevice,
-                subtitle: loc.noFilesDesc,
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _openFileBrowser(context);
-                },
-              ),
-              // Option 2: From directory (Android only)
-              if (!Platform.isIOS)
-                _ImportOptionTile(
-                  icon: Icons.folder_open_outlined,
-                  iconColor: cs.tertiary,
-                  title: loc.importFromDirectory,
-                  subtitle: '批量导入整个文件夹中的媒体文件',
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _openDirectoryBrowser(context);
-                  },
-                ),
-              const SizedBox(height: AppSpacing.sm),
-            ],
-          ),
-        ),
-      ),
-    );
+    _openFileBrowser(context);
   }
 
   // ── Directory import ────────────────────────────────────────────
