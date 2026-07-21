@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_media_manager/core/i18n/app_localizations.dart';
+import 'widgets/advanced_search_dialog.dart';
 
-/// Search screen (placeholder).
+/// 搜索页面：直接弹出高级搜索对话框
+///
+/// 历史原因：此页面曾是占位符，导致点击搜索按钮后看到"开发中"。
+/// 实际已有完整的 AdvancedSearchDialog 实现，这里直接展示该对话框。
 class SearchScreen extends StatelessWidget {
   final String? initialQuery;
 
@@ -9,14 +12,6 @@ class SearchScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(loc.search),
-      ),
-      body: const Center(
-        child: Text('搜索功能开发中...'),
-      ),
-    );
+    return const AdvancedSearchDialog();
   }
 }

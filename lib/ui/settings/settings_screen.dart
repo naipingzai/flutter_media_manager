@@ -92,6 +92,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title: Text(loc.storageStats),
                     subtitle: Text(_buildStatsText(context)),
                   ),
+                  ListTile(
+                    leading: const Icon(Icons.cleaning_services_outlined),
+                    title: Text(loc.clearThumbnailCache),
+                    onTap: () => _clearThumbnailCache(context),
+                  ),
                 ],
                 const Divider(),
                 _SectionHeader(title: loc.dataSection),

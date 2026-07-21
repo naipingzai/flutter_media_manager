@@ -838,8 +838,8 @@ class _MediaScreenState extends State<MediaScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         icon: Icon(Icons.delete_outline_rounded, size: 40, color: cs.error),
-        title: Text(loc.confirmBatchDelete),
-        content: Text(loc.confirmBatchDelete),
+        title: Text(loc.deleteMedia),
+        content: Text('${loc.confirmBatchDelete} (${ids.length})'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),

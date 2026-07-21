@@ -195,7 +195,6 @@ class _ViewerPageState extends State<ViewerPage> {
               _iconButton(Icons.rotate_right_rounded, _rotateImage),
               const SizedBox(width: 4),
             ],
-            _iconButton(Icons.close_rounded, _goBack),
           ],
         ),
       ),
