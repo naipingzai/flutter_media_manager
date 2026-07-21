@@ -149,16 +149,62 @@ class _MediaGridItem extends StatelessWidget {
   }
 
   Widget _buildThumbnail(BuildContext context) {
-    // Try thumbnail first, then fall back to original file path
-    final displayPath = media.thumbnailPath.isNotEmpty
-        ? media.thumbnailPath
-        : (media.mediaType == MediaType.image ? media.filePath : '');
-    if (displayPath.isEmpty) return _buildFallbackIcon(context);
-    return Image.file(
-      File(displayPath),
-      fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => _buildFallbackIcon(context),
-    );
+    final cs = Theme.of(context).colorScheme;
+    final thumbnailPath = media.thumbnailPath;
+
+    if (thumbnailPath.isNotEmpty && File(thumbnailPath).existsSync()) {
+      // 有缩略图且文件存在 → 直接显示
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.file(File(thumbnailPath), fit: BoxFit.cover),
+          // 视频缩略图加播放图标覆盖
+          if (media.mediaType == MediaType.video)
+            Center(
+              child: Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.play_arrow_rounded,
+                    color: Colors.white, size: 28),
+              ),
+            ),
+        ],
+      );
+    }
+
+    // 没有缩略图或文件不存在
+    if (media.mediaType == MediaType.image &&
+        media.filePath.isNotEmpty &&
+        File(media.filePath).existsSync()) {
+      // 图片直接显示原始文件
+      return Image.file(File(media.filePath),
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildFallbackIcon(context));
+    }
+
+    // 视频无缩略图时显示播放图标 + 背景色
+    if (media.mediaType == MediaType.video) {
+      return Container(
+        color: cs.surfaceContainerHighest,
+        child: Center(
+          child: Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: cs.primary.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.play_arrow_rounded, size: 32, color: cs.primary),
+          ),
+        ),
+      );
+    }
+
+    return _buildFallbackIcon(context);
   }
 
   Widget _buildFallbackIcon(BuildContext context) {
