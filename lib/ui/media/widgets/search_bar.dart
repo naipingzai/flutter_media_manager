@@ -1,9 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:flutter_media_manager/core/i18n/app_localizations.dart';
 import '../../../functionality/media/media_bloc.dart';
-
 
 /// 媒体搜索栏
 class MediaSearchBar extends StatefulWidget {
@@ -16,9 +16,11 @@ class MediaSearchBar extends StatefulWidget {
 class _MediaSearchBarState extends State<MediaSearchBar> {
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
+  Timer? _debounce;
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _controller.dispose();
     _focusNode.dispose();
     super.dispose();
@@ -40,6 +42,7 @@ class _MediaSearchBarState extends State<MediaSearchBar> {
               icon: const Icon(Icons.clear),
               onPressed: () {
                 _controller.clear();
+                _debounce?.cancel();
                 context.read<MediaBloc>().add(const MediaSearchEvent(''));
                 _focusNode.unfocus();
               },
@@ -47,14 +50,16 @@ class _MediaSearchBarState extends State<MediaSearchBar> {
         ],
         onChanged: (value) {
           setState(() {});
-          // 防抖搜索：延迟 300ms 执行
-          Future.delayed(const Duration(milliseconds: 300), () {
+          // 防抖搜索：取消上一次未执行的搜索，重新计时 300ms
+          _debounce?.cancel();
+          _debounce = Timer(const Duration(milliseconds: 300), () {
             if (context.mounted && _controller.text == value) {
               context.read<MediaBloc>().add(MediaSearchEvent(value));
             }
           });
         },
         onSubmitted: (value) {
+          _debounce?.cancel();
           context.read<MediaBloc>().add(MediaSearchEvent(value));
         },
       ),

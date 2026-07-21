@@ -20,7 +20,7 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('API Test')),
+      appBar: AppBar(title: Text(loc.apiTest)),
       body: _logs.isEmpty
           ? Center(child: Text(loc.noMedia))
           : ListView.builder(

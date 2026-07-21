@@ -176,6 +176,8 @@ class AppLocalizations {
   String get filterAnd => _get('filterAnd');
   String get filterOr => _get('filterOr');
   String get sortByType => _get('sortByType');
+  String get showHiddenFiles => _get('showHiddenFiles');
+  String get hideHiddenFiles => _get('hideHiddenFiles');
   String get importSelected => _get('importSelected');
   String get backToHome => _get('backToHome');
   String get selectThisFolder => _get('selectThisFolder');
@@ -512,6 +514,8 @@ const Map<String, String> _zhStrings = {
   'sortNameDesc': '名称 Z-A',
   'sortSizeDesc': '最大优先',
   'sortSizeAsc': '最小优先',
+  'showHiddenFiles': '显示隐藏文件',
+  'hideHiddenFiles': '隐藏隐藏文件',
   'filterAnd': '并且',
   'filterOr': '或者',
   'sortByType': '按类型',

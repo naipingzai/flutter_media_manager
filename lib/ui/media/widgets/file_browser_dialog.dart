@@ -94,7 +94,7 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
   bool _loading = true;
   String? _error;
   bool _sortByName = true;
-  final bool _showHidden = false;
+  bool _showHidden = false;
   final ScrollController _breadcrumbScroll = ScrollController();
 
   static const _quickPaths = [
@@ -249,6 +249,20 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
                 ),
               ),
             ),
+          // 隐藏文件切换
+          IconButton(
+            icon: Icon(
+              _showHidden
+                  ? Icons.visibility_rounded
+                  : Icons.visibility_off_rounded,
+              color: _showHidden ? cs.primary : cs.onSurfaceVariant,
+            ),
+            tooltip: _showHidden ? loc.hideHiddenFiles : loc.showHiddenFiles,
+            onPressed: () {
+              setState(() => _showHidden = !_showHidden);
+              _loadDir(_currentPath);
+            },
+          ),
           // 排序切换
           IconButton(
             icon: Icon(
@@ -416,8 +430,7 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
                   ),
                 ),
                 Icon(Icons.chevron_right_rounded,
-                    size: 20,
-                    color: cs.onSurfaceVariant.withOpacity(0.4)),
+                    size: 20, color: cs.onSurfaceVariant.withOpacity(0.4)),
               ],
             ),
           ),
@@ -437,9 +450,7 @@ class _FileBrowserPageState extends State<FileBrowserPage> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
       child: Material(
-        color: sel
-            ? cs.primaryContainer.withOpacity(0.2)
-            : Colors.transparent,
+        color: sel ? cs.primaryContainer.withOpacity(0.2) : Colors.transparent,
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: InkWell(
           onTap: () {
@@ -992,8 +1003,7 @@ class _DirectoryPickerPageState extends State<DirectoryPickerPage> {
                           maxLines: 1),
                     ),
                     Icon(Icons.chevron_right_rounded,
-                        size: 20,
-                        color: cs.onSurfaceVariant.withOpacity(0.4)),
+                        size: 20, color: cs.onSurfaceVariant.withOpacity(0.4)),
                   ],
                 ),
               ),

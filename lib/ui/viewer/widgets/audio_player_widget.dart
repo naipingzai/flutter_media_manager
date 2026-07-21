@@ -68,12 +68,11 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
         }
       });
 
-      _duration = _player.duration ?? Duration.zero;
       if (mounted) {
         setState(() => _isInitialized = true);
       }
     } catch (e) {
-      debugPrint('音频播放器初始化失败: $e');
+      debugPrint('Audio player init failed: $e');
     }
   }
 
@@ -137,7 +136,9 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
           const SizedBox(height: 24),
           // 标题
           Text(
-            widget.title.isNotEmpty ? widget.title : '未知音频',
+            widget.title.isNotEmpty
+                ? widget.title
+                : widget.filePath.split('/').last,
             style: const TextStyle(color: Colors.white, fontSize: 18),
             textAlign: TextAlign.center,
           ),
@@ -145,8 +146,8 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
           // 文件名
           Text(
             widget.filePath.split('/').last,
-            style: TextStyle(
-                color: Colors.white.withOpacity(0.5), fontSize: 13),
+            style:
+                TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 13),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 32),

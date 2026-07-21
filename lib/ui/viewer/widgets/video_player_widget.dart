@@ -162,9 +162,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     final position = controller.value.position;
     final duration = controller.value.duration;
     final maxMs =
-        duration.inMilliseconds.toDouble().clamp(1, double.infinity).toDouble();
-    final valueMs =
-        position.inMilliseconds.toDouble().clamp(0, maxMs).toDouble();
+        duration.inMilliseconds.toDouble().clamp(1.0, double.infinity);
+    final valueMs = position.inMilliseconds.toDouble().clamp(0.0, maxMs);
 
     return GestureDetector(
       onTap: _toggleControls,
