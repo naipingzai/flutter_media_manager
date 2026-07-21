@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:video_player/video_player.dart';
 import 'package:flutter_media_manager/core/i18n/app_localizations.dart';
+import 'package:flutter_media_manager/core/design_system/app_theme.dart';
 import 'package:flutter_media_manager/bridge/native/api/album.dart'
     as album_api;
 import 'package:flutter_media_manager/bridge/native/api/media.dart';
@@ -15,24 +16,17 @@ import 'package:flutter_media_manager/functionality/media/media_bloc.dart';
 
 /// 媒体查看器页面 - 全屏沉浸式
 ///
-/// 功能设计（产品经理视角）：
-/// - 图片：双指缩放 + 拖拽平移 + 双击缩放 + 旋转
-/// - 视频：播放/暂停 + 进度条 + 全屏 + 倍速
-/// - 底部操作栏：相册管理、标签管理、删除（3个核心按钮）
-/// - 顶部信息栏：返回、文件名、页码指示、更多菜单
-/// - 更多菜单：重命名、文件详情
-/// - 点击屏幕：切换 overlay 显示/隐藏
-/// - 滑动翻页切换媒体
+/// 图片：InteractiveViewer（双指缩放+拖拽）+ 旋转
+/// 视频：点击暂停/播放，进度条自动隐藏，倍速，全屏
+/// 底部：添加相册、标签管理、删除
 class ViewerPage extends StatefulWidget {
   final MediaItem initialMedia;
   final List<MediaItem> mediaList;
-
   const ViewerPage({
     super.key,
     required this.initialMedia,
     required this.mediaList,
   });
-
   @override
   State<ViewerPage> createState() => _ViewerPageState();
 }
@@ -41,22 +35,18 @@ class _ViewerPageState extends State<ViewerPage> {
   late final PageController _pageController;
   late MediaItem _currentMedia;
   int _currentIndex = 0;
-
-  String? _noteContent;
   List<tag_api.Tag> _mediaTags = [];
   int _imageRotation = 0;
   bool _showOverlay = true;
 
-  // 视频播放器状态
+  // 视频
   VideoPlayerController? _videoController;
-  bool _videoInitialized = false;
-  bool _videoPlaying = false;
+  bool _videoReady = false;
   bool _videoShowControls = true;
   Duration _videoPosition = Duration.zero;
   Duration _videoDuration = Duration.zero;
-  double _videoPlaybackSpeed = 1.0;
+  double _videoSpeed = 1.0;
   Timer? _hideControlsTimer;
-  List<StreamSubscription> _videoSubscriptions = [];
 
   @override
   void initState() {
@@ -66,10 +56,8 @@ class _ViewerPageState extends State<ViewerPage> {
     if (_currentIndex < 0) _currentIndex = 0;
     _currentMedia = widget.mediaList[_currentIndex];
     _pageController = PageController(initialPage: _currentIndex);
-    _loadMediaData();
-    if (_currentMedia.mediaType == MediaType.video) {
-      _initVideo(_currentMedia.filePath);
-    }
+    _loadTags();
+    if (_currentMedia.mediaType == MediaType.video) _initVideo();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   }
 
@@ -82,19 +70,13 @@ class _ViewerPageState extends State<ViewerPage> {
     super.dispose();
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // 数据加载
-  // ═══════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════
+  // 数据
+  // ═══════════════════════════════════════════════════════
 
-  Future<void> _loadMediaData() async {
-    final note = await note_api.getNoteByMediaId(mediaId: _currentMedia.id);
+  Future<void> _loadTags() async {
     final tags = await tag_api.getMediaTags(mediaId: _currentMedia.id);
-    if (mounted) {
-      setState(() {
-        _noteContent = note?.content;
-        _mediaTags = tags;
-      });
-    }
+    if (mounted) setState(() => _mediaTags = tags);
   }
 
   void _switchMedia(int index) {
@@ -104,123 +86,106 @@ class _ViewerPageState extends State<ViewerPage> {
       _currentIndex = index;
       _currentMedia = newMedia;
       _imageRotation = 0;
-      _noteContent = null;
       _mediaTags = [];
       _showOverlay = true;
+      _videoShowControls = true;
     });
-    _loadMediaData();
-    // 切换视频播放器
+    _loadTags();
     if (newMedia.mediaType == MediaType.video) {
-      _initVideo(newMedia.filePath);
+      _initVideo();
     } else {
       _disposeVideo();
     }
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // 视频播放器管理
-  // ═══════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════
+  // 视频播放器
+  // ═══════════════════════════════════════════════════════
 
-  Future<void> _initVideo(String filePath) async {
+  Future<void> _initVideo() async {
     _disposeVideo();
-    final controller = VideoPlayerController.file(File(filePath));
-    _videoController = controller;
-    try {
-      await controller.initialize();
-      if (!mounted) return;
-      setState(() => _videoInitialized = true);
-      controller.addListener(_onVideoUpdate);
-    } catch (e) {
-      debugPrint('Video init failed: $e');
-    }
+    final c = VideoPlayerController.file(File(_currentMedia.filePath));
+    _videoController = c;
+    c.addListener(_onVideoTick);
+    await c.initialize();
+    if (!mounted) return;
+    setState(() => _videoReady = true);
   }
 
-  void _onVideoUpdate() {
+  void _onVideoTick() {
     final c = _videoController;
     if (c == null || !mounted) return;
     setState(() {
-      _videoPlaying = c.value.isPlaying;
       _videoPosition = c.value.position;
       _videoDuration = c.value.duration;
       if (c.value.isCompleted) {
-        _videoPlaying = false;
+        // 播放完成：暂停，重置进度，显示控件
+        if (_videoPosition >= _videoDuration &&
+            _videoDuration > Duration.zero) {
+          _videoController?.seekTo(Duration.zero);
+          _videoShowControls = true;
+          _hideControlsTimer?.cancel();
+        }
       }
     });
   }
 
   void _disposeVideo() {
-    for (final sub in _videoSubscriptions) {
-      sub.cancel();
-    }
-    _videoSubscriptions.clear();
-    _videoController?.removeListener(_onVideoUpdate);
+    _hideControlsTimer?.cancel();
+    _videoController?.removeListener(_onVideoTick);
     _videoController?.dispose();
     _videoController = null;
-    _videoInitialized = false;
-    _videoPlaying = false;
+    _videoReady = false;
     _videoPosition = Duration.zero;
     _videoDuration = Duration.zero;
   }
 
-  void _togglePlayPause() {
+  void _toggleVideo() {
     final c = _videoController;
-    if (c == null || !_videoInitialized) return;
-    if (_videoPlaying) {
+    if (c == null || !_videoReady) return;
+    if (c.value.isPlaying) {
       c.pause();
+      setState(() => _videoShowControls = true);
+      _hideControlsTimer?.cancel();
     } else {
-      if (c.value.isCompleted) {
-        c.seekTo(Duration.zero);
-      }
+      if (c.value.isCompleted) c.seekTo(Duration.zero);
       c.play();
+      setState(() => _videoShowControls = true);
+      _scheduleHideControls();
     }
-    setState(() => _videoPlaying = !_videoPlaying);
-    _resetHideTimer();
+  }
+
+  void _toggleVideoControls() {
+    setState(() => _videoShowControls = !_videoShowControls);
+    if (_videoShowControls && _videoController?.value.isPlaying == true) {
+      _scheduleHideControls();
+    }
+  }
+
+  void _scheduleHideControls() {
+    _hideControlsTimer?.cancel();
+    _hideControlsTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted && (_videoController?.value.isPlaying ?? false)) {
+        setState(() => _videoShowControls = false);
+      }
+    });
   }
 
   void _seekVideo(double ms) {
     _videoController?.seekTo(Duration(milliseconds: ms.toInt()));
   }
 
-  void _changeSpeed() {
+  void _cycleSpeed() {
     final speeds = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
-    final currentIdx = speeds.indexOf(_videoPlaybackSpeed);
-    final nextIdx = (currentIdx + 1) % speeds.length;
-    _videoPlaybackSpeed = speeds[nextIdx];
-    _videoController?.setPlaybackSpeed(_videoPlaybackSpeed);
+    final idx = speeds.indexOf(_videoSpeed);
+    _videoSpeed = speeds[(idx + 1) % speeds.length];
+    _videoController?.setPlaybackSpeed(_videoSpeed);
     setState(() {});
   }
 
-  String _formatVideoDuration(Duration d) {
-    final h = d.inHours;
-    final m = d.inMinutes.remainder(60);
-    final s = d.inSeconds.remainder(60);
-    if (h > 0) {
-      return '$h:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
-    }
-    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
-  }
-
-  void _resetHideTimer() {
-    _hideControlsTimer?.cancel();
-    setState(() => _videoShowControls = true);
-    _hideControlsTimer = Timer(const Duration(seconds: 4), () {
-      if (mounted && _videoPlaying) {
-        setState(() => _videoShowControls = false);
-      }
-    });
-  }
-
-  // ═══════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════
   // 通用操作
-  // ═══════════════════════════════════════════════════════════════
-
-  void _toggleOverlay() {
-    if (_currentMedia.mediaType == MediaType.video) {
-      _togglePlayPause();
-    } else {
-      setState(() => _showOverlay = !_showOverlay);
-    }
-  }
+  // ═══════════════════════════════════════════════════════
 
   void _rotateImage() =>
       setState(() => _imageRotation = (_imageRotation + 1) % 4);
@@ -230,6 +195,10 @@ class _ViewerPageState extends State<ViewerPage> {
     Navigator.pop(context);
   }
 
+  // ═══════════════════════════════════════════════════════
+  // 构建
+  // ═══════════════════════════════════════════════════════
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -237,63 +206,52 @@ class _ViewerPageState extends State<ViewerPage> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // 媒体内容
-          GestureDetector(
-            onTap: _toggleOverlay,
-            child: PageView.builder(
-              controller: _pageController,
-              itemCount: widget.mediaList.length,
-              onPageChanged: _switchMedia,
-              itemBuilder: (context, index) {
-                return _buildMediaContent(widget.mediaList[index]);
-              },
-            ),
+          // 媒体内容（滑动翻页）
+          PageView.builder(
+            controller: _pageController,
+            itemCount: widget.mediaList.length,
+            onPageChanged: _switchMedia,
+            itemBuilder: (_, i) => _buildContent(widget.mediaList[i]),
           ),
-          // 顶部信息栏
-          if (_showOverlay) _buildTopBar(),
-          // 底部操作栏
-          if (_showOverlay) _buildBottomBar(),
+          // 顶部栏（始终显示）
+          _buildTopBar(),
+          // 底部操作栏（始终显示）
+          _buildBottomBar(),
         ],
       ),
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // 媒体内容构建
-  // ═══════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════
+  // 内容渲染
+  // ═══════════════════════════════════════════════════════
 
-  Widget _buildMediaContent(MediaItem media) {
+  Widget _buildContent(MediaItem media) {
     switch (media.mediaType) {
       case MediaType.image:
-        return _buildImageViewer();
+        return _buildImage();
       case MediaType.video:
-        return _buildVideoViewer();
+        return _buildVideo();
       default:
-        return _buildUnsupportedContent(media);
+        return _buildFallback(media);
     }
   }
 
-  Widget _buildImageViewer() {
-    return InteractiveViewer(
-      minScale: 0.5,
-      maxScale: 4.0,
-      child: Center(
-        child: RotatedBox(
-          quarterTurns: _imageRotation,
-          child: Image.file(
-            File(_currentMedia.filePath),
-            fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) => Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.broken_image_rounded,
-                      size: 64, color: Colors.white54),
-                  const SizedBox(height: 12),
-                  Text(_currentMedia.originalName,
-                      style:
-                          const TextStyle(color: Colors.white54, fontSize: 14)),
-                ],
+  Widget _buildImage() {
+    return GestureDetector(
+      onTap: () => setState(() => _showOverlay = !_showOverlay),
+      child: InteractiveViewer(
+        minScale: 0.5,
+        maxScale: 4.0,
+        child: Center(
+          child: RotatedBox(
+            quarterTurns: _imageRotation,
+            child: Image.file(
+              File(_currentMedia.filePath),
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => const Center(
+                child: Icon(Icons.broken_image_rounded,
+                    size: 64, color: Colors.white54),
               ),
             ),
           ),
@@ -302,31 +260,35 @@ class _ViewerPageState extends State<ViewerPage> {
     );
   }
 
-  Widget _buildVideoViewer() {
-    if (!_videoInitialized || _videoController == null) {
+  Widget _buildVideo() {
+    if (!_videoReady || _videoController == null) {
       return const Center(
-        child: CircularProgressIndicator(color: Colors.white),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(color: Colors.white),
+            SizedBox(height: 12),
+            Text('加载中...', style: TextStyle(color: Colors.white54)),
+          ],
+        ),
       );
     }
-    final cs = Theme.of(context).colorScheme;
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        // 视频画面
-        GestureDetector(
-          onDoubleTap: _togglePlayPause,
-          child: Center(
+    return GestureDetector(
+      onTap: _toggleVideo,
+      onDoubleTap: _toggleVideoControls,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // 视频画面
+          Center(
             child: AspectRatio(
               aspectRatio: _videoController!.value.aspectRatio,
               child: VideoPlayer(_videoController!),
             ),
           ),
-        ),
-        // 播放/暂停大图标（播放中隐藏）
-        if (!_videoPlaying && _showOverlay)
-          Center(
-            child: GestureDetector(
-              onTap: _togglePlayPause,
+          // 大播放图标（暂停时显示）
+          if (!_videoController!.value.isPlaying)
+            Center(
               child: Container(
                 width: 64,
                 height: 64,
@@ -338,21 +300,23 @@ class _ViewerPageState extends State<ViewerPage> {
                     color: Colors.white, size: 40),
               ),
             ),
+          // 底部进度条（自动隐藏）
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 300),
+            bottom: _videoShowControls ? 0 : -100,
+            left: 0,
+            right: 0,
+            child: _buildVideoControls(),
           ),
-        // 底部进度条和控制栏
-        Positioned(
-          bottom: 0,
-          left: 0,
-          right: 0,
-          child: _buildVideoControls(),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildVideoControls() {
     final cs = Theme.of(context).colorScheme;
     return Container(
+      height: 72,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.bottomCenter,
@@ -360,70 +324,58 @@ class _ViewerPageState extends State<ViewerPage> {
           colors: [Colors.black.withOpacity(0.9), Colors.transparent],
         ),
       ),
-      padding: EdgeInsets.fromLTRB(
-          16, 32, 16, MediaQuery.of(context).padding.bottom + 16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: Row(
         children: [
+          // 时间
+          Text(
+            '${_fmt(_videoPosition)} / ${_fmt(_videoDuration)}',
+            style: const TextStyle(color: Colors.white70, fontSize: 11),
+          ),
+          const SizedBox(width: 6),
           // 进度条
-          SliderTheme(
-            data: SliderThemeData(
-              trackHeight: 3,
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
-              overlayShape: const RoundSliderOverlayShape(overlayRadius: 10),
-              activeTrackColor: cs.primary,
-              inactiveTrackColor: Colors.white24,
-              thumbColor: cs.primary,
-              overlayColor: cs.primary.withOpacity(0.2),
-            ),
-            child: Slider(
-              value: _videoPosition.inMilliseconds.toDouble().clamp(
-                  0.0,
-                  _videoDuration.inMilliseconds
-                      .toDouble()
-                      .clamp(1.0, double.infinity)),
-              max: _videoDuration.inMilliseconds
-                  .toDouble()
-                  .clamp(1.0, double.infinity),
-              onChanged: _seekVideo,
+          Expanded(
+            child: SliderTheme(
+              data: SliderThemeData(
+                trackHeight: 2,
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
+                activeTrackColor: cs.primary,
+                inactiveTrackColor: Colors.white24,
+                thumbColor: cs.primary,
+              ),
+              child: Slider(
+                value: _videoPosition.inMilliseconds.toDouble().clamp(
+                    0.0,
+                    _videoDuration.inMilliseconds
+                        .toDouble()
+                        .clamp(1.0, double.infinity)),
+                max: _videoDuration.inMilliseconds
+                    .toDouble()
+                    .clamp(1.0, double.infinity),
+                onChanged: _seekVideo,
+              ),
             ),
           ),
-          // 控制按钮行
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Row(
-              children: [
-                // 时间显示
-                Text(
-                  '${_formatVideoDuration(_videoPosition)} / ${_formatVideoDuration(_videoDuration)}',
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
+          const SizedBox(width: 6),
+          // 倍速
+          GestureDetector(
+            onTap: _cycleSpeed,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: _videoSpeed != 1.0
+                    ? cs.primary.withOpacity(0.3)
+                    : Colors.white12,
+                borderRadius: BorderRadius.circular(3),
+              ),
+              child: Text(
+                '${_videoSpeed}x',
+                style: TextStyle(
+                  color: _videoSpeed != 1.0 ? cs.primary : Colors.white70,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
                 ),
-                const Spacer(),
-                // 倍速按钮
-                GestureDetector(
-                  onTap: _changeSpeed,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: _videoPlaybackSpeed != 1.0
-                          ? cs.primary.withOpacity(0.3)
-                          : Colors.white.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      '${_videoPlaybackSpeed}x',
-                      style: TextStyle(
-                        color: _videoPlaybackSpeed != 1.0
-                            ? cs.primary
-                            : Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ],
@@ -431,7 +383,7 @@ class _ViewerPageState extends State<ViewerPage> {
     );
   }
 
-  Widget _buildUnsupportedContent(MediaItem media) {
+  Widget _buildFallback(MediaItem media) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -451,84 +403,72 @@ class _ViewerPageState extends State<ViewerPage> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════
   // 顶部栏
-  // ═══════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════
 
   Widget _buildTopBar() {
     final loc = AppLocalizations.of(context);
-    final hasMultiple = widget.mediaList.length > 1;
+    final multiple = widget.mediaList.length > 1;
     return Positioned(
       top: 0,
       left: 0,
       right: 0,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.black.withOpacity(0.7), Colors.transparent],
+      child: AnimatedOpacity(
+        opacity: _showOverlay ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 250),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Colors.black.withOpacity(0.7), Colors.transparent],
+            ),
           ),
-        ),
-        padding: EdgeInsets.only(
-          top: MediaQuery.of(context).padding.top + 8,
-          left: 8,
-          right: 8,
-          bottom: 16,
-        ),
-        child: Row(
-          children: [
-            _iconButton(
-              icon: Icons.arrow_back_rounded,
-              onTap: _goBack,
-              tooltip: loc.back,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    _currentMedia.originalName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500),
-                  ),
-                  if (hasMultiple)
-                    Text(
-                      '${_currentIndex + 1} / ${widget.mediaList.length}',
-                      style: TextStyle(
-                          color: Colors.white.withOpacity(0.7), fontSize: 12),
-                    ),
-                ],
+          padding: EdgeInsets.only(
+            top: MediaQuery.of(context).padding.top + 8,
+            left: 8,
+            right: 8,
+            bottom: 16,
+          ),
+          child: Row(
+            children: [
+              _iconBtn(Icons.arrow_back_rounded, _goBack),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(_currentMedia.originalName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500)),
+                    if (multiple)
+                      Text(
+                        '${_currentIndex + 1} / ${widget.mediaList.length}',
+                        style: TextStyle(
+                            color: Colors.white.withOpacity(0.7), fontSize: 12),
+                      ),
+                  ],
+                ),
               ),
-            ),
-            // 图片旋转按钮
-            if (_currentMedia.mediaType == MediaType.image)
-              _iconButton(
-                icon: Icons.rotate_right_rounded,
-                onTap: _rotateImage,
-                tooltip: loc.rotate,
-              ),
-            // 更多菜单
-            _iconButton(
-              icon: Icons.more_vert_rounded,
-              onTap: _showMoreMenu,
-              tooltip: loc.more,
-            ),
-          ],
+              if (_currentMedia.mediaType == MediaType.image)
+                _iconBtn(Icons.rotate_right_rounded, _rotateImage),
+              _iconBtn(Icons.more_vert_rounded, _showMoreMenu),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════
   // 底部栏
-  // ═══════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════
 
   Widget _buildBottomBar() {
     final loc = AppLocalizations.of(context);
@@ -536,75 +476,56 @@ class _ViewerPageState extends State<ViewerPage> {
       bottom: 0,
       left: 0,
       right: 0,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.bottomCenter,
-            end: Alignment.topCenter,
-            colors: [Colors.black.withOpacity(0.85), Colors.transparent],
+      child: AnimatedOpacity(
+        opacity: _showOverlay ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 250),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.bottomCenter,
+              end: Alignment.topCenter,
+              colors: [Colors.black.withOpacity(0.85), Colors.transparent],
+            ),
           ),
-        ),
-        padding: EdgeInsets.fromLTRB(
-            16, 24, 16, MediaQuery.of(context).padding.bottom + 12),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            // 添加到相册
-            _actionButton(
-              icon: Icons.camera_alt_outlined,
-              label: loc.addToAlbum,
-              onTap: _showAlbumPicker,
-            ),
-            // 标签管理
-            _actionButton(
-              icon: Icons.label_outlined,
-              label: loc.tags,
-              onTap: _showTagManager,
-            ),
-            // 删除
-            _actionButton(
-              icon: Icons.delete_outline_rounded,
-              label: loc.delete,
-              color: Colors.red,
-              onTap: _showDeleteConfirm,
-            ),
-          ],
+          padding: EdgeInsets.fromLTRB(
+              16, 24, 16, MediaQuery.of(context).padding.bottom + 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _actionBtn(
+                  Icons.camera_alt_outlined, loc.addToAlbum, _showAlbumPicker),
+              _actionBtn(Icons.label_outlined, loc.tags, _showTagManager),
+              _actionBtn(
+                  Icons.delete_outline_rounded, loc.delete, _showDeleteConfirm,
+                  color: Colors.red),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // UI 辅助组件
-  // ═══════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════
+  // 辅助组件
+  // ═══════════════════════════════════════════════════════
 
-  Widget _iconButton({
-    required IconData icon,
-    required VoidCallback onTap,
-    String? tooltip,
-  }) {
-    final btn = Material(
+  Widget _iconBtn(IconData icon, VoidCallback onTap) {
+    return Material(
       color: Colors.white.withOpacity(0.15),
       borderRadius: BorderRadius.circular(10),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(10),
         child: SizedBox(
-          width: 36,
-          height: 36,
-          child: Icon(icon, color: Colors.white, size: 20),
-        ),
+            width: 36,
+            height: 36,
+            child: Icon(icon, color: Colors.white, size: 20)),
       ),
     );
-    return tooltip != null ? Tooltip(message: tooltip, child: btn) : btn;
   }
 
-  Widget _actionButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-    Color? color,
-  }) {
+  Widget _actionBtn(IconData icon, String label, VoidCallback onTap,
+      {Color? color}) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -623,9 +544,37 @@ class _ViewerPageState extends State<ViewerPage> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
+  String _fmt(Duration d) {
+    final h = d.inHours,
+        m = d.inMinutes.remainder(60),
+        s = d.inSeconds.remainder(60);
+    return h > 0
+        ? '$h:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}'
+        : '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+
+  String _fmtSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024 * 1024 * 1024)
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+  }
+
+  String _fmtDuration(int? ms) {
+    if (ms == null || ms <= 0) return '0:00';
+    final d = Duration(milliseconds: ms);
+    final h = d.inHours,
+        m = d.inMinutes.remainder(60),
+        s = d.inSeconds.remainder(60);
+    return h > 0
+        ? '$h:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}'
+        : '$m:${s.toString().padLeft(2, '0')}';
+  }
+
+  // ═══════════════════════════════════════════════════════
   // 更多菜单
-  // ═══════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════
 
   void _showMoreMenu() {
     final loc = AppLocalizations.of(context);
@@ -638,23 +587,23 @@ class _ViewerPageState extends State<ViewerPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 36,
-              height: 4,
-              margin: const EdgeInsets.only(top: 12),
-              decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2)),
-            ),
             const SizedBox(height: 12),
-            _moreTile(Icons.edit_outlined, loc.rename, () {
-              Navigator.pop(ctx);
-              _showRenameDialog();
-            }),
-            _moreTile(Icons.info_outline, loc.details, () {
-              Navigator.pop(ctx);
-              _showFileInfoDialog();
-            }),
+            ListTile(
+              leading: const Icon(Icons.edit_outlined),
+              title: Text(loc.rename),
+              onTap: () {
+                Navigator.pop(ctx);
+                _showRenameDialog();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.info_outline),
+              title: Text(loc.details),
+              onTap: () {
+                Navigator.pop(ctx);
+                _showFileInfo();
+              },
+            ),
             SizedBox(height: MediaQuery.of(ctx).padding.bottom + 8),
           ],
         ),
@@ -662,38 +611,32 @@ class _ViewerPageState extends State<ViewerPage> {
     );
   }
 
-  Widget _moreTile(IconData icon, String title, VoidCallback onTap) {
-    return ListTile(leading: Icon(icon), title: Text(title), onTap: onTap);
-  }
-
-  // ═══════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════
   // 功能方法
-  // ═══════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════
 
   void _showRenameDialog() {
     final loc = AppLocalizations.of(context);
-    final controller = TextEditingController(text: _currentMedia.originalName);
+    final ctrl = TextEditingController(text: _currentMedia.originalName);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(loc.rename),
         content: TextField(
-          controller: controller,
-          decoration: InputDecoration(labelText: loc.newName),
-          autofocus: true,
-        ),
+            controller: ctrl,
+            decoration: InputDecoration(labelText: loc.newName),
+            autofocus: true),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(loc.cancel),
-          ),
+              onPressed: () => Navigator.pop(ctx), child: Text(loc.cancel)),
           FilledButton(
             onPressed: () async {
-              final newName = controller.text.trim();
-              if (newName.isNotEmpty) {
-                final updated = MediaItem(
+              final n = ctrl.text.trim();
+              if (n.isNotEmpty) {
+                await updateMedia(
+                    media: MediaItem(
                   id: _currentMedia.id,
-                  originalName: newName,
+                  originalName: n,
                   storageName: _currentMedia.storageName,
                   filePath: _currentMedia.filePath,
                   thumbnailPath: _currentMedia.thumbnailPath,
@@ -706,10 +649,10 @@ class _ViewerPageState extends State<ViewerPage> {
                   sha256Hash: _currentMedia.sha256Hash,
                   createdAt: _currentMedia.createdAt,
                   updatedAt: _currentMedia.updatedAt,
-                );
-                await updateMedia(media: updated);
+                ));
                 if (mounted) {
-                  setState(() => _currentMedia = updated);
+                  setState(() =>
+                      _currentMedia = _currentMedia.copyWith(originalName: n));
                   context.read<MediaBloc>().add(const MediaLoadAllEvent());
                 }
               }
@@ -727,11 +670,11 @@ class _ViewerPageState extends State<ViewerPage> {
     if (!mounted) return;
     await showDialog(
       context: context,
-      builder: (ctx) => _TagManagerDialog(
+      builder: (ctx) => _TagDialog(
         allTags: allTags,
         currentTags: _mediaTags,
         mediaId: _currentMedia.id,
-        onChanged: _loadMediaData,
+        onChanged: _loadTags,
       ),
     );
   }
@@ -755,20 +698,19 @@ class _ViewerPageState extends State<ViewerPage> {
           child: ListView.builder(
             shrinkWrap: true,
             itemCount: albums.length,
-            itemBuilder: (context, index) {
-              final album = albums[index];
+            itemBuilder: (_, i) {
+              final a = albums[i];
               return ListTile(
                 leading: Icon(Icons.camera_alt_rounded, color: cs.primary),
-                title: Text(album.album.name),
-                subtitle: Text('${album.mediaCount} ${loc.files}'),
+                title: Text(a.album.name),
+                subtitle: Text('${a.mediaCount} ${loc.files}'),
                 onTap: () async {
                   await album_api.addMediaToAlbum(
-                      mediaIds: [_currentMedia.id], albumId: album.album.id);
+                      mediaIds: [_currentMedia.id], albumId: a.album.id);
                   if (ctx.mounted) {
                     Navigator.pop(ctx);
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content:
-                            Text('${loc.addToAlbum}: ${album.album.name}')));
+                        content: Text('${loc.addToAlbum}: ${a.album.name}')));
                   }
                 },
               );
@@ -791,9 +733,7 @@ class _ViewerPageState extends State<ViewerPage> {
             Text('${loc.confirmDeleteMedia} "${_currentMedia.originalName}" ?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(loc.cancel),
-          ),
+              onPressed: () => Navigator.pop(ctx), child: Text(loc.cancel)),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: cs.error),
             onPressed: () async {
@@ -805,23 +745,26 @@ class _ViewerPageState extends State<ViewerPage> {
                 Navigator.pop(context);
                 return;
               }
-              final newList = widget.mediaList
+              final rest = widget.mediaList
                   .where((m) => m.id != _currentMedia.id)
                   .toList();
-              if (newList.isEmpty) {
+              if (rest.isEmpty) {
                 Navigator.pop(context);
                 return;
               }
-              final newIndex = math.min(_currentIndex, newList.length - 1);
+              final next = math.min(_currentIndex, rest.length - 1);
               setState(() {
-                _currentMedia = newList[newIndex];
-                _currentIndex = newIndex;
+                _currentMedia = rest[next];
+                _currentIndex = next;
                 _imageRotation = 0;
-                _noteContent = null;
                 _mediaTags = [];
               });
-              _pageController.jumpToPage(newIndex);
-              _loadMediaData();
+              _pageController.jumpToPage(next);
+              _loadTags();
+              if (_currentMedia.mediaType == MediaType.video)
+                _initVideo();
+              else
+                _disposeVideo();
             },
             child: Text(loc.delete),
           ),
@@ -830,17 +773,17 @@ class _ViewerPageState extends State<ViewerPage> {
     );
   }
 
-  void _showFileInfoDialog() {
+  void _showFileInfo() {
     final loc = AppLocalizations.of(context);
     final info = [
       _infoRow(loc.fileName, _currentMedia.originalName),
       _infoRow(loc.mimeType, _currentMedia.mimeType),
-      _infoRow(loc.fileSize, _formatBytes(_currentMedia.size)),
+      _infoRow(loc.fileSize, _fmtSize(_currentMedia.size)),
       if (_currentMedia.width != null && _currentMedia.height != null)
         _infoRow(
             loc.resolution, '${_currentMedia.width} x ${_currentMedia.height}'),
       if (_currentMedia.duration != null)
-        _infoRow(loc.duration, _formatDuration(_currentMedia.duration!)),
+        _infoRow(loc.duration, _fmtDuration(_currentMedia.duration!)),
       _infoRow(
           loc.tags,
           _mediaTags.isEmpty
@@ -857,14 +800,12 @@ class _ViewerPageState extends State<ViewerPage> {
             shrinkWrap: true,
             itemCount: info.length,
             separatorBuilder: (_, __) => const Divider(height: 1),
-            itemBuilder: (_, index) => info[index],
+            itemBuilder: (_, i) => info[i],
           ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(loc.close),
-          )
+              onPressed: () => Navigator.pop(ctx), child: Text(loc.close))
         ],
       ),
     );
@@ -874,80 +815,53 @@ class _ViewerPageState extends State<ViewerPage> {
     final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        SizedBox(
             width: 70,
             child: Text(label,
-                style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13)),
-          ),
-          Expanded(
+                style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13))),
+        Expanded(
             child: SelectableText(value,
-                style: TextStyle(color: cs.onSurface, fontSize: 13)),
-          ),
-        ],
-      ),
+                style: TextStyle(color: cs.onSurface, fontSize: 13))),
+      ]),
     );
-  }
-
-  String _formatDuration(int? ms) {
-    if (ms == null || ms <= 0) return '0:00';
-    final d = Duration(milliseconds: ms);
-    final h = d.inHours,
-        m = d.inMinutes.remainder(60),
-        s = d.inSeconds.remainder(60);
-    return h > 0
-        ? '$h:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}'
-        : '$m:${s.toString().padLeft(2, '0')}';
-  }
-
-  String _formatBytes(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024)
-      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// 标签管理对话框
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════
+// 标签对话框
+// ═══════════════════════════════════════════════════════════════════════
 
-class _TagManagerDialog extends StatefulWidget {
+class _TagDialog extends StatefulWidget {
   final List<tag_api.Tag> allTags;
   final List<tag_api.Tag> currentTags;
   final String mediaId;
   final VoidCallback onChanged;
-  const _TagManagerDialog({
-    required this.allTags,
-    required this.currentTags,
-    required this.mediaId,
-    required this.onChanged,
-  });
+  const _TagDialog(
+      {required this.allTags,
+      required this.currentTags,
+      required this.mediaId,
+      required this.onChanged});
 
   @override
-  State<_TagManagerDialog> createState() => _TagManagerDialogState();
+  State<_TagDialog> createState() => _TagDialogState();
 }
 
-class _TagManagerDialogState extends State<_TagManagerDialog> {
-  late final Set<String> _selectedIds;
-
+class _TagDialogState extends State<_TagDialog> {
+  late final Set<String> _ids;
   @override
   void initState() {
     super.initState();
-    _selectedIds = widget.currentTags.map((t) => t.id).toSet();
+    _ids = widget.currentTags.map((t) => t.id).toSet();
   }
 
-  Future<void> _toggleTag(tag_api.Tag tag) async {
-    final isSelected = _selectedIds.contains(tag.id);
-    if (isSelected) {
+  Future<void> _toggle(tag_api.Tag tag) async {
+    if (_ids.contains(tag.id)) {
       await tag_api.removeTagFromMedia(mediaId: widget.mediaId, tagId: tag.id);
-      _selectedIds.remove(tag.id);
+      _ids.remove(tag.id);
     } else {
       await tag_api.addTagToMedia(mediaId: widget.mediaId, tagId: tag.id);
-      _selectedIds.add(tag.id);
+      _ids.add(tag.id);
     }
     if (mounted) {
       setState(() {});
@@ -965,49 +879,40 @@ class _TagManagerDialogState extends State<_TagManagerDialog> {
         width: double.maxFinite,
         child: widget.allTags.isEmpty
             ? Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.label_off_outlined,
-                        size: 48, color: cs.onSurfaceVariant),
-                    const SizedBox(height: 12),
-                    Text(loc.noTags),
-                  ],
-                ),
-              )
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.label_off_outlined,
+                    size: 48, color: cs.onSurfaceVariant),
+                const SizedBox(height: 12),
+                Text(loc.noTags),
+              ]))
             : ListView.builder(
                 shrinkWrap: true,
                 itemCount: widget.allTags.length,
-                itemBuilder: (context, index) {
-                  final tag = widget.allTags[index];
-                  final selected = _selectedIds.contains(tag.id);
-                  final tagColor = tag.color != null
+                itemBuilder: (_, i) {
+                  final tag = widget.allTags[i];
+                  final sel = _ids.contains(tag.id);
+                  final tc = tag.color != null
                       ? Color(int.parse(tag.color!.replaceFirst('#', '0xFF')))
                       : cs.primary;
                   return ListTile(
                     leading: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       decoration: BoxDecoration(
-                        color: selected ? tagColor : cs.surfaceContainerHighest,
-                        shape: BoxShape.circle,
-                      ),
+                          color: sel ? tc : cs.surfaceContainerHighest,
+                          shape: BoxShape.circle),
                       padding: const EdgeInsets.all(4),
-                      child: Icon(
-                        selected ? Icons.check_rounded : null,
-                        size: 16,
-                        color: selected ? Colors.white : cs.onSurfaceVariant,
-                      ),
+                      child: Icon(sel ? Icons.check_rounded : null,
+                          size: 16,
+                          color: sel ? Colors.white : cs.onSurfaceVariant),
                     ),
                     title: Text(tag.name),
-                    onTap: () => _toggleTag(tag),
+                    onTap: () => _toggle(tag),
                   );
                 }),
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(loc.close),
-        ),
+            onPressed: () => Navigator.pop(context), child: Text(loc.close))
       ],
     );
   }
