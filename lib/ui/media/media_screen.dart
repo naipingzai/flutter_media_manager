@@ -411,7 +411,7 @@ class _MediaScreenState extends State<MediaScreen> {
               ),
               const SizedBox(width: AppSpacing.xs),
               _selectionActionButton(
-                icon: Icons.camera_alt_outlined,
+                icon: Icons.photo_album_outlined,
                 label: loc.addToAlbum,
                 color: cs.tertiary,
                 enabled: selectedCount > 0,
