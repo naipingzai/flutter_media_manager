@@ -73,8 +73,6 @@ class StorageStatsData {
       this.thumbnailCacheSize, this.databaseSize);
 }
 
-// Storage stats callback: void cb(int count, int64 size, int64 thumb, int64 db)
-typedef _StorageStatsCb = Void Function(Int32, Int64, Int64, Int64);
 typedef _GetStorageStatsFn = Int32 Function(
     Pointer<Int32>, Pointer<Int64>, Pointer<Int64>, Pointer<Int64>);
 typedef _ClearThumbnailCacheFn = Int32 Function();
