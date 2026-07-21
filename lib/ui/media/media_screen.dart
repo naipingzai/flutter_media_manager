@@ -572,14 +572,69 @@ class _MediaScreenState extends State<MediaScreen> {
     _showImportResult(context, successCount, failCount);
   }
 
+  // ── iOS: 从相册选择（支持图片+视频）──────────────────────────────
+  Future<List<String>> _pickFromGallery(BuildContext context) async {
+    final picker = ImagePicker();
+    final loc = AppLocalizations.of(context);
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 36,
+              height: 4,
+              margin: const EdgeInsets.only(top: 12),
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 12),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: Text(loc.filterImages),
+              onTap: () => Navigator.pop(ctx, 'image'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.videocam_outlined),
+              title: Text(loc.video),
+              onTap: () => Navigator.pop(ctx, 'video'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.perm_media_outlined),
+              title: Text(loc.tabAllMedia),
+              subtitle: Text('${loc.filterImages} + ${loc.video}'),
+              onTap: () => Navigator.pop(ctx, 'both'),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (action == null) return [];
+    List<String> paths = [];
+    if (action == 'image' || action == 'both') {
+      final images = await picker.pickMultiImage();
+      paths.addAll(images.map((f) => f.path));
+    }
+    if (action == 'video' || action == 'both') {
+      final video = await picker.pickVideo(source: ImageSource.gallery);
+      if (video != null) paths.add(video.path);
+    }
+    return paths;
+  }
+
   // ── File import ─────────────────────────────────────────────────
   Future<void> _openFileBrowser(BuildContext context) async {
     List<String> filePaths;
     if (Platform.isIOS) {
-      final picker = ImagePicker();
-      final pickedFiles = await picker.pickMultiImage();
-      if (pickedFiles.isEmpty) return;
-      filePaths = pickedFiles.map((f) => f.path).toList();
+      filePaths = await _pickFromGallery(context);
+      if (filePaths.isEmpty) return;
     } else {
       filePaths = await openFileBrowser(context);
       if (filePaths.isEmpty) return;
