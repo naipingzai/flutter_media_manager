@@ -7,6 +7,7 @@ import 'package:flutter_media_manager/core/design_system/components.dart'
     hide formatDuration;
 import 'package:flutter_media_manager/bridge/native/api/media.dart';
 import 'package:flutter_media_manager/ui/viewer/viewer_page.dart';
+import 'video_thumbnail.dart';
 import '../../../functionality/media/media_bloc.dart';
 
 class MediaGrid extends StatelessWidget {
@@ -186,22 +187,11 @@ class _MediaGridItem extends StatelessWidget {
           errorBuilder: (_, __, ___) => _buildFallbackIcon(context));
     }
 
-    // 视频无缩略图时显示播放图标 + 背景色
-    if (media.mediaType == MediaType.video) {
-      return Container(
-        color: cs.surfaceContainerHighest,
-        child: Center(
-          child: Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: cs.primary.withOpacity(0.2),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.play_arrow_rounded, size: 32, color: cs.primary),
-          ),
-        ),
-      );
+    // 视频使用VideoThumbnail提取首帧
+    if (media.mediaType == MediaType.video &&
+        media.filePath.isNotEmpty &&
+        File(media.filePath).existsSync()) {
+      return VideoThumbnail(filePath: media.filePath);
     }
 
     return _buildFallbackIcon(context);

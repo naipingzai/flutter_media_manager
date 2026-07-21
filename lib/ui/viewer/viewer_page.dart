@@ -12,14 +12,15 @@ import 'package:flutter_media_manager/bridge/native/api/media.dart';
 import 'package:flutter_media_manager/bridge/native/api/tag.dart' as tag_api;
 import 'package:flutter_media_manager/functionality/media/media_bloc.dart';
 
-/// 媒体查看器 - Google Photos 风格
+/// 媒体查看器 - 苹果相册风格
 ///
-/// 设计原则（参考 Google Photos）：
-/// 1. 图片：全屏显示，单指左右滑动切换，双指缩放，双击放大
-/// 2. 视频：点击画面播放/暂停，底部进度条自动隐藏
-/// 3. 顶部：简洁（文件名+页码+更多），点击隐藏
-/// 4. 底部：3个核心操作（相册/标签/删除）
-/// 5. 所有控件点击时显示，再次点击隐藏，播放视频时自动隐藏
+/// 设计参考：Apple Photos
+/// - 全屏沉浸式黑色背景
+/// - 单击切换工具栏显隐
+/// - 图片：双指缩放，双击放大/还原，旋转
+/// - 视频：播放/暂停，进度条在视频底部（播放时自动隐藏）
+/// - 底部工具栏：相册、标签、删除（只在工具栏可见时显示）
+/// - 视频进度条在底部工具栏上方，不重叠
 class ViewerPage extends StatefulWidget {
   final MediaItem initialMedia;
   final List<MediaItem> mediaList;
@@ -34,14 +35,13 @@ class ViewerPage extends StatefulWidget {
   State<ViewerPage> createState() => _ViewerPageState();
 }
 
-class _ViewerPageState extends State<ViewerPage>
-    with SingleTickerProviderStateMixin {
+class _ViewerPageState extends State<ViewerPage> {
   late final PageController _pageController;
   late MediaItem _currentMedia;
   int _currentIndex = 0;
   List<tag_api.Tag> _mediaTags = [];
   int _imageRotation = 0;
-  bool _showControls = true;
+  bool _showChrome = true; // 控制顶部+底部工具栏显隐
 
   // 视频
   VideoPlayerController? _videoController;
@@ -49,7 +49,7 @@ class _ViewerPageState extends State<ViewerPage>
   Duration _videoPosition = Duration.zero;
   Duration _videoDuration = Duration.zero;
   double _videoSpeed = 1.0;
-  Timer? _hideTimer;
+  Timer? _autoHideTimer;
 
   @override
   void initState() {
@@ -68,7 +68,7 @@ class _ViewerPageState extends State<ViewerPage>
   void dispose() {
     _pageController.dispose();
     _disposeVideo();
-    _hideTimer?.cancel();
+    _autoHideTimer?.cancel();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
   }
@@ -90,7 +90,7 @@ class _ViewerPageState extends State<ViewerPage>
       _currentMedia = newMedia;
       _imageRotation = 0;
       _mediaTags = [];
-      _showControls = true;
+      _showChrome = true;
     });
     _loadTags();
     if (newMedia.mediaType == MediaType.video) {
@@ -112,7 +112,6 @@ class _ViewerPageState extends State<ViewerPage>
     await c.initialize();
     if (!mounted) return;
     setState(() => _videoReady = true);
-    _scheduleHide();
   }
 
   void _onVideoTick() {
@@ -121,16 +120,18 @@ class _ViewerPageState extends State<ViewerPage>
     setState(() {
       _videoPosition = c.value.position;
       _videoDuration = c.value.duration;
-      if (c.value.isCompleted && !_videoReady) {
-        _videoController?.seekTo(Duration.zero);
-        _showControls = true;
-        _hideTimer?.cancel();
-      }
     });
+    // 播放完成自动重置
+    if (c.value.isCompleted && _videoDuration > Duration.zero) {
+      _videoController?.seekTo(Duration.zero);
+      _videoController?.pause();
+      _showChrome = true;
+      _autoHideTimer?.cancel();
+    }
   }
 
   void _disposeVideo() {
-    _hideTimer?.cancel();
+    _autoHideTimer?.cancel();
     _videoController?.removeListener(_onVideoTick);
     _videoController?.dispose();
     _videoController = null;
@@ -139,35 +140,18 @@ class _ViewerPageState extends State<ViewerPage>
     _videoDuration = Duration.zero;
   }
 
-  void _toggleVideo() {
+  void _toggleVideoPlay() {
     final c = _videoController;
     if (c == null || !_videoReady) return;
     if (c.value.isPlaying) {
       c.pause();
-      setState(() => _showControls = true);
-      _hideTimer?.cancel();
+      _autoHideTimer?.cancel();
     } else {
       if (c.value.isCompleted) c.seekTo(Duration.zero);
       c.play();
-      setState(() => _showControls = true);
-      _scheduleHide();
+      _startAutoHide();
     }
-  }
-
-  void _toggleControls() {
-    setState(() => _showControls = !_showControls);
-    if (_showControls && (_videoController?.value.isPlaying ?? false)) {
-      _scheduleHide();
-    }
-  }
-
-  void _scheduleHide() {
-    _hideTimer?.cancel();
-    _hideTimer = Timer(const Duration(seconds: 4), () {
-      if (mounted && (_videoController?.value.isPlaying ?? false)) {
-        setState(() => _showControls = false);
-      }
-    });
+    setState(() {});
   }
 
   void _seekVideo(double ms) {
@@ -182,9 +166,27 @@ class _ViewerPageState extends State<ViewerPage>
     setState(() {});
   }
 
+  void _startAutoHide() {
+    _autoHideTimer?.cancel();
+    _autoHideTimer = Timer(const Duration(seconds: 4), () {
+      if (mounted && (_videoController?.value.isPlaying ?? false)) {
+        setState(() => _showChrome = false);
+      }
+    });
+  }
+
   // ═══════════════════════════════════════════════════════
-  // 通用操作
+  // 交互
   // ═══════════════════════════════════════════════════════
+
+  /// 单击切换工具栏
+  void _onTap() {
+    setState(() => _showChrome = !_showChrome);
+    if (_showChrome && (_videoController?.value.isPlaying ?? false)) {
+      _startAutoHide();
+    }
+    _autoHideTimer?.cancel();
+  }
 
   void _rotateImage() =>
       setState(() => _imageRotation = (_imageRotation + 1) % 4);
@@ -205,14 +207,34 @@ class _ViewerPageState extends State<ViewerPage>
       body: Stack(
         fit: StackFit.expand,
         children: [
-          PageView.builder(
-            controller: _pageController,
-            itemCount: widget.mediaList.length,
-            onPageChanged: _switchMedia,
-            itemBuilder: (_, i) => _buildContent(widget.mediaList[i]),
+          // 媒体内容
+          GestureDetector(
+            onTap: _onTap,
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: widget.mediaList.length,
+              onPageChanged: _switchMedia,
+              itemBuilder: (_, i) => _buildContent(widget.mediaList[i]),
+            ),
           ),
-          if (_showControls) _buildTopBar(),
-          if (_showControls) _buildBottomBar(),
+          // 顶部栏
+          AnimatedOpacity(
+            opacity: _showChrome ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 200),
+            child: IgnorePointer(
+              ignoring: !_showChrome,
+              child: _buildTopBar(),
+            ),
+          ),
+          // 底部栏（视频进度条 + 工具栏）
+          AnimatedOpacity(
+            opacity: _showChrome ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 200),
+            child: IgnorePointer(
+              ignoring: !_showChrome,
+              child: _buildBottomSection(),
+            ),
+          ),
         ],
       ),
     );
@@ -234,22 +256,18 @@ class _ViewerPageState extends State<ViewerPage>
   }
 
   Widget _buildImage() {
-    return GestureDetector(
-      onTap: _toggleControls,
-      onDoubleTap: () => setState(() => _showControls = !_showControls),
-      child: InteractiveViewer(
-        minScale: 0.5,
-        maxScale: 4.0,
-        child: Center(
-          child: RotatedBox(
-            quarterTurns: _imageRotation,
-            child: Image.file(
-              File(_currentMedia.filePath),
-              fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => const Center(
-                child: Icon(Icons.broken_image_rounded,
-                    size: 64, color: Colors.white54),
-              ),
+    return InteractiveViewer(
+      minScale: 0.5,
+      maxScale: 4.0,
+      child: Center(
+        child: RotatedBox(
+          quarterTurns: _imageRotation,
+          child: Image.file(
+            File(_currentMedia.filePath),
+            fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) => const Center(
+              child: Icon(Icons.broken_image_rounded,
+                  size: 64, color: Colors.white54),
             ),
           ),
         ),
@@ -263,111 +281,10 @@ class _ViewerPageState extends State<ViewerPage>
         child: CircularProgressIndicator(color: Colors.white),
       );
     }
-    return GestureDetector(
-      onTap: _toggleVideo,
-      onDoubleTap: _toggleControls,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Center(
-            child: AspectRatio(
-              aspectRatio: _videoController!.value.aspectRatio,
-              child: VideoPlayer(_videoController!),
-            ),
-          ),
-          // 播放大图标（暂停时）
-          if (!_videoController!.value.isPlaying)
-            Center(
-              child: Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.5),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.play_arrow_rounded,
-                    color: Colors.white, size: 40),
-              ),
-            ),
-          // 底部进度条
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 200),
-            bottom: _showControls ? 0 : -80,
-            left: 0,
-            right: 0,
-            child: _buildVideoControls(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildVideoControls() {
-    final cs = Theme.of(context).colorScheme;
-    return Container(
-      height: 64,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.bottomCenter,
-          end: Alignment.topCenter,
-          colors: [Colors.black.withOpacity(0.9), Colors.transparent],
-        ),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: Row(
-        children: [
-          Text(_fmt(_videoPosition),
-              style: const TextStyle(color: Colors.white70, fontSize: 11)),
-          Expanded(
-            child: SliderTheme(
-              data: SliderThemeData(
-                trackHeight: 3,
-                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                activeTrackColor: Colors.white,
-                inactiveTrackColor: Colors.white24,
-                thumbColor: Colors.white,
-              ),
-              child: Slider(
-                value: _videoPosition.inMilliseconds.toDouble().clamp(
-                    0.0,
-                    _videoDuration.inMilliseconds
-                        .toDouble()
-                        .clamp(1.0, double.infinity)),
-                max: _videoDuration.inMilliseconds
-                    .toDouble()
-                    .clamp(1.0, double.infinity),
-                onChanged: _seekVideo,
-              ),
-            ),
-          ),
-          Text(_fmt(_videoDuration),
-              style: const TextStyle(color: Colors.white70, fontSize: 11)),
-          const SizedBox(width: 8),
-          // 倍速按钮
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: _cycleSpeed,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: _videoSpeed != 1.0
-                      ? cs.primary
-                      : Colors.white.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  '${_videoSpeed}x',
-                  style: TextStyle(
-                    color: _videoSpeed != 1.0 ? Colors.white : Colors.white70,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
+    return Center(
+      child: AspectRatio(
+        aspectRatio: _videoController!.value.aspectRatio,
+        child: VideoPlayer(_videoController!),
       ),
     );
   }
@@ -393,7 +310,7 @@ class _ViewerPageState extends State<ViewerPage>
   }
 
   // ═══════════════════════════════════════════════════════
-  // 顶部栏
+  // 顶部栏（苹果风格：简洁半透明）
   // ═══════════════════════════════════════════════════════
 
   Widget _buildTopBar() {
@@ -408,18 +325,18 @@ class _ViewerPageState extends State<ViewerPage>
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.black.withOpacity(0.7), Colors.transparent],
+            colors: [Colors.black.withOpacity(0.6), Colors.transparent],
           ),
         ),
         padding: EdgeInsets.only(
-          top: MediaQuery.of(context).padding.top + 8,
-          left: 8,
-          right: 8,
-          bottom: 16,
+          top: MediaQuery.of(context).padding.top + 4,
+          left: 4,
+          right: 4,
+          bottom: 8,
         ),
         child: Row(
           children: [
-            _iconBtn(Icons.arrow_back_rounded, _goBack),
+            _chromeIcon(Icons.arrow_back_ios_new_rounded, _goBack),
             const SizedBox(width: 8),
             Expanded(
               child: Column(
@@ -431,44 +348,27 @@ class _ViewerPageState extends State<ViewerPage>
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500)),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600)),
                   if (multiple)
                     Text(
                       '${_currentIndex + 1} / ${widget.mediaList.length}',
                       style: TextStyle(
-                          color: Colors.white.withOpacity(0.7), fontSize: 12),
+                          color: Colors.white.withOpacity(0.6), fontSize: 11),
                     ),
                 ],
               ),
             ),
             if (_currentMedia.mediaType == MediaType.image)
-              _iconBtn(Icons.rotate_right_rounded, _rotateImage),
-            PopupMenuButton<String>(
-              icon: _iconBtn(Icons.more_vert_rounded, () {}),
-              onSelected: (value) {
-                switch (value) {
-                  case 'rename':
-                    _showRenameDialog();
-                    break;
-                  case 'album':
-                    _showAlbumPicker();
-                    break;
-                  case 'tags':
-                    _showTagManager();
-                    break;
-                  case 'info':
-                    _showFileInfo();
-                    break;
-                }
-              },
-              itemBuilder: (_) => [
-                PopupMenuItem(value: 'rename', child: Text(loc.rename)),
-                PopupMenuItem(value: 'album', child: Text(loc.addToAlbum)),
-                PopupMenuItem(value: 'tags', child: Text(loc.tags)),
-                PopupMenuItem(value: 'info', child: Text(loc.details)),
-              ],
-            ),
+              _chromeIcon(Icons.rotate_right_rounded, _rotateImage),
+            // 视频：播放/暂停
+            if (_currentMedia.mediaType == MediaType.video)
+              _chromeIcon(
+                _videoController?.value.isPlaying == true
+                    ? Icons.pause_rounded
+                    : Icons.play_arrow_rounded,
+                _toggleVideoPlay,
+              ),
           ],
         ),
       ),
@@ -476,11 +376,12 @@ class _ViewerPageState extends State<ViewerPage>
   }
 
   // ═══════════════════════════════════════════════════════
-  // 底部栏
+  // 底部区域（视频进度条 + 工具栏）
   // ═══════════════════════════════════════════════════════
 
-  Widget _buildBottomBar() {
+  Widget _buildBottomSection() {
     final loc = AppLocalizations.of(context);
+    final isVideo = _currentMedia.mediaType == MediaType.video;
     return Positioned(
       bottom: 0,
       left: 0,
@@ -490,66 +391,148 @@ class _ViewerPageState extends State<ViewerPage>
           gradient: LinearGradient(
             begin: Alignment.bottomCenter,
             end: Alignment.topCenter,
-            colors: [Colors.black.withOpacity(0.85), Colors.transparent],
+            colors: [Colors.black.withOpacity(0.8), Colors.transparent],
           ),
         ),
         padding: EdgeInsets.fromLTRB(
-            16, 24, 16, MediaQuery.of(context).padding.bottom + 12),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            16, 20, 16, MediaQuery.of(context).padding.bottom + 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            _actionBtn(
-                Icons.camera_alt_outlined, loc.addToAlbum, _showAlbumPicker),
-            _actionBtn(Icons.label_outlined, loc.tags, _showTagManager),
-            _actionBtn(
-                Icons.delete_outline_rounded, loc.delete, _showDeleteConfirm,
-                color: Colors.red),
+            // 视频进度条（仅视频显示，放在工具栏上方）
+            if (isVideo && _videoReady) ...[
+              _buildVideoProgressBar(),
+              const SizedBox(height: 12),
+            ],
+            // 底部工具栏：相册 / 标签 / 删除
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _bottomAction(Icons.camera_alt_outlined, loc.addToAlbum,
+                    _showAlbumPicker),
+                _bottomAction(Icons.label_outline, loc.tags, _showTagManager),
+                _bottomAction(Icons.info_outline, loc.details, _showFileInfo),
+                _bottomAction(
+                    Icons.delete_outline, loc.delete, _showDeleteConfirm,
+                    color: Colors.redAccent),
+              ],
+            ),
           ],
         ),
       ),
     );
   }
 
+  Widget _buildVideoProgressBar() {
+    final isPlaying = _videoController?.value.isPlaying ?? false;
+    final maxMs =
+        _videoDuration.inMilliseconds.toDouble().clamp(1.0, double.infinity);
+    final posMs = _videoPosition.inMilliseconds.toDouble().clamp(0.0, maxMs);
+    return Row(
+      children: [
+        // 播放/暂停按钮
+        GestureDetector(
+          onTap: _toggleVideoPlay,
+          child: Icon(
+            isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+            color: Colors.white,
+            size: 22,
+          ),
+        ),
+        const SizedBox(width: 8),
+        // 时间
+        Text(_fmtDur(_videoPosition),
+            style: const TextStyle(color: Colors.white70, fontSize: 11)),
+        const SizedBox(width: 8),
+        // 进度条
+        Expanded(
+          child: SliderTheme(
+            data: SliderThemeData(
+              trackHeight: 3,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+              activeTrackColor: Colors.white,
+              inactiveTrackColor: Colors.white24,
+              thumbColor: Colors.white,
+            ),
+            child: Slider(
+              value: posMs,
+              max: maxMs,
+              onChanged: _seekVideo,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        // 总时长
+        Text(_fmtDur(_videoDuration),
+            style: const TextStyle(color: Colors.white70, fontSize: 11)),
+        const SizedBox(width: 8),
+        // 倍速
+        GestureDetector(
+          onTap: _cycleSpeed,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: _videoSpeed != 1.0
+                  ? Colors.white.withOpacity(0.2)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              '${_videoSpeed}x',
+              style: TextStyle(
+                color: _videoSpeed != 1.0 ? Colors.white : Colors.white70,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   // ═══════════════════════════════════════════════════════
-  // 辅助
+  // 辅助组件
   // ═══════════════════════════════════════════════════════
 
-  Widget _iconBtn(IconData icon, VoidCallback onTap) {
+  Widget _chromeIcon(IconData icon, VoidCallback onTap) {
     return Material(
       color: Colors.white.withOpacity(0.15),
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(8),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(8),
         child: SizedBox(
-            width: 36,
-            height: 36,
-            child: Icon(icon, color: Colors.white, size: 20)),
+          width: 36,
+          height: 36,
+          child: Icon(icon, color: Colors.white, size: 20),
+        ),
       ),
     );
   }
 
-  Widget _actionBtn(IconData icon, String label, VoidCallback onTap,
+  Widget _bottomAction(IconData icon, String label, VoidCallback onTap,
       {Color? color}) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: SizedBox(
-        width: 72,
+        width: 64,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color ?? Colors.white, size: 26),
+            Icon(icon, color: color ?? Colors.white, size: 24),
             const SizedBox(height: 4),
             Text(label,
-                style: TextStyle(color: color ?? Colors.white, fontSize: 12)),
+                style: TextStyle(color: color ?? Colors.white, fontSize: 11)),
           ],
         ),
       ),
     );
   }
 
-  String _fmt(Duration d) {
+  String _fmtDur(Duration d) {
     final h = d.inHours,
         m = d.inMinutes.remainder(60),
         s = d.inSeconds.remainder(60);
@@ -568,82 +551,12 @@ class _ViewerPageState extends State<ViewerPage>
 
   String _fmtMs(int? ms) {
     if (ms == null || ms <= 0) return '0:00';
-    final d = Duration(milliseconds: ms);
-    final h = d.inHours,
-        m = d.inMinutes.remainder(60),
-        s = d.inSeconds.remainder(60);
-    return h > 0
-        ? '$h:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}'
-        : '$m:${s.toString().padLeft(2, '0')}';
+    return _fmtDur(Duration(milliseconds: ms));
   }
 
   // ═══════════════════════════════════════════════════════
   // 功能方法
   // ═══════════════════════════════════════════════════════
-
-  void _showRenameDialog() {
-    final loc = AppLocalizations.of(context);
-    final ctrl = TextEditingController(text: _currentMedia.originalName);
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(loc.rename),
-        content: TextField(
-            controller: ctrl,
-            decoration: InputDecoration(labelText: loc.newName),
-            autofocus: true),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx), child: Text(loc.cancel)),
-          FilledButton(
-            onPressed: () async {
-              final n = ctrl.text.trim();
-              if (n.isNotEmpty) {
-                await updateMedia(
-                    media: MediaItem(
-                  id: _currentMedia.id,
-                  originalName: n,
-                  storageName: _currentMedia.storageName,
-                  filePath: _currentMedia.filePath,
-                  thumbnailPath: _currentMedia.thumbnailPath,
-                  mediaType: _currentMedia.mediaType,
-                  mimeType: _currentMedia.mimeType,
-                  size: _currentMedia.size,
-                  width: _currentMedia.width,
-                  height: _currentMedia.height,
-                  duration: _currentMedia.duration,
-                  sha256Hash: _currentMedia.sha256Hash,
-                  createdAt: _currentMedia.createdAt,
-                  updatedAt: _currentMedia.updatedAt,
-                ));
-                if (mounted) {
-                  setState(() =>
-                      _currentMedia = _currentMedia.copyWith(originalName: n));
-                  context.read<MediaBloc>().add(const MediaLoadAllEvent());
-                }
-              }
-              if (ctx.mounted) Navigator.pop(ctx);
-            },
-            child: Text(loc.save),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _showTagManager() async {
-    final allTags = await tag_api.getAllTags();
-    if (!mounted) return;
-    await showDialog(
-      context: context,
-      builder: (ctx) => _TagDialog(
-        allTags: allTags,
-        currentTags: _mediaTags,
-        mediaId: _currentMedia.id,
-        onChanged: _loadTags,
-      ),
-    );
-  }
 
   Future<void> _showAlbumPicker() async {
     final loc = AppLocalizations.of(context);
@@ -683,6 +596,20 @@ class _ViewerPageState extends State<ViewerPage>
             },
           ),
         ),
+      ),
+    );
+  }
+
+  Future<void> _showTagManager() async {
+    final allTags = await tag_api.getAllTags();
+    if (!mounted) return;
+    await showDialog(
+      context: context,
+      builder: (ctx) => _TagDialog(
+        allTags: allTags,
+        currentTags: _mediaTags,
+        mediaId: _currentMedia.id,
+        onChanged: _loadTags,
       ),
     );
   }
@@ -803,11 +730,12 @@ class _TagDialog extends StatefulWidget {
   final List<tag_api.Tag> currentTags;
   final String mediaId;
   final VoidCallback onChanged;
-  const _TagDialog(
-      {required this.allTags,
-      required this.currentTags,
-      required this.mediaId,
-      required this.onChanged});
+  const _TagDialog({
+    required this.allTags,
+    required this.currentTags,
+    required this.mediaId,
+    required this.onChanged,
+  });
 
   @override
   State<_TagDialog> createState() => _TagDialogState();
@@ -815,6 +743,7 @@ class _TagDialog extends StatefulWidget {
 
 class _TagDialogState extends State<_TagDialog> {
   late final Set<String> _ids;
+
   @override
   void initState() {
     super.initState();
