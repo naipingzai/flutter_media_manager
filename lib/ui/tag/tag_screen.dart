@@ -75,7 +75,38 @@ class _TagScreenState extends State<TagScreen> {
       child: Scaffold(
         appBar: _isMediaSelectionMode
             ? _buildSelectionAppBar(context, loc, cs)
-            : _buildNormalAppBar(context, loc, cs),
+            : PreferredSize(
+                preferredSize: const Size.fromHeight(kToolbarHeight),
+                child: BlocBuilder<TagBloc, TagState>(
+                buildWhen: (prev, curr) => prev.currentParentId != curr.currentParentId,
+                builder: (context, state) {
+                  return AppBar(
+                    title: Text(loc.tabTags),
+                    leading: state.currentParentId != null
+                        ? IconButton(
+                            icon: const Icon(Icons.arrow_back_rounded),
+                            onPressed: () => context.read<TagBloc>().add(const TagNavigateUpEvent()),
+                          )
+                        : null,
+                    automaticallyImplyLeading: state.currentParentId == null,
+                    actions: [
+                      if (_filteredMedia != null)
+                        IconButton(
+                          icon: Icon(Icons.clear_all_rounded, color: cs.onSurfaceVariant),
+                          tooltip: loc.clearAll,
+                          onPressed: _clearFilter,
+                        )
+                      else if (state.currentParentId == null)
+                        IconButton(
+                          icon: Icon(Icons.filter_list_rounded, color: cs.onSurfaceVariant),
+                          tooltip: loc.tagFilter,
+                          onPressed: _showTagFilterDialog,
+                        ),
+                    ],
+                  );
+                },
+              ),
+              ),
         body: BlocBuilder<TagBloc, TagState>(
           builder: (context, state) {
             switch (state.status) {
@@ -107,38 +138,6 @@ class _TagScreenState extends State<TagScreen> {
         bottomNavigationBar:
             _isMediaSelectionMode ? _buildMediaSelectionBar(context, cs) : null,
       ),
-    );
-  }
-
-  // ── Normal AppBar ───────────────────────────────────────────────
-  PreferredSizeWidget _buildNormalAppBar(
-      BuildContext context, AppLocalizations loc, ColorScheme cs) {
-    return AppBar(
-      title: Text(loc.tabTags),
-      actions: [
-        if (_filteredMedia != null)
-          IconButton(
-            icon: Icon(Icons.clear_all_rounded, color: cs.onSurfaceVariant),
-            tooltip: loc.clearAll,
-            onPressed: _clearFilter,
-          )
-        else
-          BlocBuilder<TagBloc, TagState>(
-            buildWhen: (prev, curr) =>
-                prev.currentParentId != curr.currentParentId,
-            builder: (context, state) {
-              if (state.currentParentId != null) {
-                return const SizedBox.shrink();
-              }
-              return IconButton(
-                icon:
-                    Icon(Icons.filter_list_rounded, color: cs.onSurfaceVariant),
-                tooltip: loc.tagFilter,
-                onPressed: _showTagFilterDialog,
-              );
-            },
-          ),
-      ],
     );
   }
 
@@ -945,13 +944,14 @@ class _TagCard extends StatelessWidget {
         onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md, vertical: AppSpacing.sm),
           child: Text(
-              tag.name,
-              style: AppTextStyles.subtitle.copyWith(color: cs.onSurface),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+            tag.name,
+            style: AppTextStyles.subtitle.copyWith(color: cs.onSurface),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
       ),
     );
@@ -1169,4 +1169,3 @@ class _TagFilterDialogState extends State<_TagFilterDialog> {
     );
   }
 }
-
