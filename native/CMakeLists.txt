@@ -4,18 +4,20 @@ project(flutter_media_manager_native C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_library(sqlite3 STATIC third_party/sqlite3.c)
-target_include_directories(sqlite3 PUBLIC third_party)
+set(NATIVE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+
+add_library(sqlite3 STATIC ${NATIVE_DIR}/third_party/sqlite3.c)
+target_include_directories(sqlite3 PUBLIC ${NATIVE_DIR}/third_party)
 target_compile_definitions(sqlite3 PRIVATE SQLITE_THREADSAFE=1)
 target_compile_options(sqlite3 PRIVATE -O2 -fPIC)
 
 set(SOURCES
-    src/db/database.cpp
-    src/ffi_bridge.cpp
+    ${NATIVE_DIR}/src/db/database.cpp
+    ${NATIVE_DIR}/src/ffi_bridge.cpp
 )
 
 add_library(flutter_media_manager_native SHARED ${SOURCES})
-target_include_directories(flutter_media_manager_native PRIVATE src ${CMAKE_CURRENT_SOURCE_DIR}/third_party)
+target_include_directories(flutter_media_manager_native PRIVATE ${NATIVE_DIR}/src ${NATIVE_DIR}/third_party)
 target_link_libraries(flutter_media_manager_native PRIVATE sqlite3)
 target_compile_options(flutter_media_manager_native PRIVATE -O2 -fPIC)
 
