@@ -47,8 +47,8 @@ Route<dynamic>? generateRoute(RouteSettings settings) {
     case AppRoutes.mediaViewer:
       final args = settings.arguments as Map<String, dynamic>?;
       return _buildRoute(
-        ViewerPage(
-          initialMedia: args?['media'] as dynamic,
+        AppMediaViewer(
+          media: args?['media'] as dynamic,
           mediaList: (args?['mediaList'] as List<dynamic>?)
                   ?.cast<media_api.MediaItem>()
                   .toList() ??

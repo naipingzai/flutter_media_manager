@@ -21,21 +21,21 @@ import 'package:flutter_media_manager/functionality/media/media_bloc.dart';
 /// - 视频：播放/暂停，进度条在视频底部（播放时自动隐藏）
 /// - 底部工具栏：相册、标签、删除（只在工具栏可见时显示）
 /// - 视频进度条在底部工具栏上方，不重叠
-class ViewerPage extends StatefulWidget {
-  final MediaItem initialMedia;
+class AppMediaViewer extends StatefulWidget {
+  final MediaItem media;
   final List<MediaItem> mediaList;
 
-  const ViewerPage({
+  const AppMediaViewer({
     super.key,
-    required this.initialMedia,
+    required this.media,
     required this.mediaList,
   });
 
   @override
-  State<ViewerPage> createState() => _ViewerPageState();
+  State<AppMediaViewer> createState() => _AppMediaViewerState();
 }
 
-class _ViewerPageState extends State<ViewerPage> {
+class _AppMediaViewerState extends State<AppMediaViewer> {
   late final PageController _pageController;
   late MediaItem _currentMedia;
   int _currentIndex = 0;
@@ -55,7 +55,7 @@ class _ViewerPageState extends State<ViewerPage> {
   void initState() {
     super.initState();
     _currentIndex =
-        widget.mediaList.indexWhere((m) => m.id == widget.initialMedia.id);
+        widget.mediaList.indexWhere((m) => m.id == widget.media.id);
     if (_currentIndex < 0) _currentIndex = 0;
     _currentMedia = widget.mediaList[_currentIndex];
     _pageController = PageController(initialPage: _currentIndex);
@@ -264,6 +264,8 @@ class _ViewerPageState extends State<ViewerPage> {
             child: Image.file(
               File(media.filePath),
               fit: BoxFit.contain,
+              width: double.infinity,
+              height: double.infinity,
               errorBuilder: (_, __, ___) => const Center(
                 child: Icon(Icons.broken_image_rounded,
                     size: 64, color: Colors.white54),
@@ -648,7 +650,7 @@ class _ViewerPageState extends State<ViewerPage> {
                 Navigator.pop(context);
                 return;
               }
-              final next = math.min(_currentIndex, rest.length - 1);
+              final next = math.min(_currentIndex as int, (rest.length - 1) as int);
               setState(() {
                 _currentMedia = rest[next];
                 _currentIndex = next;
@@ -815,3 +817,5 @@ class _TagDialogState extends State<_TagDialog> {
     );
   }
 }
+
+

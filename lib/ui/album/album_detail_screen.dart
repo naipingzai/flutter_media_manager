@@ -320,8 +320,8 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => ViewerPage(
-                              initialMedia: media,
+                            builder: (_) => AppMediaViewer(
+                              media: media,
                               mediaList: _mediaList,
                             ),
                           ),

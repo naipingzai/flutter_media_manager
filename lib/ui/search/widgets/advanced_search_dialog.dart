@@ -303,7 +303,7 @@ class _AdvancedSearchDialogState extends State<AdvancedSearchDialog> {
                 color: _dateRange != null ? cs.primary : cs.outline,
                 width: _dateRange != null
                     ? AppSize.borderWidthStrong
-                    : AppSize.borderWidthDefault,
+                    : AppSize.borderWidth,
               ),
             ),
             child: Row(

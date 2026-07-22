@@ -6,7 +6,7 @@ import 'package:flutter_media_manager/core/i18n/app_localizations.dart';
 import 'package:flutter_media_manager/core/design_system/app_theme.dart';
 import 'package:flutter_media_manager/bridge/native/api/tag.dart' as tag_api;
 import 'package:flutter_media_manager/bridge/native/api/media.dart';
-import '../viewer/viewer_page.dart';
+import 'package:flutter_media_manager/ui/viewer/viewer_page.dart';
 import '../../functionality/tag/tag_bloc.dart';
 import 'package:flutter_media_manager/functionality/home/app_bloc.dart';
 
@@ -424,8 +424,8 @@ class _TagScreenState extends State<TagScreen> {
                 Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (_) => ViewerPage(
-                            initialMedia: media, mediaList: _filteredMedia!)));
+                        builder: (_) => AppMediaViewer(
+                            media: media, mediaList: _filteredMedia!)));
               }
             },
             onLongPress: () => _enterMediaSelection(media.id),

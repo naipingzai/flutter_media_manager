@@ -46,23 +46,6 @@ class AppSize {
   static const double thumbnailGrid = 120.0;
   static const double cardMinHeight = 80.0;
 
-  // Backward-compatible aliases (deprecated – use the new names above)
-  @Deprecated('Use iconSm instead')
-  static const double iconSmall = iconSm;
-  @Deprecated('Use iconMd instead')
-  static const double iconMedium = iconLg;
-  @Deprecated('Use iconXl instead')
-  static const double iconLarge = iconXl;
-  @Deprecated('Use iconXxl instead')
-  static const double iconXLarge = iconXxl;
-  @Deprecated('Use iconXxl instead')
-  static const double iconXl_ = iconXxl;
-  @Deprecated('Use touchTarget instead')
-  static const double touchTargetMin = touchTarget;
-  @Deprecated('Use borderWidth instead')
-  static const double borderWidthDefault = borderWidth;
-  @Deprecated('Use iconXl instead')
-  static const double iconXl2 = iconXxl;
 }
 
 // ─── Elevation ─────────────────────────────────────────────────────────
@@ -81,8 +64,6 @@ class AppAnimation {
   static const Duration normal = Duration(milliseconds: 250);
   static const Duration slow = Duration(milliseconds: 400);
   static const Duration thumbnailScale = Duration(milliseconds: 200);
-  @Deprecated('Use thumbnailScale instead')
-  static const Duration thumbnailScaleIn = thumbnailScale;
 }
 
 // ─── Typography ────────────────────────────────────────────────────────

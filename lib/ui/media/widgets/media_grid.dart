@@ -85,8 +85,8 @@ class MediaGrid extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ViewerPage(
-          initialMedia: media,
+        builder: (context) => AppMediaViewer(
+          media: media,
           mediaList: mediaList,
         ),
       ),
