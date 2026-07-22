@@ -75,9 +75,7 @@ jobs:
 
   build-windows:
     name: Build Windows
-    runs-on: windows-latest
-    env:
-      CMAKE_GENERATOR: Visual Studio 17 2022
+    runs-on: windows-2019
     steps:
       - uses: actions/checkout@v4
 
