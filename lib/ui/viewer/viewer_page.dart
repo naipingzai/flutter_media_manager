@@ -207,15 +207,12 @@ class _ViewerPageState extends State<ViewerPage> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // 媒体内容
-          GestureDetector(
-            onTap: _onTap,
-            child: PageView.builder(
-              controller: _pageController,
-              itemCount: widget.mediaList.length,
-              onPageChanged: _switchMedia,
-              itemBuilder: (_, i) => _buildContent(widget.mediaList[i]),
-            ),
+          // 媒体内容（不包GestureDetector，避免吞掉InteractiveViewer缩放手势）
+          PageView.builder(
+            controller: _pageController,
+            itemCount: widget.mediaList.length,
+            onPageChanged: _switchMedia,
+            itemBuilder: (_, i) => _buildContent(widget.mediaList[i]),
           ),
           // 顶部栏
           AnimatedOpacity(
@@ -247,27 +244,30 @@ class _ViewerPageState extends State<ViewerPage> {
   Widget _buildContent(MediaItem media) {
     switch (media.mediaType) {
       case MediaType.image:
-        return _buildImage();
+        return _buildImage(media);
       case MediaType.video:
-        return _buildVideo();
+        return _buildVideo(media);
       default:
         return _buildFallback(media);
     }
   }
 
-  Widget _buildImage() {
-    return InteractiveViewer(
-      minScale: 0.5,
-      maxScale: 4.0,
-      child: Center(
-        child: RotatedBox(
-          quarterTurns: _imageRotation,
-          child: Image.file(
-            File(_currentMedia.filePath),
-            fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) => const Center(
-              child: Icon(Icons.broken_image_rounded,
-                  size: 64, color: Colors.white54),
+  Widget _buildImage(MediaItem media) {
+    return GestureDetector(
+      onTap: _onTap,
+      child: InteractiveViewer(
+        minScale: 0.5,
+        maxScale: 4.0,
+        child: Center(
+          child: RotatedBox(
+            quarterTurns: _imageRotation,
+            child: Image.file(
+              File(media.filePath),
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => const Center(
+                child: Icon(Icons.broken_image_rounded,
+                    size: 64, color: Colors.white54),
+              ),
             ),
           ),
         ),
@@ -275,16 +275,19 @@ class _ViewerPageState extends State<ViewerPage> {
     );
   }
 
-  Widget _buildVideo() {
+  Widget _buildVideo(MediaItem media) {
     if (!_videoReady || _videoController == null) {
       return const Center(
         child: CircularProgressIndicator(color: Colors.white),
       );
     }
-    return Center(
-      child: AspectRatio(
-        aspectRatio: _videoController!.value.aspectRatio,
-        child: VideoPlayer(_videoController!),
+    return GestureDetector(
+      onTap: _onTap,
+      child: Center(
+        child: AspectRatio(
+          aspectRatio: _videoController!.value.aspectRatio,
+          child: VideoPlayer(_videoController!),
+        ),
       ),
     );
   }
