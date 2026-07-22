@@ -175,6 +175,7 @@ class AppLocalizations {
   String get sortSizeAsc => _get('sortSizeAsc');
   String get filterAnd => _get('filterAnd');
   String get filterOr => _get('filterOr');
+  String get sortBySize => _get('sortBySize');
   String get sortByType => _get('sortByType');
   String get showHiddenFiles => _get('showHiddenFiles');
   String get hideHiddenFiles => _get('hideHiddenFiles');
@@ -360,7 +361,7 @@ class AppLocalizations {
 }
 
 const Map<String, String> _zhStrings = {
-  'appName': '媒体知识库',
+  'appName': '媒体库',
   'confirm': '确定',
   'cancel': '取消',
   'save': '保存',
@@ -518,6 +519,7 @@ const Map<String, String> _zhStrings = {
   'hideHiddenFiles': '隐藏隐藏文件',
   'filterAnd': '并且',
   'filterOr': '或者',
+  'sortBySize': '按大小',
   'sortByType': '按类型',
   'importSelected': '导入%s',
   'backToHome': '返回首页',

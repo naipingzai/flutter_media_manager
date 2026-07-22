@@ -268,10 +268,8 @@ class _TagScreenState extends State<TagScreen> {
         itemCount: state.tagsWithInfo.length,
         itemBuilder: (context, index) {
           final tagInfo = state.tagsWithInfo[index];
-          final tagColor = tagInfo.tag.color != null
-              ? Color(int.parse(tagInfo.tag.color!.replaceFirst('#', '0xFF')))
-                  .withOpacity(0.15)
-              : cs.primaryContainer.withOpacity(0.15);
+          // 与相册统一：使用 secondaryContainer 保持一致的浅色调
+          final tagColor = cs.secondaryContainer.withOpacity(0.3);
           return _GridCard(
             name: tagInfo.tag.name,
             subtitle: '${tagInfo.mediaCount} ${loc.files}',

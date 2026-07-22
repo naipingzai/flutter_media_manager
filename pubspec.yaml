@@ -1,5 +1,5 @@
 name: flutter_media_manager
-description: "Flutter Media Manager - Cross-platform multimedia file management application (Flutter + C++)"
+description: "媒体库 - 跨平台多媒体文件管理应用 (Flutter + C++)"
 publish_to: 'none'
 
 version: 1.0.0+1

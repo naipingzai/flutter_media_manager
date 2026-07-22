@@ -52,6 +52,14 @@ class TagBloc extends Bloc<TagEvent, TagState> {
     }
   }
 
+  /// 按名称 A-Z 排序
+  List<TagWithInfo> _sortTags(List<TagWithInfo> tags) {
+    final sorted = List<TagWithInfo>.from(tags);
+    sorted.sort((a, b) =>
+        a.tag.name.toLowerCase().compareTo(b.tag.name.toLowerCase()));
+    return sorted;
+  }
+
   Future<void> _onLoadRoots(
     TagLoadRootsEvent event,
     Emitter<TagState> emit,
@@ -59,9 +67,10 @@ class TagBloc extends Bloc<TagEvent, TagState> {
     emit(state.copyWith(status: TagStatus.loading));
     try {
       final tags = await getRootTags();
+      final sortedTags = _sortTags(tags);
       emit(state.copyWith(
         status: TagStatus.loaded,
-        tagsWithInfo: tags,
+        tagsWithInfo: sortedTags,
       ));
     } catch (e) {
       _logger.e('加载根标签失败: $e');
@@ -79,9 +88,10 @@ class TagBloc extends Bloc<TagEvent, TagState> {
     emit(state.copyWith(status: TagStatus.loading));
     try {
       final tags = await getChildTags(parentId: event.parentId);
+      final sortedTags = _sortTags(tags);
       emit(state.copyWith(
         status: TagStatus.loaded,
-        tagsWithInfo: tags,
+        tagsWithInfo: sortedTags,
         currentParentId: event.parentId,
       ));
     } catch (e) {

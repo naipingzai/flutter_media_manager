@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:video_player/video_player.dart';
+
 import 'package:flutter_media_manager/core/i18n/app_localizations.dart';
 import 'package:flutter_media_manager/bridge/native/api/album.dart'
     as album_api;
@@ -14,13 +15,10 @@ import 'package:flutter_media_manager/functionality/media/media_bloc.dart';
 
 /// 媒体查看器 - 苹果相册风格
 ///
-/// 设计参考：Apple Photos
 /// - 全屏沉浸式黑色背景
 /// - 单击切换工具栏显隐
-/// - 图片：双指缩放，双击放大/还原，旋转
-/// - 视频：播放/暂停，进度条在视频底部（播放时自动隐藏）
-/// - 底部工具栏：相册、标签、删除（只在工具栏可见时显示）
-/// - 视频进度条在底部工具栏上方，不重叠
+/// - 图片：双指缩放
+/// - 视频：播放控制
 class AppMediaViewer extends StatefulWidget {
   final MediaItem media;
   final List<MediaItem> mediaList;
@@ -41,7 +39,7 @@ class _AppMediaViewerState extends State<AppMediaViewer> {
   int _currentIndex = 0;
   List<tag_api.Tag> _mediaTags = [];
   int _imageRotation = 0;
-  bool _showChrome = true; // 控制顶部+底部工具栏显隐
+  bool _showChrome = true;
 
   // 视频
   VideoPlayerController? _videoController;
@@ -54,8 +52,7 @@ class _AppMediaViewerState extends State<AppMediaViewer> {
   @override
   void initState() {
     super.initState();
-    _currentIndex =
-        widget.mediaList.indexWhere((m) => m.id == widget.media.id);
+    _currentIndex = widget.mediaList.indexWhere((m) => m.id == widget.media.id);
     if (_currentIndex < 0) _currentIndex = 0;
     _currentMedia = widget.mediaList[_currentIndex];
     _pageController = PageController(initialPage: _currentIndex);
@@ -73,13 +70,12 @@ class _AppMediaViewerState extends State<AppMediaViewer> {
     super.dispose();
   }
 
-  // ═══════════════════════════════════════════════════════
-  // 数据
-  // ═══════════════════════════════════════════════════════
+  // ── 数据 ─────────────────────────────────────────────────
 
   Future<void> _loadTags() async {
     final tags = await tag_api.getMediaTags(mediaId: _currentMedia.id);
-    if (mounted) setState(() => _mediaTags = tags);
+    if (!mounted) return;
+    setState(() => _mediaTags = tags);
   }
 
   void _switchMedia(int index) {
@@ -100,18 +96,21 @@ class _AppMediaViewerState extends State<AppMediaViewer> {
     }
   }
 
-  // ═══════════════════════════════════════════════════════
-  // 视频播放器
-  // ═══════════════════════════════════════════════════════
+  // ── 视频播放器 ──────────────────────────────────────────
 
   Future<void> _initVideo() async {
     _disposeVideo();
     final c = VideoPlayerController.file(File(_currentMedia.filePath));
     _videoController = c;
     c.addListener(_onVideoTick);
-    await c.initialize();
-    if (!mounted) return;
-    setState(() => _videoReady = true);
+    try {
+      await c.initialize();
+      if (!mounted) return;
+      setState(() => _videoReady = true);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _videoReady = false);
+    }
   }
 
   void _onVideoTick() {
@@ -121,11 +120,9 @@ class _AppMediaViewerState extends State<AppMediaViewer> {
       _videoPosition = c.value.position;
       _videoDuration = c.value.duration;
     });
-    // 播放完成自动重置
     if (c.value.isCompleted && _videoDuration > Duration.zero) {
-      _videoController?.seekTo(Duration.zero);
-      _videoController?.pause();
-      _showChrome = true;
+      c.seekTo(Duration.zero);
+      c.pause();
       _autoHideTimer?.cancel();
     }
   }
@@ -169,23 +166,22 @@ class _AppMediaViewerState extends State<AppMediaViewer> {
   void _startAutoHide() {
     _autoHideTimer?.cancel();
     _autoHideTimer = Timer(const Duration(seconds: 4), () {
-      if (mounted && (_videoController?.value.isPlaying ?? false)) {
+      if (!mounted) return;
+      if (_videoController?.value.isPlaying ?? false) {
         setState(() => _showChrome = false);
       }
     });
   }
 
-  // ═══════════════════════════════════════════════════════
-  // 交互
-  // ═══════════════════════════════════════════════════════
+  // ── 交互 ────────────────────────────────────────────────
 
-  /// 单击切换工具栏
   void _onTap() {
     setState(() => _showChrome = !_showChrome);
     if (_showChrome && (_videoController?.value.isPlaying ?? false)) {
       _startAutoHide();
+    } else {
+      _autoHideTimer?.cancel();
     }
-    _autoHideTimer?.cancel();
   }
 
   void _rotateImage() =>
@@ -196,40 +192,54 @@ class _AppMediaViewerState extends State<AppMediaViewer> {
     Navigator.pop(context);
   }
 
-  // ═══════════════════════════════════════════════════════
-  // 构建
-  // ═══════════════════════════════════════════════════════
+  // ── 构建 ────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
-        fit: StackFit.expand,
         children: [
-          // 媒体内容（不包GestureDetector，避免吞掉InteractiveViewer缩放手势）
-          PageView.builder(
-            controller: _pageController,
-            itemCount: widget.mediaList.length,
-            onPageChanged: _switchMedia,
-            itemBuilder: (_, i) => _buildContent(widget.mediaList[i]),
-          ),
-          // 顶部栏
-          AnimatedOpacity(
-            opacity: _showChrome ? 1.0 : 0.0,
-            duration: const Duration(milliseconds: 200),
-            child: IgnorePointer(
-              ignoring: !_showChrome,
-              child: _buildTopBar(),
+          // 1. 媒体内容层（始终在最底）
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: _onTap,
+              child: PageView.builder(
+                controller: _pageController,
+                itemCount: widget.mediaList.length,
+                onPageChanged: _switchMedia,
+                itemBuilder: (_, i) => _buildContent(widget.mediaList[i]),
+              ),
             ),
           ),
-          // 底部栏（视频进度条 + 工具栏）
-          AnimatedOpacity(
-            opacity: _showChrome ? 1.0 : 0.0,
-            duration: const Duration(milliseconds: 200),
-            child: IgnorePointer(
-              ignoring: !_showChrome,
-              child: _buildBottomSection(),
+          // 2. 顶部栏
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: AnimatedSlide(
+              duration: const Duration(milliseconds: 200),
+              offset: _showChrome ? Offset.zero : const Offset(0, -1),
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 200),
+                opacity: _showChrome ? 1.0 : 0.0,
+                child: _buildTopBar(),
+              ),
+            ),
+          ),
+          // 3. 底部栏
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: AnimatedSlide(
+              duration: const Duration(milliseconds: 200),
+              offset: _showChrome ? Offset.zero : const Offset(0, 1),
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 200),
+                opacity: _showChrome ? 1.0 : 0.0,
+                child: _buildBottomSection(),
+              ),
             ),
           ),
         ],
@@ -237,9 +247,7 @@ class _AppMediaViewerState extends State<AppMediaViewer> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════
-  // 内容
-  // ═══════════════════════════════════════════════════════
+  // ── 内容 ────────────────────────────────────────────────
 
   Widget _buildContent(MediaItem media) {
     switch (media.mediaType) {
@@ -253,24 +261,17 @@ class _AppMediaViewerState extends State<AppMediaViewer> {
   }
 
   Widget _buildImage(MediaItem media) {
-    return GestureDetector(
-      onTap: _onTap,
-      child: InteractiveViewer(
-        minScale: 0.5,
-        maxScale: 4.0,
-        child: Center(
-          child: RotatedBox(
-            quarterTurns: _imageRotation,
-            child: Image.file(
-              File(media.filePath),
-              fit: BoxFit.contain,
-              width: double.infinity,
-              height: double.infinity,
-              errorBuilder: (_, __, ___) => const Center(
-                child: Icon(Icons.broken_image_rounded,
-                    size: 64, color: Colors.white54),
-              ),
-            ),
+    return InteractiveViewer(
+      minScale: 0.5,
+      maxScale: 4.0,
+      child: RotatedBox(
+        quarterTurns: _imageRotation,
+        child: Image.file(
+          File(media.filePath),
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => const Center(
+            child: Icon(Icons.broken_image_rounded,
+                size: 64, color: Colors.white54),
           ),
         ),
       ),
@@ -283,13 +284,10 @@ class _AppMediaViewerState extends State<AppMediaViewer> {
         child: CircularProgressIndicator(color: Colors.white),
       );
     }
-    return GestureDetector(
-      onTap: _onTap,
-      child: Center(
-        child: AspectRatio(
-          aspectRatio: _videoController!.value.aspectRatio,
-          child: VideoPlayer(_videoController!),
-        ),
+    return Center(
+      child: AspectRatio(
+        aspectRatio: _videoController!.value.aspectRatio,
+        child: VideoPlayer(_videoController!),
       ),
     );
   }
@@ -314,116 +312,98 @@ class _AppMediaViewerState extends State<AppMediaViewer> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════
-  // 顶部栏（苹果风格：简洁半透明）
-  // ═══════════════════════════════════════════════════════
+  // ── 顶部栏 ──────────────────────────────────────────────
 
   Widget _buildTopBar() {
-    final loc = AppLocalizations.of(context);
     final multiple = widget.mediaList.length > 1;
-    return Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.black.withOpacity(0.6), Colors.transparent],
-          ),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Colors.black.withOpacity(0.6), Colors.transparent],
         ),
-        padding: EdgeInsets.only(
-          top: MediaQuery.of(context).padding.top + 4,
-          left: 4,
-          right: 4,
-          bottom: 8,
-        ),
-        child: Row(
-          children: [
-            _chromeIcon(Icons.arrow_back_ios_new_rounded, _goBack),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(_currentMedia.originalName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600)),
-                  if (multiple)
-                    Text(
-                      '${_currentIndex + 1} / ${widget.mediaList.length}',
-                      style: TextStyle(
-                          color: Colors.white.withOpacity(0.6), fontSize: 11),
-                    ),
-                ],
-              ),
+      ),
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 4,
+        left: 4,
+        right: 4,
+        bottom: 8,
+      ),
+      child: Row(
+        children: [
+          _chromeIcon(Icons.arrow_back_ios_new_rounded, _goBack),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(_currentMedia.originalName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600)),
+                if (multiple)
+                  Text(
+                    '${_currentIndex + 1} / ${widget.mediaList.length}',
+                    style: TextStyle(
+                        color: Colors.white.withOpacity(0.6), fontSize: 11),
+                  ),
+              ],
             ),
-            if (_currentMedia.mediaType == MediaType.image)
-              _chromeIcon(Icons.rotate_right_rounded, _rotateImage),
-            // 视频：播放/暂停
-            if (_currentMedia.mediaType == MediaType.video)
-              _chromeIcon(
-                _videoController?.value.isPlaying == true
-                    ? Icons.pause_rounded
-                    : Icons.play_arrow_rounded,
-                _toggleVideoPlay,
-              ),
-          ],
-        ),
+          ),
+          if (_currentMedia.mediaType == MediaType.image)
+            _chromeIcon(Icons.rotate_right_rounded, _rotateImage),
+          if (_currentMedia.mediaType == MediaType.video)
+            _chromeIcon(
+              _videoController?.value.isPlaying == true
+                  ? Icons.pause_rounded
+                  : Icons.play_arrow_rounded,
+              _toggleVideoPlay,
+            ),
+        ],
       ),
     );
   }
 
-  // ═══════════════════════════════════════════════════════
-  // 底部区域（视频进度条 + 工具栏）
-  // ═══════════════════════════════════════════════════════
+  // ── 底部栏 ──────────────────────────────────────────────
 
   Widget _buildBottomSection() {
     final loc = AppLocalizations.of(context);
     final isVideo = _currentMedia.mediaType == MediaType.video;
-    return Positioned(
-      bottom: 0,
-      left: 0,
-      right: 0,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.bottomCenter,
-            end: Alignment.topCenter,
-            colors: [Colors.black.withOpacity(0.8), Colors.transparent],
-          ),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.bottomCenter,
+          end: Alignment.topCenter,
+          colors: [Colors.black.withOpacity(0.8), Colors.transparent],
         ),
-        padding: EdgeInsets.fromLTRB(
-            16, 20, 16, MediaQuery.of(context).padding.bottom + 12),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // 视频进度条（仅视频显示，放在工具栏上方）
-            if (isVideo && _videoReady) ...[
-              _buildVideoProgressBar(),
-              const SizedBox(height: 12),
-            ],
-            // 底部工具栏：相册 / 标签 / 删除
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _bottomAction(Icons.camera_alt_outlined, loc.addToAlbum,
-                    _showAlbumPicker),
-                _bottomAction(Icons.label_outline, loc.tags, _showTagManager),
-                _bottomAction(Icons.info_outline, loc.details, _showFileInfo),
-                _bottomAction(
-                    Icons.delete_outline, loc.delete, _showDeleteConfirm,
-                    color: Colors.redAccent),
-              ],
-            ),
+      ),
+      padding: EdgeInsets.fromLTRB(
+          16, 20, 16, MediaQuery.of(context).padding.bottom + 12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isVideo && _videoReady) ...[
+            _buildVideoProgressBar(),
+            const SizedBox(height: 12),
           ],
-        ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _bottomAction(
+                  Icons.camera_alt_outlined, loc.addToAlbum, _showAlbumPicker),
+              _bottomAction(Icons.label_outline, loc.tags, _showTagManager),
+              _bottomAction(Icons.info_outline, loc.details, _showFileInfo),
+              _bottomAction(
+                  Icons.delete_outline, loc.delete, _showDeleteConfirm,
+                  color: Colors.redAccent),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -435,7 +415,6 @@ class _AppMediaViewerState extends State<AppMediaViewer> {
     final posMs = _videoPosition.inMilliseconds.toDouble().clamp(0.0, maxMs);
     return Row(
       children: [
-        // 播放/暂停按钮
         GestureDetector(
           onTap: _toggleVideoPlay,
           child: Icon(
@@ -445,11 +424,9 @@ class _AppMediaViewerState extends State<AppMediaViewer> {
           ),
         ),
         const SizedBox(width: 8),
-        // 时间
         Text(_fmtDur(_videoPosition),
             style: const TextStyle(color: Colors.white70, fontSize: 11)),
         const SizedBox(width: 8),
-        // 进度条
         Expanded(
           child: SliderTheme(
             data: SliderThemeData(
@@ -468,11 +445,9 @@ class _AppMediaViewerState extends State<AppMediaViewer> {
           ),
         ),
         const SizedBox(width: 8),
-        // 总时长
         Text(_fmtDur(_videoDuration),
             style: const TextStyle(color: Colors.white70, fontSize: 11)),
         const SizedBox(width: 8),
-        // 倍速
         GestureDetector(
           onTap: _cycleSpeed,
           child: Container(
@@ -497,9 +472,7 @@ class _AppMediaViewerState extends State<AppMediaViewer> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════
-  // 辅助组件
-  // ═══════════════════════════════════════════════════════
+  // ── 辅助组件 ────────────────────────────────────────────
 
   Widget _chromeIcon(IconData icon, VoidCallback onTap) {
     return Material(
@@ -559,9 +532,7 @@ class _AppMediaViewerState extends State<AppMediaViewer> {
     return _fmtDur(Duration(milliseconds: ms));
   }
 
-  // ═══════════════════════════════════════════════════════
-  // 功能方法
-  // ═══════════════════════════════════════════════════════
+  // ── 功能方法 ────────────────────────────────────────────
 
   Future<void> _showAlbumPicker() async {
     final loc = AppLocalizations.of(context);
@@ -573,7 +544,7 @@ class _AppMediaViewerState extends State<AppMediaViewer> {
           .showSnackBar(SnackBar(content: Text(loc.noAlbums)));
       return;
     }
-    await showDialog(
+    await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(loc.addToAlbum),
@@ -591,11 +562,11 @@ class _AppMediaViewerState extends State<AppMediaViewer> {
                 onTap: () async {
                   await album_api.addMediaToAlbum(
                       mediaIds: [_currentMedia.id], albumId: a.album.id);
-                  if (ctx.mounted) {
-                    Navigator.pop(ctx);
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text('${loc.addToAlbum}: ${a.album.name}')));
-                  }
+                  if (!ctx.mounted) return;
+                  Navigator.pop(ctx);
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text('${loc.addToAlbum}: ${a.album.name}')));
                 },
               );
             },
@@ -608,7 +579,7 @@ class _AppMediaViewerState extends State<AppMediaViewer> {
   Future<void> _showTagManager() async {
     final allTags = await tag_api.getAllTags();
     if (!mounted) return;
-    await showDialog(
+    await showDialog<void>(
       context: context,
       builder: (ctx) => _TagDialog(
         allTags: allTags,
@@ -622,7 +593,7 @@ class _AppMediaViewerState extends State<AppMediaViewer> {
   void _showDeleteConfirm() {
     final loc = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         icon: Icon(Icons.delete_outline_rounded, size: 40, color: cs.error),
@@ -650,7 +621,7 @@ class _AppMediaViewerState extends State<AppMediaViewer> {
                 Navigator.pop(context);
                 return;
               }
-              final next = math.min(_currentIndex as int, (rest.length - 1) as int);
+              final next = math.min(_currentIndex, rest.length - 1);
               setState(() {
                 _currentMedia = rest[next];
                 _currentIndex = next;
@@ -659,10 +630,11 @@ class _AppMediaViewerState extends State<AppMediaViewer> {
               });
               _pageController.jumpToPage(next);
               _loadTags();
-              if (_currentMedia.mediaType == MediaType.video)
+              if (_currentMedia.mediaType == MediaType.video) {
                 _initVideo();
-              else
+              } else {
                 _disposeVideo();
+              }
             },
             child: Text(loc.delete),
           ),
@@ -681,14 +653,14 @@ class _AppMediaViewerState extends State<AppMediaViewer> {
         _infoRow(
             loc.resolution, '${_currentMedia.width} x ${_currentMedia.height}'),
       if (_currentMedia.duration != null)
-        _infoRow(loc.duration, _fmtMs(_currentMedia.duration!)),
+        _infoRow(loc.duration, _fmtMs(_currentMedia.duration)),
       _infoRow(
           loc.tags,
           _mediaTags.isEmpty
               ? loc.none
               : _mediaTags.map((t) => t.name).join(', ')),
     ];
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(loc.details),
@@ -726,9 +698,7 @@ class _AppMediaViewerState extends State<AppMediaViewer> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-// 标签对话框
-// ═══════════════════════════════════════════════════════════════════════
+// ── 标签对话框 ────────────────────────────────────────────────
 
 class _TagDialog extends StatefulWidget {
   final List<tag_api.Tag> allTags;
@@ -763,10 +733,9 @@ class _TagDialogState extends State<_TagDialog> {
       await tag_api.addTagToMedia(mediaId: widget.mediaId, tagId: tag.id);
       _ids.add(tag.id);
     }
-    if (mounted) {
-      setState(() {});
-      widget.onChanged();
-    }
+    if (!mounted) return;
+    setState(() {});
+    widget.onChanged();
   }
 
   @override
@@ -780,11 +749,12 @@ class _TagDialogState extends State<_TagDialog> {
         child: widget.allTags.isEmpty
             ? Center(
                 child: Column(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.label_off_outlined,
-                    size: 48, color: cs.onSurfaceVariant),
-                const SizedBox(height: 12),
-                Text(loc.noTags),
-              ]))
+                  Icon(Icons.label_off_outlined,
+                      size: 48, color: cs.onSurfaceVariant),
+                  const SizedBox(height: 12),
+                  Text(loc.noTags),
+                ]),
+              )
             : ListView.builder(
                 shrinkWrap: true,
                 itemCount: widget.allTags.length,
@@ -817,5 +787,3 @@ class _TagDialogState extends State<_TagDialog> {
     );
   }
 }
-
-
