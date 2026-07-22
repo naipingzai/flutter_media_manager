@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_media_manager/core/design_system/app_theme.dart';
+import 'package:flutter_media_manager/core/design_system/components.dart';
 import 'package:flutter_media_manager/core/i18n/app_localizations.dart';
 import 'package:flutter_media_manager/bridge/native/api/album.dart';
 import 'package:flutter_media_manager/ui/viewer/viewer_page.dart';
@@ -168,7 +169,7 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
               width: 40,
               height: 40,
               child:
-                  CircularProgressIndicator(strokeWidth: 3, color: cs.primary),
+                  AppLoadingState(),
             ),
             const SizedBox(height: AppSpacing.md),
             Text(loc.loading,

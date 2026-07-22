@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:flutter_media_manager/core/design_system/app_theme.dart';
+import 'package:flutter_media_manager/core/design_system/components.dart';
 import 'package:flutter_media_manager/core/i18n/app_localizations.dart';
 import 'widgets/media_grid.dart';
 import 'widgets/file_browser_dialog.dart';
@@ -240,23 +241,7 @@ class _MediaScreenState extends State<MediaScreen> {
 
   // ── Loading ─────────────────────────────────────────────────────
   Widget _buildLoading(BuildContext context, ColorScheme cs) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: 40,
-            height: 40,
-            child: CircularProgressIndicator(strokeWidth: 3, color: cs.primary),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            AppLocalizations.of(context).loading,
-            style: AppTextStyles.body.copyWith(color: cs.onSurfaceVariant),
-          ),
-        ],
-      ),
-    );
+    return AppLoadingState(message: AppLocalizations.of(context).loading);
   }
 
   // ── Body ────────────────────────────────────────────────────────
@@ -266,39 +251,10 @@ class _MediaScreenState extends State<MediaScreen> {
       case MediaStatus.loading:
         return _buildLoading(context, cs);
       case MediaStatus.error:
-        return Center(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.xl),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: cs.errorContainer.withOpacity(0.3),
-                    shape: BoxShape.circle,
-                  ),
-                  child:
-                      Icon(Icons.cloud_off_rounded, size: 48, color: cs.error),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                Text(
-                  '${AppLocalizations.of(context).error}: ${state.errorMessage ?? AppLocalizations.of(context).unknown}',
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.body.copyWith(
-                    color: cs.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                FilledButton.icon(
-                  onPressed: () =>
-                      context.read<MediaBloc>().add(const MediaLoadAllEvent()),
-                  icon: const Icon(Icons.refresh_rounded, size: 18),
-                  label: Text(AppLocalizations.of(context).retry),
-                ),
-              ],
-            ),
-          ),
+        return AppErrorState(
+          message: state.errorMessage ?? AppLocalizations.of(context).unknown,
+          onRetry: () =>
+              context.read<MediaBloc>().add(const MediaLoadAllEvent()),
         );
       case MediaStatus.loaded:
         if (state.filteredList.isEmpty) {

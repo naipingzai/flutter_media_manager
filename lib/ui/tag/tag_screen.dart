@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:flutter_media_manager/core/i18n/app_localizations.dart';
 import 'package:flutter_media_manager/core/design_system/app_theme.dart';
+import 'package:flutter_media_manager/core/design_system/components.dart';
 import 'package:flutter_media_manager/bridge/native/api/tag.dart' as tag_api;
 import 'package:flutter_media_manager/bridge/native/api/media.dart';
 import 'package:flutter_media_manager/ui/viewer/viewer_page.dart';
@@ -175,7 +176,7 @@ class _TagScreenState extends State<TagScreen> {
             width: 40,
             height: 40,
             child:
-                CircularProgressIndicator(strokeWidth: 3, color: cs.primary)),
+                AppLoadingState()),
         const SizedBox(height: AppSpacing.md),
         Text(loc.loading,
             style: AppTextStyles.body.copyWith(color: cs.onSurfaceVariant)),

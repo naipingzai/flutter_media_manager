@@ -81,20 +81,7 @@ class _AlbumScreenState extends State<AlbumScreen> {
   Widget _buildBody(
       BuildContext context, AppLocalizations loc, ColorScheme cs) {
     if (_loading) {
-      return Center(
-          child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox(
-              width: 40,
-              height: 40,
-              child:
-                  CircularProgressIndicator(strokeWidth: 3, color: cs.primary)),
-          const SizedBox(height: AppSpacing.md),
-          Text(loc.loading,
-              style: AppTextStyles.body.copyWith(color: cs.onSurfaceVariant)),
-        ],
-      ));
+      return AppLoadingState(message: loc.loading);
     }
     if (_error != null) {
       return Center(
