@@ -130,7 +130,7 @@ class PermissionService {
     return PermissionResult.denied;
   }
 
-  /// 兼容性入口：先检查后请求（用于界面层）
+  /// 统一入口：先检查后请求（用于界面层）
   static Future<PermissionResult> checkAndRequestStoragePermission() async {
     final current = await checkStoragePermission();
     if (current == PermissionResult.granted ||
