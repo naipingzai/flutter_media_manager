@@ -53,6 +53,10 @@ add_subdirectory(${FLUTTER_MANAGED_DIR})
 add_subdirectory("runner")
 
 
+# Build the native C++ library from the native/ directory
+set(NATIVE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../native")
+add_subdirectory(${NATIVE_DIR} ${CMAKE_BINARY_DIR}/native)
+
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.
 include(flutter/generated_plugins.cmake)
@@ -102,7 +106,15 @@ install(CODE "
 install(DIRECTORY "${PROJECT_BUILD_DIR}/${FLUTTER_ASSET_DIR_NAME}"
   DESTINATION "${INSTALL_BUNDLE_DATA_DIR}" COMPONENT Runtime)
 
-# Install the AOT library on non-Debug builds only.
-install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
-  CONFIGURATIONS Profile;Release
+
+# Install the native C++ shared library (DLL on Windows)
+install(TARGETS flutter_media_manager_native
+  RUNTIME DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+  LIBRARY DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
   COMPONENT Runtime)
+
+# Install the AOT library on non-Debug builds only.
+if(NOT CMAKE_BUILD_TYPE MATCHES "Debug")
+  install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
+    COMPONENT Runtime)
+endif()

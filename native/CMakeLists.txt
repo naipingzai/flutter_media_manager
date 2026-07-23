@@ -9,7 +9,11 @@ set(NATIVE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 add_library(sqlite3 STATIC ${NATIVE_DIR}/third_party/sqlite3.c)
 target_include_directories(sqlite3 PUBLIC ${NATIVE_DIR}/third_party)
 target_compile_definitions(sqlite3 PRIVATE SQLITE_THREADSAFE=1)
-target_compile_options(sqlite3 PRIVATE -O2 -fPIC)
+if(MSVC)
+  target_compile_options(sqlite3 PRIVATE /O2)
+else()
+  target_compile_options(sqlite3 PRIVATE -O2 -fPIC)
+endif()
 
 set(SOURCES
     ${NATIVE_DIR}/src/db/database.cpp
@@ -19,9 +23,15 @@ set(SOURCES
 add_library(flutter_media_manager_native SHARED ${SOURCES})
 target_include_directories(flutter_media_manager_native PRIVATE ${NATIVE_DIR}/src ${NATIVE_DIR}/third_party)
 target_link_libraries(flutter_media_manager_native PRIVATE sqlite3)
-target_compile_options(flutter_media_manager_native PRIVATE -O2 -fPIC)
+if(MSVC)
+  target_compile_options(flutter_media_manager_native PRIVATE /O2)
+else()
+  target_compile_options(flutter_media_manager_native PRIVATE -O2 -fPIC)
+endif()
 
-if(NOT APPLE AND NOT ANDROID)
+if(WIN32)
+    target_compile_definitions(flutter_media_manager_native PRIVATE SQLITE_OS_WIN=1)
+elseif(NOT APPLE AND NOT ANDROID)
     target_link_libraries(flutter_media_manager_native PRIVATE pthread dl m)
 endif()
 
