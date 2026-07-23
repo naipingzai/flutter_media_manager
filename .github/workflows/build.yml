@@ -24,6 +24,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.27.0'
           channel: 'stable'
           cache: true
 
@@ -56,6 +57,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.27.0'
           channel: 'stable'
           cache: true
 
@@ -73,9 +75,7 @@ jobs:
 
   build-windows:
     name: Build Windows
-    runs-on: windows-latest
-    env:
-      CMAKE_GENERATOR: "Visual Studio 17 2022"
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
 
@@ -83,18 +83,12 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          cache: true
+
+      - name: Flutter version
+        run: flutter --version
 
       - name: Install dependencies
         run: flutter pub get
-
-      - name: Patch Flutter CMake generator to VS 2022
-        shell: pwsh
-        run: |
-          $sdkDir = flutter sdk-path
-          $file = Join-Path $sdkDir "packageslutter_tools\lib\src\windowsuild_windows.dart"
-          (Get-Content $file -Raw) -replace 'Visual Studio 16 2019', 'Visual Studio 17 2022' | Set-Content $file -NoNewline
-          Write-Host "Patched Flutter to use VS 2022 generator"
 
       - name: Build Windows app
         run: flutter build windows --release
@@ -115,6 +109,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.27.0'
           channel: 'stable'
           cache: true
 
