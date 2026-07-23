@@ -802,7 +802,11 @@ static std::string format_timestamp_filename() {
     // 本地时间缓冲区
     struct tm tm_buf;
     // 线程安全地转换为本地时间
+#ifdef _WIN32
+    localtime_s(&tm_buf, &now_t);
+#else
     localtime_r(&now_t, &tm_buf);
+#endif
     // 格式化缓冲区
     char buf[32];
     // 按格式写入
@@ -1566,7 +1570,7 @@ std::vector<MediaItem> Database::get_media_by_tags_and(const std::vector<std::st
     // 准备查询
     sqlite3_prepare_v2(db_, sql.c_str(), -1, &s, nullptr);
     // 绑定所有标签 id
-    for (size_t i = 0; i < tids.size(); i++) bind_text(s, i + 1, tids[i]);
+    for (size_t i = 0; i < tids.size(); i++) bind_text(s, static_cast<int>(i + 1), tids[i]);
     // 逐行读取
     while (sqlite3_step(s) == SQLITE_ROW) r.push_back(row_to_media_item(s));
     // 释放
@@ -1597,7 +1601,7 @@ std::vector<MediaItem> Database::get_media_by_tags_or(const std::vector<std::str
     // 准备查询
     sqlite3_prepare_v2(db_, sql.c_str(), -1, &s, nullptr);
     // 绑定所有标签 id
-    for (size_t i = 0; i < tids.size(); i++) bind_text(s, i + 1, tids[i]);
+    for (size_t i = 0; i < tids.size(); i++) bind_text(s, static_cast<int>(i + 1), tids[i]);
     // 逐行读取
     while (sqlite3_step(s) == SQLITE_ROW) r.push_back(row_to_media_item(s));
     // 释放
