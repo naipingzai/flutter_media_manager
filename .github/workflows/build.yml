@@ -24,7 +24,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.27.0'
+          flutter-version: '3.32.0'
           channel: 'stable'
           cache: true
 
@@ -57,7 +57,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.27.0'
+          flutter-version: '3.32.0'
           channel: 'stable'
           cache: true
 
@@ -75,14 +75,14 @@ jobs:
 
   build-windows:
     name: Build Windows
-    runs-on: windows-2019
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.27.0'
+          flutter-version: '3.32.0'
           channel: 'stable'
           cache: true
 
@@ -108,7 +108,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.27.0'
+          flutter-version: '3.32.0'
           channel: 'stable'
           cache: true
 
