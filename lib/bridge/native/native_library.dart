@@ -21,149 +21,149 @@ import 'package:ffi/ffi.dart';
 // 每对 typedef 包含 Native（C 侧）和 Dart（Dart 侧）签名
 
 // --------------------------------------------------------------------
-// C 侧: int amkb_init(const char* appDir)
+// C 侧: int fmm_init(const char* appDir)
 // 返回 Int32（0 成功），参数为 UTF-8 字符串指针
-typedef AmkbInitNative = Int32 Function(Pointer<Utf8> appDir);
-typedef AmkbInitDart = int Function(Pointer<Utf8> appDir);
+typedef FmmInitNative = Int32 Function(Pointer<Utf8> appDir);
+typedef FmmInitDart = int Function(Pointer<Utf8> appDir);
 
 // --------------------------------------------------------------------
 // 回调参数: id, name, type, size, path, thumb
-typedef AmkbGetAllMediaNative = Int32 Function(
+typedef FmmGetAllMediaNative = Int32 Function(
     Pointer<NativeFunction<MediaCallback>> cb);
-typedef AmkbGetAllMediaDart = int Function(
+typedef FmmGetAllMediaDart = int Function(
     Pointer<NativeFunction<MediaCallback>> cb);
 typedef MediaCallback = Void Function(Pointer<Utf8> id, Pointer<Utf8> name,
     Pointer<Utf8> type, Int64 size, Pointer<Utf8> path, Pointer<Utf8> thumb);
 
 // --------------------------------------------------------------------
-typedef AmkbSearchMediaNative = Int32 Function(
+typedef FmmSearchMediaNative = Int32 Function(
     Pointer<Utf8> query, Pointer<NativeFunction<MediaCallback>> cb);
-typedef AmkbSearchMediaDart = int Function(
+typedef FmmSearchMediaDart = int Function(
     Pointer<Utf8> query, Pointer<NativeFunction<MediaCallback>> cb);
 
 // --------------------------------------------------------------------
-typedef AmkbFilterMediaByTypeNative = Int32 Function(
+typedef FmmFilterMediaByTypeNative = Int32 Function(
     Pointer<Utf8> type, Pointer<NativeFunction<MediaCallback>> cb);
-typedef AmkbFilterMediaByTypeDart = int Function(
+typedef FmmFilterMediaByTypeDart = int Function(
     Pointer<Utf8> type, Pointer<NativeFunction<MediaCallback>> cb);
 
 // --------------------------------------------------------------------
-typedef AmkbDeleteMediaNative = Int32 Function(Pointer<Utf8> id);
-typedef AmkbDeleteMediaDart = int Function(Pointer<Utf8> id);
+typedef FmmDeleteMediaNative = Int32 Function(Pointer<Utf8> id);
+typedef FmmDeleteMediaDart = int Function(Pointer<Utf8> id);
 
 // --------------------------------------------------------------------
-typedef AmkbImportSingleFileNative = Int32 Function(Pointer<Utf8> path);
-typedef AmkbImportSingleFileDart = int Function(Pointer<Utf8> path);
+typedef FmmImportSingleFileNative = Int32 Function(Pointer<Utf8> path);
+typedef FmmImportSingleFileDart = int Function(Pointer<Utf8> path);
 
 // --------------------------------------------------------------------
-typedef AmkbScanDirectoryNative = Int32 Function(
+typedef FmmScanDirectoryNative = Int32 Function(
     Pointer<Utf8> dir, Pointer<Utf8> appDir);
-typedef AmkbScanDirectoryDart = int Function(
+typedef FmmScanDirectoryDart = int Function(
     Pointer<Utf8> dir, Pointer<Utf8> appDir);
 
 // --------------------------------------------------------------------
 typedef AlbumCallback = Void Function(
     Pointer<Utf8> id, Pointer<Utf8> name, Int32 mediaCount);
-typedef AmkbGetRootAlbumsNative = Int32 Function(
+typedef FmmGetRootAlbumsNative = Int32 Function(
     Pointer<NativeFunction<AlbumCallback>> cb);
-typedef AmkbGetRootAlbumsDart = int Function(
+typedef FmmGetRootAlbumsDart = int Function(
     Pointer<NativeFunction<AlbumCallback>> cb);
-typedef AmkbGetChildAlbumsNative = Int32 Function(
+typedef FmmGetChildAlbumsNative = Int32 Function(
     Pointer<Utf8> parentId, Pointer<NativeFunction<AlbumCallback>> cb);
-typedef AmkbGetChildAlbumsDart = int Function(
+typedef FmmGetChildAlbumsDart = int Function(
     Pointer<Utf8> parentId, Pointer<NativeFunction<AlbumCallback>> cb);
 
 // --------------------------------------------------------------------
 // 返回 Pointer<Utf8>，指向新相册 ID 字符串
-typedef AmkbCreateAlbumNative = Pointer<Utf8> Function(
+typedef FmmCreateAlbumNative = Pointer<Utf8> Function(
     Pointer<Utf8> name, Pointer<Utf8> parentId);
-typedef AmkbCreateAlbumDart = Pointer<Utf8> Function(
+typedef FmmCreateAlbumDart = Pointer<Utf8> Function(
     Pointer<Utf8> name, Pointer<Utf8> parentId);
 
 // --------------------------------------------------------------------
-typedef AmkbDeleteAlbumNative = Int32 Function(Pointer<Utf8> id);
-typedef AmkbDeleteAlbumDart = int Function(Pointer<Utf8> id);
+typedef FmmDeleteAlbumNative = Int32 Function(Pointer<Utf8> id);
+typedef FmmDeleteAlbumDart = int Function(Pointer<Utf8> id);
 
 // --------------------------------------------------------------------
-typedef AmkbRenameAlbumNative = Int32 Function(
+typedef FmmRenameAlbumNative = Int32 Function(
     Pointer<Utf8> id, Pointer<Utf8> name);
-typedef AmkbRenameAlbumDart = int Function(
+typedef FmmRenameAlbumDart = int Function(
     Pointer<Utf8> id, Pointer<Utf8> name);
 
 // --------------------------------------------------------------------
-typedef AmkbGetMediaByAlbumNative = Int32 Function(
+typedef FmmGetMediaByAlbumNative = Int32 Function(
     Pointer<Utf8> albumId, Pointer<NativeFunction<MediaCallback>> cb);
-typedef AmkbGetMediaByAlbumDart = int Function(
+typedef FmmGetMediaByAlbumDart = int Function(
     Pointer<Utf8> albumId, Pointer<NativeFunction<MediaCallback>> cb);
 
 // --------------------------------------------------------------------
 typedef TagCallback = Void Function(
     Pointer<Utf8> id, Pointer<Utf8> name, Pointer<Utf8> color);
-typedef AmkbGetAllTagsNative = Int32 Function(
+typedef FmmGetAllTagsNative = Int32 Function(
     Pointer<NativeFunction<TagCallback>> cb);
-typedef AmkbGetAllTagsDart = int Function(
+typedef FmmGetAllTagsDart = int Function(
     Pointer<NativeFunction<TagCallback>> cb);
 
 // --------------------------------------------------------------------
-typedef AmkbCreateTagNative = Pointer<Utf8> Function(
+typedef FmmCreateTagNative = Pointer<Utf8> Function(
     Pointer<Utf8> name, Pointer<Utf8> color, Pointer<Utf8> parentId);
-typedef AmkbCreateTagDart = Pointer<Utf8> Function(
+typedef FmmCreateTagDart = Pointer<Utf8> Function(
     Pointer<Utf8> name, Pointer<Utf8> color, Pointer<Utf8> parentId);
 
 // --------------------------------------------------------------------
-typedef AmkbDeleteTagNative = Int32 Function(Pointer<Utf8> id);
-typedef AmkbDeleteTagDart = int Function(Pointer<Utf8> id);
+typedef FmmDeleteTagNative = Int32 Function(Pointer<Utf8> id);
+typedef FmmDeleteTagDart = int Function(Pointer<Utf8> id);
 
 // --------------------------------------------------------------------
-typedef AmkbRenameTagNative = Int32 Function(
+typedef FmmRenameTagNative = Int32 Function(
     Pointer<Utf8> id, Pointer<Utf8> name);
-typedef AmkbRenameTagDart = int Function(Pointer<Utf8> id, Pointer<Utf8> name);
+typedef FmmRenameTagDart = int Function(Pointer<Utf8> id, Pointer<Utf8> name);
 
 // --------------------------------------------------------------------
-typedef AmkbAddTagToMediaNative = Int32 Function(
+typedef FmmAddTagToMediaNative = Int32 Function(
     Pointer<Utf8> mediaId, Pointer<Utf8> tagId);
-typedef AmkbAddTagToMediaDart = int Function(
-    Pointer<Utf8> mediaId, Pointer<Utf8> tagId);
-
-// --------------------------------------------------------------------
-typedef AmkbRemoveTagFromMediaNative = Int32 Function(
-    Pointer<Utf8> mediaId, Pointer<Utf8> tagId);
-typedef AmkbRemoveTagFromMediaDart = int Function(
+typedef FmmAddTagToMediaDart = int Function(
     Pointer<Utf8> mediaId, Pointer<Utf8> tagId);
 
 // --------------------------------------------------------------------
-typedef AmkbGetMediaTagsNative = Int32 Function(
+typedef FmmRemoveTagFromMediaNative = Int32 Function(
+    Pointer<Utf8> mediaId, Pointer<Utf8> tagId);
+typedef FmmRemoveTagFromMediaDart = int Function(
+    Pointer<Utf8> mediaId, Pointer<Utf8> tagId);
+
+// --------------------------------------------------------------------
+typedef FmmGetMediaTagsNative = Int32 Function(
     Pointer<Utf8> mediaId, Pointer<NativeFunction<TagCallback>> cb);
-typedef AmkbGetMediaTagsDart = int Function(
+typedef FmmGetMediaTagsDart = int Function(
     Pointer<Utf8> mediaId, Pointer<NativeFunction<TagCallback>> cb);
 
 // --------------------------------------------------------------------
-typedef AmkbSaveNoteNative = Int32 Function(
+typedef FmmSaveNoteNative = Int32 Function(
     Pointer<Utf8> mediaId, Pointer<Utf8> content);
-typedef AmkbSaveNoteDart = int Function(
+typedef FmmSaveNoteDart = int Function(
     Pointer<Utf8> mediaId, Pointer<Utf8> content);
 
 // --------------------------------------------------------------------
-typedef AmkbDeleteNoteNative = Int32 Function(Pointer<Utf8> id);
-typedef AmkbDeleteNoteDart = int Function(Pointer<Utf8> id);
+typedef FmmDeleteNoteNative = Int32 Function(Pointer<Utf8> id);
+typedef FmmDeleteNoteDart = int Function(Pointer<Utf8> id);
 
 // --------------------------------------------------------------------
-typedef AmkbDeleteAllDataNative = Int32 Function();
-typedef AmkbDeleteAllDataDart = int Function();
+typedef FmmDeleteAllDataNative = Int32 Function();
+typedef FmmDeleteAllDataDart = int Function();
 
 // --------------------------------------------------------------------
-typedef AmkbExportDataNative = Int32 Function(Pointer<Utf8> path);
-typedef AmkbExportDataDart = int Function(Pointer<Utf8> path);
+typedef FmmExportDataNative = Int32 Function(Pointer<Utf8> path);
+typedef FmmExportDataDart = int Function(Pointer<Utf8> path);
 
 // --------------------------------------------------------------------
-typedef AmkbImportDataNative = Int32 Function(Pointer<Utf8> path);
-typedef AmkbImportDataDart = int Function(Pointer<Utf8> path);
+typedef FmmImportDataNative = Int32 Function(Pointer<Utf8> path);
+typedef FmmImportDataDart = int Function(Pointer<Utf8> path);
 
 // --------------------------------------------------------------------
 // 7 个 int/string 参数: theme, grid, album_grid, thumb, lang, dyn_color, last_scan
-typedef AmkbSaveSettingsNative = Int32 Function(
+typedef FmmSaveSettingsNative = Int32 Function(
     Int32, Int32, Int32, Int32, Pointer<Utf8>, Int32, Pointer<Utf8>);
-typedef AmkbSaveSettingsDart = int Function(
+typedef FmmSaveSettingsDart = int Function(
     int, int, int, int, Pointer<Utf8>, int, Pointer<Utf8>);
 
 // --------------------------------------------------------------------
@@ -208,7 +208,7 @@ class NativeLibrary {
   int init(String appDir) {
     final path = appDir.toNativeUtf8();
 
-    final fn = _lib.lookupFunction<AmkbInitNative, AmkbInitDart>('amkb_init');
+    final fn = _lib.lookupFunction<FmmInitNative, FmmInitDart>('fmm_init');
 
     final result = fn(path);
 

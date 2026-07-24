@@ -36,7 +36,7 @@ class NoteFfi {
     final m = mediaId.toNativeUtf8();
     final c = content.toNativeUtf8();
     final r = _lib.lookupFunction<_SaveNoteFn,
-        int Function(Pointer<Utf8>, Pointer<Utf8>)>('amkb_save_note')(m, c);
+        int Function(Pointer<Utf8>, Pointer<Utf8>)>('fmm_save_note')(m, c);
     calloc.free(m);
     calloc.free(c);
     return r;
@@ -45,7 +45,7 @@ class NoteFfi {
   int deleteNote(String id) {
     final p = id.toNativeUtf8();
     final r = _lib.lookupFunction<_DeleteNoteFn, int Function(Pointer<Utf8>)>(
-        'amkb_delete_note')(p);
+        'fmm_delete_note')(p);
     calloc.free(p);
     return r;
   }

@@ -19,9 +19,9 @@
 #include <sqlite3.h>
 
 // --------------------------------------------------------------------
-// amkb  = Advance Media Knowledge Base 项目缩写
+// fmm   = flutter_media_manager 项目缩写
 // db    = 数据库模块命名空间
-namespace amkb {
+namespace fmm {
 namespace db {
 
 // --------------------------------------------------------------------
@@ -313,4 +313,4 @@ private:
 } // namespace db
 
 // --------------------------------------------------------------------
-} // namespace amkb
+} // namespace fmm

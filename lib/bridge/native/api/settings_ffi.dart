@@ -3,10 +3,10 @@ import 'dart:io';
 import 'package:ffi/ffi.dart';
 
 // C function signatures for settings
-typedef AmkbGetSettingsNative = Pointer<Void> Function();
-typedef AmkbGetSettingsDart = Pointer<Void> Function();
+typedef FmmGetSettingsNative = Pointer<Void> Function();
+typedef FmmGetSettingsDart = Pointer<Void> Function();
 
-typedef AmkbSaveSettingsNative = Int32 Function(
+typedef FmmSaveSettingsNative = Int32 Function(
     Int32 themeMode,
     Int32 gridCols,
     Int32 albumCols,
@@ -14,7 +14,7 @@ typedef AmkbSaveSettingsNative = Int32 Function(
     Pointer<Utf8> language,
     Int32 dynamicColor,
     Pointer<Utf8> lastScanPath);
-typedef AmkbSaveSettingsDart = int Function(
+typedef FmmSaveSettingsDart = int Function(
     int themeMode,
     int gridCols,
     int albumCols,
@@ -23,14 +23,14 @@ typedef AmkbSaveSettingsDart = int Function(
     int dynamicColor,
     Pointer<Utf8> lastScanPath);
 
-typedef AmkbDeleteAllDataNative = Int32 Function();
-typedef AmkbDeleteAllDataDart = int Function();
+typedef FmmDeleteAllDataNative = Int32 Function();
+typedef FmmDeleteAllDataDart = int Function();
 
-typedef AmkbExportDataNative = Int32 Function(Pointer<Utf8> path);
-typedef AmkbExportDataDart = int Function(Pointer<Utf8> path);
+typedef FmmExportDataNative = Int32 Function(Pointer<Utf8> path);
+typedef FmmExportDataDart = int Function(Pointer<Utf8> path);
 
-typedef AmkbImportDataNative = Int32 Function(Pointer<Utf8> path);
-typedef AmkbImportDataDart = int Function(Pointer<Utf8> path);
+typedef FmmImportDataNative = Int32 Function(Pointer<Utf8> path);
+typedef FmmImportDataDart = int Function(Pointer<Utf8> path);
 
 // Settings callback typedef
 typedef _SettingsCb = Void Function(
@@ -125,7 +125,7 @@ class SettingsFfi {
     _lib.lookupFunction<
         _GetSettingsCbFn,
         int Function(
-            Pointer<NativeFunction<_SettingsCb>>)>('amkb_get_settings_cb')(cb);
+            Pointer<NativeFunction<_SettingsCb>>)>('fmm_get_settings_cb')(cb);
     final r = _result ?? SettingsData(0, 3, 2, 85, 'zh', 1, '');
     _result = null;
     return r;
@@ -138,7 +138,7 @@ class SettingsFfi {
     final r = _lib.lookupFunction<
             _SaveSettingsFn,
             int Function(int, int, int, int, Pointer<Utf8>, int,
-                Pointer<Utf8>)>('amkb_save_settings')(
+                Pointer<Utf8>)>('fmm_save_settings')(
         themeMode, gridCols, albumCols, thumbQ, l, dynColor, s);
     calloc.free(l);
     calloc.free(s);
@@ -154,7 +154,7 @@ class SettingsFfi {
     _lib.lookupFunction<
             _GetStorageStatsFn,
             int Function(Pointer<Int32>, Pointer<Int64>, Pointer<Int64>,
-                Pointer<Int64>)>('amkb_get_storage_stats')(
+                Pointer<Int64>)>('fmm_get_storage_stats')(
         countPtr, sizePtr, thumbPtr, dbPtr);
     final result = StorageStatsData(
       countPtr.value,
@@ -172,22 +172,22 @@ class SettingsFfi {
   /// Clear thumbnail cache via FFI
   int clearThumbnailCache() {
     return _lib.lookupFunction<_ClearThumbnailCacheFn, int Function()>(
-        'amkb_clear_thumbnail_cache')();
+        'fmm_clear_thumbnail_cache')();
   }
 
   /// Delete all data
   int deleteAllData() {
     final fn =
-        _lib.lookupFunction<AmkbDeleteAllDataNative, AmkbDeleteAllDataDart>(
-            'amkb_delete_all_data');
+        _lib.lookupFunction<FmmDeleteAllDataNative, FmmDeleteAllDataDart>(
+            'fmm_delete_all_data');
     return fn();
   }
 
   /// Export data to path
   int exportData(String path) {
     final pathUtf8 = path.toNativeUtf8();
-    final fn = _lib.lookupFunction<AmkbExportDataNative, AmkbExportDataDart>(
-        'amkb_export_data');
+    final fn = _lib.lookupFunction<FmmExportDataNative, FmmExportDataDart>(
+        'fmm_export_data');
     final result = fn(pathUtf8);
     calloc.free(pathUtf8);
     return result;
@@ -196,8 +196,8 @@ class SettingsFfi {
   /// Import data from path
   int importData(String path) {
     final pathUtf8 = path.toNativeUtf8();
-    final fn = _lib.lookupFunction<AmkbImportDataNative, AmkbImportDataDart>(
-        'amkb_import_data');
+    final fn = _lib.lookupFunction<FmmImportDataNative, FmmImportDataDart>(
+        'fmm_import_data');
     final result = fn(pathUtf8);
     calloc.free(pathUtf8);
     return result;

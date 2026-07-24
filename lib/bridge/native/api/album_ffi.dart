@@ -1,7 +1,7 @@
 /// 文件坐标: lib/bridge/native/api/album_ffi.dart
 /// 作用:     相册相关 C 函数的 Dart FFI 封装
 /// 说明:     使用 dart:ffi 直接调用 native/src/ffi_bridge.cpp 中导出的
-///           amkb_* 函数，并通过静态回调收集 C 端返回的多条记录。
+///           fmm_* 函数，并通过静态回调收集 C 端返回的多条记录。
 library;
 
 import 'dart:ffi';
@@ -71,7 +71,7 @@ class AlbumFfi {
     _lib.lookupFunction<
         _GetRootAlbumsFn,
         int Function(
-            Pointer<NativeFunction<_AlbumCb>>)>('amkb_get_root_albums')(cb);
+            Pointer<NativeFunction<_AlbumCb>>)>('fmm_get_root_albums')(cb);
     final r = _currentAlbums!;
     _currentAlbums = null;
     return r;
@@ -84,7 +84,7 @@ class AlbumFfi {
     _lib.lookupFunction<
         _GetChildAlbumsFn,
         int Function(Pointer<Utf8>,
-            Pointer<NativeFunction<_AlbumCb>>)>('amkb_get_child_albums')(p, cb);
+            Pointer<NativeFunction<_AlbumCb>>)>('fmm_get_child_albums')(p, cb);
     calloc.free(p);
     final r = _currentAlbums!;
     _currentAlbums = null;
@@ -97,7 +97,7 @@ class AlbumFfi {
     final result = _lib.lookupFunction<
         _CreateAlbumFn,
         Pointer<Utf8> Function(
-            Pointer<Utf8>, Pointer<Utf8>)>('amkb_create_album')(n, pid);
+            Pointer<Utf8>, Pointer<Utf8>)>('fmm_create_album')(n, pid);
     calloc.free(n);
     if (parentId != null) calloc.free(pid);
     return result.toDartString();
@@ -106,7 +106,7 @@ class AlbumFfi {
   int deleteAlbum(String id) {
     final p = id.toNativeUtf8();
     final r = _lib.lookupFunction<_DeleteAlbumFn, int Function(Pointer<Utf8>)>(
-        'amkb_delete_album')(p);
+        'fmm_delete_album')(p);
     calloc.free(p);
     return r;
   }
@@ -115,7 +115,7 @@ class AlbumFfi {
     final i = id.toNativeUtf8();
     final n = name.toNativeUtf8();
     final r = _lib.lookupFunction<_RenameAlbumFn,
-        int Function(Pointer<Utf8>, Pointer<Utf8>)>('amkb_rename_album')(i, n);
+        int Function(Pointer<Utf8>, Pointer<Utf8>)>('fmm_rename_album')(i, n);
     calloc.free(i);
     calloc.free(n);
     return r;
@@ -134,7 +134,7 @@ class AlbumFfi {
     final a = albumId.toNativeUtf8();
     _lib.lookupFunction<_GetMediaByAlbumFn,
             int Function(Pointer<Utf8>, Pointer<NativeFunction<_MediaCb>>)>(
-        'amkb_get_media_by_album')(a, cb);
+        'fmm_get_media_by_album')(a, cb);
     calloc.free(a);
     final r = _currentMedia!;
     _currentMedia = null;
@@ -147,7 +147,7 @@ class AlbumFfi {
     final r = _lib.lookupFunction<
         _AddMediaToAlbumFn,
         int Function(Pointer<Utf8>,
-            Pointer<Utf8>)>('amkb_add_single_media_to_album')(m, a);
+            Pointer<Utf8>)>('fmm_add_single_media_to_album')(m, a);
     calloc.free(m);
     calloc.free(a);
     return r;
@@ -159,7 +159,7 @@ class AlbumFfi {
     final r = _lib.lookupFunction<
         _RemoveMediaFromAlbumFn,
         int Function(Pointer<Utf8>,
-            Pointer<Utf8>)>('amkb_remove_single_media_from_album')(m, a);
+            Pointer<Utf8>)>('fmm_remove_single_media_from_album')(m, a);
     calloc.free(m);
     calloc.free(a);
     return r;
@@ -179,7 +179,7 @@ class AlbumFfi {
             _GetAlbumBreadcrumbFn,
             int Function(
                 Pointer<Utf8>, Pointer<NativeFunction<_BreadcrumbCb>>)>(
-        'amkb_get_album_breadcrumb')(a, cb);
+        'fmm_get_album_breadcrumb')(a, cb);
     calloc.free(a);
     final r = _currentBreadcrumb!;
     _currentBreadcrumb = null;

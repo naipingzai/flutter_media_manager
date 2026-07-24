@@ -78,7 +78,7 @@ class TagFfi {
     _currentTags = [];
     final cb = Pointer.fromFunction<_TagCb>(_collectTag);
     _lib.lookupFunction<_GetAllTagsFn,
-        int Function(Pointer<NativeFunction<_TagCb>>)>('amkb_get_all_tags')(cb);
+        int Function(Pointer<NativeFunction<_TagCb>>)>('fmm_get_all_tags')(cb);
     final r = _currentTags!;
     _currentTags = null;
     return r;
@@ -90,7 +90,7 @@ class TagFfi {
     _lib.lookupFunction<
         _GetRootTagsFn,
         int Function(
-            Pointer<NativeFunction<_TagCb>>)>('amkb_get_root_tags')(cb);
+            Pointer<NativeFunction<_TagCb>>)>('fmm_get_root_tags')(cb);
     final r = _currentTags!;
     _currentTags = null;
     return r;
@@ -103,7 +103,7 @@ class TagFfi {
     _lib.lookupFunction<
         _GetChildTagsFn,
         int Function(Pointer<Utf8>,
-            Pointer<NativeFunction<_TagCb>>)>('amkb_get_child_tags')(p, cb);
+            Pointer<NativeFunction<_TagCb>>)>('fmm_get_child_tags')(p, cb);
     calloc.free(p);
     final r = _currentTags!;
     _currentTags = null;
@@ -117,7 +117,7 @@ class TagFfi {
     final result = _lib.lookupFunction<
         _CreateTagFn,
         Pointer<Utf8> Function(Pointer<Utf8>, Pointer<Utf8>,
-            Pointer<Utf8>)>('amkb_create_tag')(n, c, p);
+            Pointer<Utf8>)>('fmm_create_tag')(n, c, p);
     calloc.free(n);
     if (color != null) calloc.free(c);
     if (parentId != null) calloc.free(p);
@@ -127,7 +127,7 @@ class TagFfi {
   int deleteTag(String id) {
     final p = id.toNativeUtf8();
     final r = _lib.lookupFunction<_DeleteTagFn, int Function(Pointer<Utf8>)>(
-        'amkb_delete_tag')(p);
+        'fmm_delete_tag')(p);
     calloc.free(p);
     return r;
   }
@@ -136,7 +136,7 @@ class TagFfi {
     final i = id.toNativeUtf8();
     final n = name.toNativeUtf8();
     final r = _lib.lookupFunction<_RenameTagFn,
-        int Function(Pointer<Utf8>, Pointer<Utf8>)>('amkb_rename_tag')(i, n);
+        int Function(Pointer<Utf8>, Pointer<Utf8>)>('fmm_rename_tag')(i, n);
     calloc.free(i);
     calloc.free(n);
     return r;
@@ -148,7 +148,7 @@ class TagFfi {
     final r = _lib.lookupFunction<
         _UpdateTagColorFn,
         int Function(
-            Pointer<Utf8>, Pointer<Utf8>)>('amkb_update_tag_color')(i, c);
+            Pointer<Utf8>, Pointer<Utf8>)>('fmm_update_tag_color')(i, c);
     calloc.free(i);
     calloc.free(c);
     return r;
@@ -160,7 +160,7 @@ class TagFfi {
     final r = _lib.lookupFunction<
         _UpdateTagParentFn,
         int Function(
-            Pointer<Utf8>, Pointer<Utf8>)>('amkb_update_tag_parent')(i, p);
+            Pointer<Utf8>, Pointer<Utf8>)>('fmm_update_tag_parent')(i, p);
     calloc.free(i);
     if (parentId != null) calloc.free(p);
     return r;
@@ -172,7 +172,7 @@ class TagFfi {
     final r = _lib.lookupFunction<
         _AddTagToMediaFn,
         int Function(
-            Pointer<Utf8>, Pointer<Utf8>)>('amkb_add_tag_to_media')(m, t);
+            Pointer<Utf8>, Pointer<Utf8>)>('fmm_add_tag_to_media')(m, t);
     calloc.free(m);
     calloc.free(t);
     return r;
@@ -184,7 +184,7 @@ class TagFfi {
     final r = _lib.lookupFunction<
         _RemoveTagFromMediaFn,
         int Function(
-            Pointer<Utf8>, Pointer<Utf8>)>('amkb_remove_tag_from_media')(m, t);
+            Pointer<Utf8>, Pointer<Utf8>)>('fmm_remove_tag_from_media')(m, t);
     calloc.free(m);
     calloc.free(t);
     return r;
@@ -197,7 +197,7 @@ class TagFfi {
     _lib.lookupFunction<
         _GetMediaTagsFn,
         int Function(Pointer<Utf8>,
-            Pointer<NativeFunction<_TagCb>>)>('amkb_get_media_tags')(m, cb);
+            Pointer<NativeFunction<_TagCb>>)>('fmm_get_media_tags')(m, cb);
     calloc.free(m);
     final r = _currentTags!;
     _currentTags = null;
@@ -225,7 +225,7 @@ class TagFfi {
     final t = tagIds.first.toNativeUtf8();
     _lib.lookupFunction<_GetMediaBySingleTagFn,
             int Function(Pointer<Utf8>, Pointer<NativeFunction<_MediaCb>>)>(
-        'amkb_get_media_by_single_tag')(t, cb);
+        'fmm_get_media_by_single_tag')(t, cb);
     calloc.free(t);
     final r = _currentMedia!;
     _currentMedia = null;

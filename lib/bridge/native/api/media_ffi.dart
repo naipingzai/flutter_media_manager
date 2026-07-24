@@ -74,7 +74,7 @@ class MediaFfi {
     // Use zone to pass items list
     _currentItems = items;
     final fn = _lib
-        .lookupFunction<_GetAllMediaFn, _GetAllMediaDart>('amkb_get_all_media');
+        .lookupFunction<_GetAllMediaFn, _GetAllMediaDart>('fmm_get_all_media');
     fn(nativeCb);
     _currentItems = null;
     return items;
@@ -86,7 +86,7 @@ class MediaFfi {
     _currentItems = items;
     final q = query.toNativeUtf8();
     final fn = _lib
-        .lookupFunction<_SearchMediaFn, _SearchMediaDart>('amkb_search_media');
+        .lookupFunction<_SearchMediaFn, _SearchMediaDart>('fmm_search_media');
     fn(q, nativeCb);
     calloc.free(q);
     _currentItems = null;
@@ -99,7 +99,7 @@ class MediaFfi {
     _currentItems = items;
     final t = type.toNativeUtf8();
     final fn = _lib.lookupFunction<_FilterMediaFn, _FilterMediaDart>(
-        'amkb_filter_media_by_type');
+        'fmm_filter_media_by_type');
     fn(t, nativeCb);
     calloc.free(t);
     _currentItems = null;
@@ -109,7 +109,7 @@ class MediaFfi {
   int deleteMedia(String id) {
     final p = id.toNativeUtf8();
     final fn = _lib
-        .lookupFunction<_DeleteMediaFn, _DeleteMediaDart>('amkb_delete_media');
+        .lookupFunction<_DeleteMediaFn, _DeleteMediaDart>('fmm_delete_media');
     final r = fn(p);
     calloc.free(p);
     return r;
@@ -118,7 +118,7 @@ class MediaFfi {
   int importFile(String path) {
     final p = path.toNativeUtf8();
     final fn = _lib.lookupFunction<_ImportFileFn, _ImportFileDart>(
-        'amkb_import_single_file');
+        'fmm_import_single_file');
     final r = fn(p);
     calloc.free(p);
     return r;
@@ -128,7 +128,7 @@ class MediaFfi {
     final d = dir.toNativeUtf8();
     final a = appDir.toNativeUtf8();
     final fn =
-        _lib.lookupFunction<_ScanDirFn, _ScanDirDart>('amkb_scan_directory');
+        _lib.lookupFunction<_ScanDirFn, _ScanDirDart>('fmm_scan_directory');
     final r = fn(d, a);
     calloc.free(d);
     calloc.free(a);

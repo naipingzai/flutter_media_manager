@@ -31,8 +31,8 @@
 
 // 创建 std::filesystem 的短别名 fs，避免代码冗长
 namespace fs = std::filesystem;
-// 将当前文件置于 amkb::db 命名空间，与 database.h 保持一致
-using namespace amkb::db;
+// 将当前文件置于 fmm::db 命名空间，与 database.h 保持一致
+using namespace fmm::db;
 
 /**
  * @brief 匿名命名空间
