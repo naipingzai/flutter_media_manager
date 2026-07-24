@@ -198,16 +198,19 @@ int Database::init(const std::string& app_dir) {
     std::lock_guard<std::mutex> lock(mutex_);
     // 保存应用目录路径
     app_dir_ = app_dir;
+    // 在 Windows 上使用 UTF-8 路径对象以便正确处理中文路径
+    fs::path app_path = to_path(app_dir);
     // 创建应用根目录
-    fs::create_directories(app_dir);
+    std::error_code ec;
+    fs::create_directories(app_path, ec);
     // 创建媒体文件存放目录
-    fs::create_directories(app_dir + "/media");
+    fs::create_directories(app_path / "media", ec);
     // 创建缩略图存放目录
-    fs::create_directories(app_dir + "/media/thumbnails");
+    fs::create_directories(app_path / "media" / "thumbnails", ec);
     // 数据库文件完整路径
-    std::string db_path = app_dir + "/advance_media_kb.db";
+    fs::path db_path = app_path / "advance_media_kb.db";
     // 打开 SQLite 数据库
-    int rc = sqlite3_open(db_path.c_str(), &db_);
+    int rc = sqlite3_open(db_path.string().c_str(), &db_);
     // 打开失败则返回错误码
     if (rc != SQLITE_OK) return rc;
     // 启用外键约束（SQLite 默认关闭）
@@ -899,9 +902,23 @@ static std::string get_or_create_default_tag(sqlite3* database) {
  * 将文件复制到应用目录，创建缩略图占位，并插入数据库。
  * 导入后会自动关联到默认相册和默认标签。
  */
+// --------------------------------------------------------------------
+// Windows 上 std::filesystem 默认使用 ANSI 编码解析路径
+// 对于含中文等非 ASCII 字符的路径，std::filesystem 会失败
+// 使用 fs::u8path() 显式指定 UTF-8 编码以正确处理 Windows 上的中文路径
+// --------------------------------------------------------------------
+static fs::path to_path(const std::string& s) {
+#ifdef _WIN32
+    return fs::u8path(s);
+#else
+    return fs::path(s);
+#endif
+}
+
 int Database::import_media(const std::string& fp, const std::string& ad) {
     // 源文件不存在则返回 -1
-    if (!fs::exists(fp)) return -1;
+    fs::path src = to_path(fp);
+    if (!fs::exists(src)) return -1;
     // 提取扩展名、媒体类型、MIME 类型
     std::string ext = get_extension(fp);
     std::string mt = detect_media_type(ext);
@@ -911,17 +928,19 @@ int Database::import_media(const std::string& fp, const std::string& ad) {
     // 生成媒体 UUID
     std::string id = generate_uuid();
     // 原文件名
-    std::string on = fs::path(fp).filename().string();
+    std::string on = src.filename().string();
     // 文件命名：原文件名_导入时间.扩展名
-    std::string stem = sanitize_filename(fs::path(fp).stem().string());
+    std::string stem = sanitize_filename(src.stem().string());
     std::string time_str = format_timestamp_filename();
     std::string sn = stem + "_" + time_str + "." + ext;
     // 防止重名
     std::string dp = ad + "/media/" + sn;
     int counter = 1;
-    while (fs::exists(dp)) {
+    fs::path dst = to_path(dp);
+    while (fs::exists(dst)) {
         sn = stem + "_" + time_str + "_" + std::to_string(counter) + "." + ext;
         dp = ad + "/media/" + sn;
+        dst = to_path(dp);
         counter++;
     }
     // 缩略图路径：图片类型直接用原文件路径，非图片创建空占位
@@ -930,10 +949,11 @@ int Database::import_media(const std::string& fp, const std::string& ad) {
         tp = dp;  // 图片直接用存储路径作为缩略图
     } else {
         tp = ad + "/media/thumbnails/" + generate_uuid() + ".jpg";
-        { std::ofstream th(tp); th << ""; }
+        fs::path thumb_path = to_path(tp);
+        { std::ofstream th(thumb_path.string()); th << ""; }
     }
     // 复制文件到目标目录
-    fs::copy_file(fp, dp);
+    fs::copy_file(src, dst, fs::copy_options::overwrite_existing);
     // 加锁保护数据库写入
     std::lock_guard<std::mutex> lock(mutex_);
     // SQL 语句指针
@@ -955,7 +975,7 @@ int Database::import_media(const std::string& fp, const std::string& ad) {
     // 绑定 MIME 类型
     bind_text(s, 7, mime);
     // 绑定文件大小
-    sqlite3_bind_int64(s, 8, (int64_t)fs::file_size(fp));
+    sqlite3_bind_int64(s, 8, (int64_t)fs::file_size(src));
     // 绑定占位哈希
     bind_text(s, 9, "hash_" + id);
     // 绑定创建时间
@@ -1711,11 +1731,12 @@ int Database::delete_note(const std::string& id) {
  */
 int Database::scan_directory(const std::string& dir, const std::string& ad) {
     // 目录不存在或不是目录则返回 -1
-    if (!fs::exists(dir) || !fs::is_directory(dir)) return -1;
+    fs::path dir_path = to_path(dir);
+    if (!fs::exists(dir_path) || !fs::is_directory(dir_path)) return -1;
     // 导入计数
     int c = 0;
     // 递归遍历目录
-    for (auto& e : fs::recursive_directory_iterator(dir)) {
+    for (auto& e : fs::recursive_directory_iterator(dir_path)) {
         // 仅处理常规文件
         if (e.is_regular_file()) {
             // 获取扩展名
