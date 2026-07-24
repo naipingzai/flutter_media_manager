@@ -104,8 +104,11 @@ class SettingsFfi {
     throw UnsupportedError('Platform not supported');
   }
 
-  // Get settings via callback
+  /// Get settings via callback. C++ side copies string data into
+  /// thread_local slots before invoking the callback, so the pointers
+  /// remain valid for the full synchronous FFI call (fixes Windows).
   static SettingsData? _result;
+
   static void _settingsCb(int themeMode, int gridCols, int albumCols,
       int thumbQ, Pointer<Utf8> lang, int dynColor, Pointer<Utf8> lastScan) {
     _result = SettingsData(

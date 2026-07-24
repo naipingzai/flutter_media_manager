@@ -108,13 +108,21 @@ typedef void (*settings_callback)(
 
 // --------------------------------------------------------------------
 // 适合 Dart NativeCallable 回调模式
+// 使用 thread_local 静态缓冲区确保字符串指针在回调期间稳定
+struct SettingsSlot {
+    char lang[64];
+    char last_scan[1024];
+};
 FFI_EXPORT int fmm_get_settings_cb(settings_callback cb) {
     // 从数据库单例读取设置
     auto s = Database::instance().get_settings();
+    static thread_local SettingsSlot slot;
+    strncpy(slot.lang, s.language.c_str(), sizeof(slot.lang) - 1); slot.lang[sizeof(slot.lang) - 1] = '\0';
+    strncpy(slot.last_scan, s.last_scan_path.c_str(), sizeof(slot.last_scan) - 1); slot.last_scan[sizeof(slot.last_scan) - 1] = '\0';
     // 如果回调函数非空，则调用并传入所有字段
     if (cb) cb(s.theme_mode, s.grid_columns, s.album_grid_columns,
-               s.thumbnail_quality, s.language.c_str(),
-               s.dynamic_color, s.last_scan_path.c_str());
+               s.thumbnail_quality, slot.lang,
+               s.dynamic_color, slot.last_scan);
     return 0;
 }
 
@@ -180,12 +188,27 @@ FFI_EXPORT int fmm_import_data(const char* path) {
 
 // --------------------------------------------------------------------
 // 通过回调函数逐个返回媒体项
+// 使用 thread_local 静态缓冲区确保字符串指针在回调期间稳定
+// 避免 Windows 上 FFI 同步回调可能导致的 use-after-free 问题
+struct MediaSlot {
+    char id[128];
+    char name[512];
+    char type[32];
+    int64_t size;
+    char path[1024];
+    char thumb[1024];
+};
 FFI_EXPORT int fmm_get_all_media(media_callback cb) {
     auto items = Database::instance().get_all_media();
+    static thread_local MediaSlot slot;
     for (auto& m : items) {
-        if (cb) cb(m.id.c_str(), m.original_name.c_str(),
-                   m.media_type.c_str(), m.size,
-                   m.file_path.c_str(), m.thumbnail_path.c_str());
+        strncpy(slot.id, m.id.c_str(), sizeof(slot.id) - 1); slot.id[sizeof(slot.id) - 1] = '\0';
+        strncpy(slot.name, m.original_name.c_str(), sizeof(slot.name) - 1); slot.name[sizeof(slot.name) - 1] = '\0';
+        strncpy(slot.type, m.media_type.c_str(), sizeof(slot.type) - 1); slot.type[sizeof(slot.type) - 1] = '\0';
+        strncpy(slot.path, m.file_path.c_str(), sizeof(slot.path) - 1); slot.path[sizeof(slot.path) - 1] = '\0';
+        strncpy(slot.thumb, m.thumbnail_path.c_str(), sizeof(slot.thumb) - 1); slot.thumb[sizeof(slot.thumb) - 1] = '\0';
+        slot.size = m.size;
+        if (cb) cb(slot.id, slot.name, slot.type, slot.size, slot.path, slot.thumb);
     }
     return (int)items.size();
 }
@@ -194,10 +217,15 @@ FFI_EXPORT int fmm_get_all_media(media_callback cb) {
 // 第 72-78 行: 按关键词搜索媒体
 FFI_EXPORT int fmm_search_media(const char* query, media_callback cb) {
     auto items = Database::instance().search_media(query ? query : "");
+    static thread_local MediaSlot slot;
     for (auto& m : items) {
-        if (cb) cb(m.id.c_str(), m.original_name.c_str(),
-                   m.media_type.c_str(), m.size,
-                   m.file_path.c_str(), m.thumbnail_path.c_str());
+        strncpy(slot.id, m.id.c_str(), sizeof(slot.id) - 1); slot.id[sizeof(slot.id) - 1] = '\0';
+        strncpy(slot.name, m.original_name.c_str(), sizeof(slot.name) - 1); slot.name[sizeof(slot.name) - 1] = '\0';
+        strncpy(slot.type, m.media_type.c_str(), sizeof(slot.type) - 1); slot.type[sizeof(slot.type) - 1] = '\0';
+        strncpy(slot.path, m.file_path.c_str(), sizeof(slot.path) - 1); slot.path[sizeof(slot.path) - 1] = '\0';
+        strncpy(slot.thumb, m.thumbnail_path.c_str(), sizeof(slot.thumb) - 1); slot.thumb[sizeof(slot.thumb) - 1] = '\0';
+        slot.size = m.size;
+        if (cb) cb(slot.id, slot.name, slot.type, slot.size, slot.path, slot.thumb);
     }
     return (int)items.size();
 }
@@ -205,10 +233,15 @@ FFI_EXPORT int fmm_search_media(const char* query, media_callback cb) {
 // --------------------------------------------------------------------
 FFI_EXPORT int fmm_filter_media_by_type(const char* type, media_callback cb) {
     auto items = Database::instance().filter_media_by_type(type ? type : "");
+    static thread_local MediaSlot slot;
     for (auto& m : items) {
-        if (cb) cb(m.id.c_str(), m.original_name.c_str(),
-                   m.media_type.c_str(), m.size,
-                   m.file_path.c_str(), m.thumbnail_path.c_str());
+        strncpy(slot.id, m.id.c_str(), sizeof(slot.id) - 1); slot.id[sizeof(slot.id) - 1] = '\0';
+        strncpy(slot.name, m.original_name.c_str(), sizeof(slot.name) - 1); slot.name[sizeof(slot.name) - 1] = '\0';
+        strncpy(slot.type, m.media_type.c_str(), sizeof(slot.type) - 1); slot.type[sizeof(slot.type) - 1] = '\0';
+        strncpy(slot.path, m.file_path.c_str(), sizeof(slot.path) - 1); slot.path[sizeof(slot.path) - 1] = '\0';
+        strncpy(slot.thumb, m.thumbnail_path.c_str(), sizeof(slot.thumb) - 1); slot.thumb[sizeof(slot.thumb) - 1] = '\0';
+        slot.size = m.size;
+        if (cb) cb(slot.id, slot.name, slot.type, slot.size, slot.path, slot.thumb);
     }
     return (int)items.size();
 }
@@ -234,10 +267,18 @@ FFI_EXPORT int fmm_scan_directory(const char* dir, const char* app_dir) {
 // ====================================================================
 
 // --------------------------------------------------------------------
+// 使用 thread_local 静态缓冲区确保字符串指针在回调期间稳定
+struct AlbumSlot {
+    char id[128];
+    char name[256];
+};
 FFI_EXPORT int fmm_get_root_albums(album_callback cb) {
     auto items = Database::instance().get_root_albums();
+    static thread_local AlbumSlot slot;
     for (auto& a : items) {
-        if (cb) cb(a.album.id.c_str(), a.album.name.c_str(), a.media_count);
+        strncpy(slot.id, a.album.id.c_str(), sizeof(slot.id) - 1); slot.id[sizeof(slot.id) - 1] = '\0';
+        strncpy(slot.name, a.album.name.c_str(), sizeof(slot.name) - 1); slot.name[sizeof(slot.name) - 1] = '\0';
+        if (cb) cb(slot.id, slot.name, a.media_count);
     }
     return (int)items.size();
 }
@@ -245,8 +286,11 @@ FFI_EXPORT int fmm_get_root_albums(album_callback cb) {
 // --------------------------------------------------------------------
 FFI_EXPORT int fmm_get_child_albums(const char* parent_id, album_callback cb) {
     auto items = Database::instance().get_child_albums(parent_id ? parent_id : "");
+    static thread_local AlbumSlot slot;
     for (auto& a : items) {
-        if (cb) cb(a.album.id.c_str(), a.album.name.c_str(), a.media_count);
+        strncpy(slot.id, a.album.id.c_str(), sizeof(slot.id) - 1); slot.id[sizeof(slot.id) - 1] = '\0';
+        strncpy(slot.name, a.album.name.c_str(), sizeof(slot.name) - 1); slot.name[sizeof(slot.name) - 1] = '\0';
+        if (cb) cb(slot.id, slot.name, a.media_count);
     }
     return (int)items.size();
 }
@@ -276,10 +320,15 @@ FFI_EXPORT int fmm_rename_album(const char* id, const char* name) {
 // --------------------------------------------------------------------
 FFI_EXPORT int fmm_get_media_by_album(const char* album_id, media_callback cb) {
     auto items = Database::instance().get_media_by_album(album_id ? album_id : "");
+    static thread_local MediaSlot slot;
     for (auto& m : items) {
-        if (cb) cb(m.id.c_str(), m.original_name.c_str(),
-                   m.media_type.c_str(), m.size,
-                   m.file_path.c_str(), m.thumbnail_path.c_str());
+        strncpy(slot.id, m.id.c_str(), sizeof(slot.id) - 1); slot.id[sizeof(slot.id) - 1] = '\0';
+        strncpy(slot.name, m.original_name.c_str(), sizeof(slot.name) - 1); slot.name[sizeof(slot.name) - 1] = '\0';
+        strncpy(slot.type, m.media_type.c_str(), sizeof(slot.type) - 1); slot.type[sizeof(slot.type) - 1] = '\0';
+        strncpy(slot.path, m.file_path.c_str(), sizeof(slot.path) - 1); slot.path[sizeof(slot.path) - 1] = '\0';
+        strncpy(slot.thumb, m.thumbnail_path.c_str(), sizeof(slot.thumb) - 1); slot.thumb[sizeof(slot.thumb) - 1] = '\0';
+        slot.size = m.size;
+        if (cb) cb(slot.id, slot.name, slot.type, slot.size, slot.path, slot.thumb);
     }
     return (int)items.size();
 }
@@ -315,10 +364,17 @@ FFI_EXPORT int fmm_remove_single_media_from_album(const char* media_id, const ch
 }
 
 // --------------------------------------------------------------------
+struct BreadcrumbSlot {
+    char id[128];
+    char name[256];
+};
 FFI_EXPORT int fmm_get_album_breadcrumb(const char* album_id, breadcrumb_callback cb) {
     auto items = Database::instance().get_album_breadcrumb(album_id ? album_id : "");
+    static thread_local BreadcrumbSlot slot;
     for (auto& i : items) {
-        if (cb) cb(i.id.c_str(), i.name.c_str());
+        strncpy(slot.id, i.id.c_str(), sizeof(slot.id) - 1); slot.id[sizeof(slot.id) - 1] = '\0';
+        strncpy(slot.name, i.name.c_str(), sizeof(slot.name) - 1); slot.name[sizeof(slot.name) - 1] = '\0';
+        if (cb) cb(slot.id, slot.name);
     }
     return (int)items.size();
 }
@@ -328,11 +384,20 @@ FFI_EXPORT int fmm_get_album_breadcrumb(const char* album_id, breadcrumb_callbac
 // ====================================================================
 
 // --------------------------------------------------------------------
+// 使用 thread_local 静态缓冲区确保字符串指针在回调期间稳定
+struct TagSlot {
+    char id[128];
+    char name[128];
+    char color[32];
+};
 FFI_EXPORT int fmm_get_all_tags(tag_callback cb) {
     auto items = Database::instance().get_all_tags();
+    static thread_local TagSlot slot;
     for (auto& t : items) {
-        if (cb) cb(t.id.c_str(), t.name.c_str(),
-                   t.color.value_or("").c_str());
+        strncpy(slot.id, t.id.c_str(), sizeof(slot.id) - 1); slot.id[sizeof(slot.id) - 1] = '\0';
+        strncpy(slot.name, t.name.c_str(), sizeof(slot.name) - 1); slot.name[sizeof(slot.name) - 1] = '\0';
+        strncpy(slot.color, t.color.value_or("").c_str(), sizeof(slot.color) - 1); slot.color[sizeof(slot.color) - 1] = '\0';
+        if (cb) cb(slot.id, slot.name, slot.color);
     }
     return (int)items.size();
 }
@@ -340,9 +405,12 @@ FFI_EXPORT int fmm_get_all_tags(tag_callback cb) {
 // --------------------------------------------------------------------
 FFI_EXPORT int fmm_get_root_tags(tag_callback cb) {
     auto items = Database::instance().get_root_tags();
+    static thread_local TagSlot slot;
     for (auto& i : items) {
-        if (cb) cb(i.tag.id.c_str(), i.tag.name.c_str(),
-                   i.tag.color.value_or("").c_str());
+        strncpy(slot.id, i.tag.id.c_str(), sizeof(slot.id) - 1); slot.id[sizeof(slot.id) - 1] = '\0';
+        strncpy(slot.name, i.tag.name.c_str(), sizeof(slot.name) - 1); slot.name[sizeof(slot.name) - 1] = '\0';
+        strncpy(slot.color, i.tag.color.value_or("").c_str(), sizeof(slot.color) - 1); slot.color[sizeof(slot.color) - 1] = '\0';
+        if (cb) cb(slot.id, slot.name, slot.color);
     }
     return (int)items.size();
 }
@@ -350,9 +418,12 @@ FFI_EXPORT int fmm_get_root_tags(tag_callback cb) {
 // --------------------------------------------------------------------
 FFI_EXPORT int fmm_get_child_tags(const char* parent_id, tag_callback cb) {
     auto items = Database::instance().get_child_tags(parent_id ? parent_id : "");
+    static thread_local TagSlot slot;
     for (auto& i : items) {
-        if (cb) cb(i.tag.id.c_str(), i.tag.name.c_str(),
-                   i.tag.color.value_or("").c_str());
+        strncpy(slot.id, i.tag.id.c_str(), sizeof(slot.id) - 1); slot.id[sizeof(slot.id) - 1] = '\0';
+        strncpy(slot.name, i.tag.name.c_str(), sizeof(slot.name) - 1); slot.name[sizeof(slot.name) - 1] = '\0';
+        strncpy(slot.color, i.tag.color.value_or("").c_str(), sizeof(slot.color) - 1); slot.color[sizeof(slot.color) - 1] = '\0';
+        if (cb) cb(slot.id, slot.name, slot.color);
     }
     return (int)items.size();
 }
@@ -404,9 +475,12 @@ FFI_EXPORT int fmm_remove_tag_from_media(const char* media_id, const char* tag_i
 // --------------------------------------------------------------------
 FFI_EXPORT int fmm_get_media_tags(const char* media_id, tag_callback cb) {
     auto items = Database::instance().get_media_tags(media_id ? media_id : "");
+    static thread_local TagSlot slot;
     for (auto& t : items) {
-        if (cb) cb(t.id.c_str(), t.name.c_str(),
-                   t.color.value_or("").c_str());
+        strncpy(slot.id, t.id.c_str(), sizeof(slot.id) - 1); slot.id[sizeof(slot.id) - 1] = '\0';
+        strncpy(slot.name, t.name.c_str(), sizeof(slot.name) - 1); slot.name[sizeof(slot.name) - 1] = '\0';
+        strncpy(slot.color, t.color.value_or("").c_str(), sizeof(slot.color) - 1); slot.color[sizeof(slot.color) - 1] = '\0';
+        if (cb) cb(slot.id, slot.name, slot.color);
     }
     return (int)items.size();
 }
@@ -418,10 +492,15 @@ FFI_EXPORT int fmm_get_media_by_tags_and(const char** tag_ids, int count, media_
         ids.push_back(tag_ids[i] ? tag_ids[i] : "");
     }
     auto items = Database::instance().get_media_by_tags_and(ids);
+    static thread_local MediaSlot slot;
     for (auto& m : items) {
-        if (cb) cb(m.id.c_str(), m.original_name.c_str(),
-                   m.media_type.c_str(), m.size,
-                   m.file_path.c_str(), m.thumbnail_path.c_str());
+        strncpy(slot.id, m.id.c_str(), sizeof(slot.id) - 1); slot.id[sizeof(slot.id) - 1] = '\0';
+        strncpy(slot.name, m.original_name.c_str(), sizeof(slot.name) - 1); slot.name[sizeof(slot.name) - 1] = '\0';
+        strncpy(slot.type, m.media_type.c_str(), sizeof(slot.type) - 1); slot.type[sizeof(slot.type) - 1] = '\0';
+        strncpy(slot.path, m.file_path.c_str(), sizeof(slot.path) - 1); slot.path[sizeof(slot.path) - 1] = '\0';
+        strncpy(slot.thumb, m.thumbnail_path.c_str(), sizeof(slot.thumb) - 1); slot.thumb[sizeof(slot.thumb) - 1] = '\0';
+        slot.size = m.size;
+        if (cb) cb(slot.id, slot.name, slot.type, slot.size, slot.path, slot.thumb);
     }
     return (int)items.size();
 }
@@ -433,10 +512,15 @@ FFI_EXPORT int fmm_get_media_by_tags_or(const char** tag_ids, int count, media_c
         ids.push_back(tag_ids[i] ? tag_ids[i] : "");
     }
     auto items = Database::instance().get_media_by_tags_or(ids);
+    static thread_local MediaSlot slot;
     for (auto& m : items) {
-        if (cb) cb(m.id.c_str(), m.original_name.c_str(),
-                   m.media_type.c_str(), m.size,
-                   m.file_path.c_str(), m.thumbnail_path.c_str());
+        strncpy(slot.id, m.id.c_str(), sizeof(slot.id) - 1); slot.id[sizeof(slot.id) - 1] = '\0';
+        strncpy(slot.name, m.original_name.c_str(), sizeof(slot.name) - 1); slot.name[sizeof(slot.name) - 1] = '\0';
+        strncpy(slot.type, m.media_type.c_str(), sizeof(slot.type) - 1); slot.type[sizeof(slot.type) - 1] = '\0';
+        strncpy(slot.path, m.file_path.c_str(), sizeof(slot.path) - 1); slot.path[sizeof(slot.path) - 1] = '\0';
+        strncpy(slot.thumb, m.thumbnail_path.c_str(), sizeof(slot.thumb) - 1); slot.thumb[sizeof(slot.thumb) - 1] = '\0';
+        slot.size = m.size;
+        if (cb) cb(slot.id, slot.name, slot.type, slot.size, slot.path, slot.thumb);
     }
     return (int)items.size();
 }
@@ -446,10 +530,15 @@ FFI_EXPORT int fmm_get_media_by_tags_or(const char** tag_ids, int count, media_c
 FFI_EXPORT int fmm_get_media_by_single_tag(const char* tag_id, media_callback cb) {
     std::vector<std::string> ids = {tag_id ? tag_id : ""};
     auto items = Database::instance().get_media_by_tags_or(ids);
+    static thread_local MediaSlot slot;
     for (auto& m : items) {
-        if (cb) cb(m.id.c_str(), m.original_name.c_str(),
-                   m.media_type.c_str(), m.size,
-                   m.file_path.c_str(), m.thumbnail_path.c_str());
+        strncpy(slot.id, m.id.c_str(), sizeof(slot.id) - 1); slot.id[sizeof(slot.id) - 1] = '\0';
+        strncpy(slot.name, m.original_name.c_str(), sizeof(slot.name) - 1); slot.name[sizeof(slot.name) - 1] = '\0';
+        strncpy(slot.type, m.media_type.c_str(), sizeof(slot.type) - 1); slot.type[sizeof(slot.type) - 1] = '\0';
+        strncpy(slot.path, m.file_path.c_str(), sizeof(slot.path) - 1); slot.path[sizeof(slot.path) - 1] = '\0';
+        strncpy(slot.thumb, m.thumbnail_path.c_str(), sizeof(slot.thumb) - 1); slot.thumb[sizeof(slot.thumb) - 1] = '\0';
+        slot.size = m.size;
+        if (cb) cb(slot.id, slot.name, slot.type, slot.size, slot.path, slot.thumb);
     }
     return (int)items.size();
 }
@@ -471,11 +560,20 @@ FFI_EXPORT int fmm_delete_note(const char* id) {
 }
 
 // --------------------------------------------------------------------
+// 使用 thread_local 静态缓冲区确保字符串指针在回调期间稳定
+struct NoteSlot {
+    char id[128];
+    char media_id[128];
+    char content[8192];
+};
 FFI_EXPORT int fmm_get_all_notes(note_callback cb) {
     auto items = Database::instance().get_all_notes();
+    static thread_local NoteSlot slot;
     for (auto& n : items) {
-        if (cb) cb(n.id.c_str(), n.media_id.c_str(),
-                   n.content.c_str(), n.created_at, n.updated_at);
+        strncpy(slot.id, n.id.c_str(), sizeof(slot.id) - 1); slot.id[sizeof(slot.id) - 1] = '\0';
+        strncpy(slot.media_id, n.media_id.c_str(), sizeof(slot.media_id) - 1); slot.media_id[sizeof(slot.media_id) - 1] = '\0';
+        strncpy(slot.content, n.content.c_str(), sizeof(slot.content) - 1); slot.content[sizeof(slot.content) - 1] = '\0';
+        if (cb) cb(slot.id, slot.media_id, slot.content, n.created_at, n.updated_at);
     }
     return (int)items.size();
 }
@@ -486,8 +584,11 @@ FFI_EXPORT int fmm_get_note_by_media_id(const char* media_id, note_callback cb) 
     auto n = Database::instance().get_note_by_media_id(
         media_id ? media_id : "");
     if (n.has_value() && cb) {
-        cb(n->id.c_str(), n->media_id.c_str(),
-           n->content.c_str(), n->created_at, n->updated_at);
+        static thread_local NoteSlot slot;
+        strncpy(slot.id, n->id.c_str(), sizeof(slot.id) - 1); slot.id[sizeof(slot.id) - 1] = '\0';
+        strncpy(slot.media_id, n->media_id.c_str(), sizeof(slot.media_id) - 1); slot.media_id[sizeof(slot.media_id) - 1] = '\0';
+        strncpy(slot.content, n->content.c_str(), sizeof(slot.content) - 1); slot.content[sizeof(slot.content) - 1] = '\0';
+        cb(slot.id, slot.media_id, slot.content, n->created_at, n->updated_at);
         return 1;
     }
     return 0;

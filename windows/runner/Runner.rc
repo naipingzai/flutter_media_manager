@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.fluttermediamanager" "\0"
-            VALUE "FileDescription", "flutter_media_manager" "\0"
+            VALUE "CompanyName", "\xe5\xaa\x92\xe4\xbd\x93\xe5\xba\x93" "\0"
+            VALUE "FileDescription", "\xe5\xaa\x92\xe4\xbd\x93\xe5\xba\x93" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "flutter_media_manager" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.fluttermediamanager. All rights reserved." "\0"
-            VALUE "OriginalFilename", "flutter_media_manager.exe" "\0"
-            VALUE "ProductName", "flutter_media_manager" "\0"
+            VALUE "InternalName", "MediaLibrary" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 \xe5\xaa\x92\xe4\xbd\x93\xe5\xba\x93. All rights reserved." "\0"
+            VALUE "OriginalFilename", "media_library.exe" "\0"
+            VALUE "ProductName", "\xe5\xaa\x92\xe4\xbd\x93\xe5\xba\x93" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

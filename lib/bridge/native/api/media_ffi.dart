@@ -44,9 +44,11 @@ class MediaItemData {
 class MediaFfi {
   static MediaFfi? _inst;
   late final DynamicLibrary _lib;
+
   MediaFfi._() {
     _lib = _openLib();
   }
+
   static MediaFfi get instance {
     _inst ??= MediaFfi._();
     return _inst!;
@@ -68,42 +70,58 @@ class MediaFfi {
     throw UnsupportedError('Unsupported platform');
   }
 
+  /// Static buffer + collecting callback. C++ side now copies string data
+  /// into thread_local slots before invoking the callback, so the pointers
+  /// remain valid for the full synchronous FFI call (fixes Windows).
+  static final List<MediaItemData> _itemsBuffer = [];
+
+  static void _collectMedia(Pointer<Utf8> id, Pointer<Utf8> name,
+      Pointer<Utf8> type, int size, Pointer<Utf8> path, Pointer<Utf8> thumb) {
+    _itemsBuffer.add(MediaItemData(
+      id.toDartString(),
+      name.toDartString(),
+      type.toDartString(),
+      size,
+      path.toDartString(),
+      thumb.toDartString(),
+    ));
+  }
+
   List<MediaItemData> getAllMedia() {
-    final items = <MediaItemData>[];
+    _itemsBuffer.clear();
     final nativeCb = Pointer.fromFunction<_MediaCb>(_collectMedia);
-    // Use zone to pass items list
-    _currentItems = items;
     final fn = _lib
         .lookupFunction<_GetAllMediaFn, _GetAllMediaDart>('fmm_get_all_media');
     fn(nativeCb);
-    _currentItems = null;
-    return items;
+    final snap = List<MediaItemData>.from(_itemsBuffer);
+    _itemsBuffer.clear();
+    return snap;
   }
 
   List<MediaItemData> searchMedia(String query) {
-    final items = <MediaItemData>[];
+    _itemsBuffer.clear();
     final nativeCb = Pointer.fromFunction<_MediaCb>(_collectMedia);
-    _currentItems = items;
     final q = query.toNativeUtf8();
     final fn = _lib
         .lookupFunction<_SearchMediaFn, _SearchMediaDart>('fmm_search_media');
     fn(q, nativeCb);
     calloc.free(q);
-    _currentItems = null;
-    return items;
+    final snap = List<MediaItemData>.from(_itemsBuffer);
+    _itemsBuffer.clear();
+    return snap;
   }
 
   List<MediaItemData> filterByType(String type) {
-    final items = <MediaItemData>[];
+    _itemsBuffer.clear();
     final nativeCb = Pointer.fromFunction<_MediaCb>(_collectMedia);
-    _currentItems = items;
     final t = type.toNativeUtf8();
     final fn = _lib.lookupFunction<_FilterMediaFn, _FilterMediaDart>(
         'fmm_filter_media_by_type');
     fn(t, nativeCb);
     calloc.free(t);
-    _currentItems = null;
-    return items;
+    final snap = List<MediaItemData>.from(_itemsBuffer);
+    _itemsBuffer.clear();
+    return snap;
   }
 
   int deleteMedia(String id) {
@@ -115,6 +133,7 @@ class MediaFfi {
     return r;
   }
 
+  /// SQLITE_DONE = 101 (import success indicator)
   int importFile(String path) {
     final p = path.toNativeUtf8();
     final fn = _lib.lookupFunction<_ImportFileFn, _ImportFileDart>(
@@ -133,19 +152,5 @@ class MediaFfi {
     calloc.free(d);
     calloc.free(a);
     return r;
-  }
-
-  // Static callback helper
-  static List<MediaItemData>? _currentItems;
-  static void _collectMedia(Pointer<Utf8> id, Pointer<Utf8> name,
-      Pointer<Utf8> type, int size, Pointer<Utf8> path, Pointer<Utf8> thumb) {
-    _currentItems?.add(MediaItemData(
-      id.toDartString(),
-      name.toDartString(),
-      type.toDartString(),
-      size,
-      path.toDartString(),
-      thumb.toDartString(),
-    ));
   }
 }

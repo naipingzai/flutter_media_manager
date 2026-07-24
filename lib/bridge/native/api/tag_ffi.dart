@@ -43,9 +43,11 @@ class MediaItemData {
 class TagFfi {
   static TagFfi? _inst;
   late final DynamicLibrary _lib;
+
   TagFfi._() {
     _lib = _openLib();
   }
+
   static TagFfi get instance {
     _inst ??= TagFfi._();
     return _inst!;
@@ -67,37 +69,46 @@ class TagFfi {
     throw UnsupportedError('Unsupported platform');
   }
 
-  static List<TagData>? _currentTags;
+  /// Buffers + callbacks. C++ side now copies string data into thread_local
+  /// slots before invoking the callback, so the pointers remain valid for
+  /// the full synchronous FFI call (fixes Windows).
+  static final List<TagData> _tagsBuffer = [];
+  static final List<MediaItemData> _mediaBuffer = [];
+
   static void _collectTag(
       Pointer<Utf8> id, Pointer<Utf8> name, Pointer<Utf8> color) {
     final c = color == nullptr ? null : color.toDartString();
-    _currentTags?.add(TagData(id.toDartString(), name.toDartString(), c));
+    _tagsBuffer.add(TagData(id.toDartString(), name.toDartString(), c));
+  }
+
+  static void _collectMedia(Pointer<Utf8> id, Pointer<Utf8> name,
+      Pointer<Utf8> type, int size, Pointer<Utf8> path, Pointer<Utf8> thumb) {
+    _mediaBuffer.add(MediaItemData(id.toDartString(), name.toDartString(),
+        type.toDartString(), size, path.toDartString(), thumb.toDartString()));
   }
 
   List<TagData> getAllTags() {
-    _currentTags = [];
+    _tagsBuffer.clear();
     final cb = Pointer.fromFunction<_TagCb>(_collectTag);
     _lib.lookupFunction<_GetAllTagsFn,
         int Function(Pointer<NativeFunction<_TagCb>>)>('fmm_get_all_tags')(cb);
-    final r = _currentTags!;
-    _currentTags = null;
-    return r;
+    final snap = List<TagData>.from(_tagsBuffer);
+    _tagsBuffer.clear();
+    return snap;
   }
 
   List<TagData> getRootTags() {
-    _currentTags = [];
+    _tagsBuffer.clear();
     final cb = Pointer.fromFunction<_TagCb>(_collectTag);
-    _lib.lookupFunction<
-        _GetRootTagsFn,
-        int Function(
-            Pointer<NativeFunction<_TagCb>>)>('fmm_get_root_tags')(cb);
-    final r = _currentTags!;
-    _currentTags = null;
-    return r;
+    _lib.lookupFunction<_GetRootTagsFn,
+        int Function(Pointer<NativeFunction<_TagCb>>)>('fmm_get_root_tags')(cb);
+    final snap = List<TagData>.from(_tagsBuffer);
+    _tagsBuffer.clear();
+    return snap;
   }
 
   List<TagData> getChildTags(String parentId) {
-    _currentTags = [];
+    _tagsBuffer.clear();
     final cb = Pointer.fromFunction<_TagCb>(_collectTag);
     final p = parentId.toNativeUtf8();
     _lib.lookupFunction<
@@ -105,9 +116,9 @@ class TagFfi {
         int Function(Pointer<Utf8>,
             Pointer<NativeFunction<_TagCb>>)>('fmm_get_child_tags')(p, cb);
     calloc.free(p);
-    final r = _currentTags!;
-    _currentTags = null;
-    return r;
+    final snap = List<TagData>.from(_tagsBuffer);
+    _tagsBuffer.clear();
+    return snap;
   }
 
   String createTag(String name, String? color, String? parentId) {
@@ -191,7 +202,7 @@ class TagFfi {
   }
 
   List<TagData> getMediaTags(String mediaId) {
-    _currentTags = [];
+    _tagsBuffer.clear();
     final cb = Pointer.fromFunction<_TagCb>(_collectTag);
     final m = mediaId.toNativeUtf8();
     _lib.lookupFunction<
@@ -199,36 +210,23 @@ class TagFfi {
         int Function(Pointer<Utf8>,
             Pointer<NativeFunction<_TagCb>>)>('fmm_get_media_tags')(m, cb);
     calloc.free(m);
-    final r = _currentTags!;
-    _currentTags = null;
-    return r;
+    final snap = List<TagData>.from(_tagsBuffer);
+    _tagsBuffer.clear();
+    return snap;
   }
 
   // Get media by tags OR
-  static List<MediaItemData>? _currentMedia;
-  static void _collectMedia(Pointer<Utf8> id, Pointer<Utf8> name,
-      Pointer<Utf8> type, int size, Pointer<Utf8> path, Pointer<Utf8> thumb) {
-    _currentMedia?.add(MediaItemData(
-      id.toDartString(),
-      name.toDartString(),
-      type.toDartString(),
-      size,
-      path.toDartString(),
-      thumb.toDartString(),
-    ));
-  }
-
   List<MediaItemData> getMediaByTagsOr(List<String> tagIds) {
     if (tagIds.isEmpty) return [];
-    _currentMedia = [];
+    _mediaBuffer.clear();
     final cb = Pointer.fromFunction<_MediaCb>(_collectMedia);
     final t = tagIds.first.toNativeUtf8();
     _lib.lookupFunction<_GetMediaBySingleTagFn,
             int Function(Pointer<Utf8>, Pointer<NativeFunction<_MediaCb>>)>(
         'fmm_get_media_by_single_tag')(t, cb);
     calloc.free(t);
-    final r = _currentMedia!;
-    _currentMedia = null;
-    return r;
+    final snap = List<MediaItemData>.from(_mediaBuffer);
+    _mediaBuffer.clear();
+    return snap;
   }
 }

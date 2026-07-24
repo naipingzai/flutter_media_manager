@@ -1,7 +1,4 @@
-/// 文件坐标: lib/bridge/native/api/album_ffi.dart
-/// 作用:     相册相关 C 函数的 Dart FFI 封装
-/// 说明:     使用 dart:ffi 直接调用 native/src/ffi_bridge.cpp 中导出的
-///           fmm_* 函数，并通过静态回调收集 C 端返回的多条记录。
+/// Album API - C++ FFI implementation (Windows-safe variant)
 library;
 
 import 'dart:ffi';
@@ -35,9 +32,11 @@ class AlbumData {
 class AlbumFfi {
   static AlbumFfi? _inst;
   late final DynamicLibrary _lib;
+
   AlbumFfi._() {
     _lib = _openLib();
   }
+
   static AlbumFfi get instance {
     _inst ??= AlbumFfi._();
     return _inst!;
@@ -59,26 +58,42 @@ class AlbumFfi {
     throw UnsupportedError('Unsupported platform');
   }
 
-  static List<AlbumData>? _currentAlbums;
+  /// Buffers + callbacks. C++ side now copies string data into thread_local
+  /// slots before invoking the callback, so the pointers remain valid for
+  /// the full synchronous FFI call (fixes Windows).
+  static final List<AlbumData> _albumsBuffer = [];
+  static final List<MediaItemData> _mediaBuffer = [];
+  static final List<BreadcrumbData> _breadcrumbBuffer = [];
+
   static void _collectAlbum(Pointer<Utf8> id, Pointer<Utf8> name, int count) {
-    _currentAlbums
-        ?.add(AlbumData(id.toDartString(), name.toDartString(), count));
+    _albumsBuffer.add(AlbumData(id.toDartString(), name.toDartString(), count));
+  }
+
+  static void _collectMedia(Pointer<Utf8> id, Pointer<Utf8> name,
+      Pointer<Utf8> type, int size, Pointer<Utf8> path, Pointer<Utf8> thumb) {
+    _mediaBuffer.add(MediaItemData(id.toDartString(), name.toDartString(),
+        type.toDartString(), size, path.toDartString(), thumb.toDartString()));
+  }
+
+  static void _collectBreadcrumb(Pointer<Utf8> id, Pointer<Utf8> name) {
+    _breadcrumbBuffer
+        .add(BreadcrumbData(id.toDartString(), name.toDartString()));
   }
 
   List<AlbumData> getRootAlbums() {
-    _currentAlbums = [];
+    _albumsBuffer.clear();
     final cb = Pointer.fromFunction<_AlbumCb>(_collectAlbum);
     _lib.lookupFunction<
         _GetRootAlbumsFn,
         int Function(
             Pointer<NativeFunction<_AlbumCb>>)>('fmm_get_root_albums')(cb);
-    final r = _currentAlbums!;
-    _currentAlbums = null;
-    return r;
+    final snap = List<AlbumData>.from(_albumsBuffer);
+    _albumsBuffer.clear();
+    return snap;
   }
 
   List<AlbumData> getChildAlbums(String parentId) {
-    _currentAlbums = [];
+    _albumsBuffer.clear();
     final cb = Pointer.fromFunction<_AlbumCb>(_collectAlbum);
     final p = parentId.toNativeUtf8();
     _lib.lookupFunction<
@@ -86,9 +101,9 @@ class AlbumFfi {
         int Function(Pointer<Utf8>,
             Pointer<NativeFunction<_AlbumCb>>)>('fmm_get_child_albums')(p, cb);
     calloc.free(p);
-    final r = _currentAlbums!;
-    _currentAlbums = null;
-    return r;
+    final snap = List<AlbumData>.from(_albumsBuffer);
+    _albumsBuffer.clear();
+    return snap;
   }
 
   String createAlbum(String name, String? parentId) {
@@ -121,24 +136,17 @@ class AlbumFfi {
     return r;
   }
 
-  static List<MediaItemData>? _currentMedia;
-  static void _collectMedia(Pointer<Utf8> id, Pointer<Utf8> name,
-      Pointer<Utf8> type, int size, Pointer<Utf8> path, Pointer<Utf8> thumb) {
-    _currentMedia?.add(MediaItemData(id.toDartString(), name.toDartString(),
-        type.toDartString(), size, path.toDartString(), thumb.toDartString()));
-  }
-
   List<MediaItemData> getMediaByAlbum(String albumId) {
-    _currentMedia = [];
+    _mediaBuffer.clear();
     final cb = Pointer.fromFunction<_MediaCb>(_collectMedia);
     final a = albumId.toNativeUtf8();
     _lib.lookupFunction<_GetMediaByAlbumFn,
             int Function(Pointer<Utf8>, Pointer<NativeFunction<_MediaCb>>)>(
         'fmm_get_media_by_album')(a, cb);
     calloc.free(a);
-    final r = _currentMedia!;
-    _currentMedia = null;
-    return r;
+    final snap = List<MediaItemData>.from(_mediaBuffer);
+    _mediaBuffer.clear();
+    return snap;
   }
 
   int addMediaToAlbum(String mediaId, String albumId) {
@@ -165,14 +173,8 @@ class AlbumFfi {
     return r;
   }
 
-  static List<BreadcrumbData>? _currentBreadcrumb;
-  static void _collectBreadcrumb(Pointer<Utf8> id, Pointer<Utf8> name) {
-    _currentBreadcrumb
-        ?.add(BreadcrumbData(id.toDartString(), name.toDartString()));
-  }
-
   List<BreadcrumbData> getAlbumBreadcrumb(String albumId) {
-    _currentBreadcrumb = [];
+    _breadcrumbBuffer.clear();
     final cb = Pointer.fromFunction<_BreadcrumbCb>(_collectBreadcrumb);
     final a = albumId.toNativeUtf8();
     _lib.lookupFunction<
@@ -181,9 +183,9 @@ class AlbumFfi {
                 Pointer<Utf8>, Pointer<NativeFunction<_BreadcrumbCb>>)>(
         'fmm_get_album_breadcrumb')(a, cb);
     calloc.free(a);
-    final r = _currentBreadcrumb!;
-    _currentBreadcrumb = null;
-    return r;
+    final snap = List<BreadcrumbData>.from(_breadcrumbBuffer);
+    _breadcrumbBuffer.clear();
+    return snap;
   }
 }
 

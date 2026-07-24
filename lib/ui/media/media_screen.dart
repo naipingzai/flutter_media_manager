@@ -78,42 +78,62 @@ class _MediaScreenState extends State<MediaScreen> {
             final parts = value.split('_');
             final fieldStr = parts[0];
             final orderStr = parts[1];
-            final field = SortField.values.firstWhere((f) => f.name == fieldStr);
+            final field =
+                SortField.values.firstWhere((f) => f.name == fieldStr);
             final order =
                 SortOrder.values.firstWhere((o) => o.name == orderStr);
-            context
-                .read<MediaBloc>()
-                .add(MediaSortEvent(field, order));
+            context.read<MediaBloc>().add(MediaSortEvent(field, order));
           },
           itemBuilder: (_) => [
-            _sortMenuItem(loc.sort, 'date_desc', loc.sortNewestFirst,
+            _sortMenuItem(
+                loc.sort,
+                'date_desc',
+                loc.sortNewestFirst,
                 state.sortField == SortField.date &&
                     state.sortOrder == SortOrder.descending,
                 Icons.access_time_rounded),
-            _sortMenuItem(loc.sort, 'date_asc', loc.sortOldestFirst,
+            _sortMenuItem(
+                loc.sort,
+                'date_asc',
+                loc.sortOldestFirst,
                 state.sortField == SortField.date &&
                     state.sortOrder == SortOrder.ascending,
                 Icons.history_rounded),
             const PopupMenuDivider(),
-            _sortMenuItem(loc.sortByName, 'name_asc', loc.sortNameAsc,
+            _sortMenuItem(
+                loc.sortByName,
+                'name_asc',
+                loc.sortNameAsc,
                 state.sortField == SortField.name &&
                     state.sortOrder == SortOrder.ascending,
                 Icons.sort_by_alpha_rounded),
-            _sortMenuItem(loc.sortByName, 'name_desc', loc.sortNameDesc,
+            _sortMenuItem(
+                loc.sortByName,
+                'name_desc',
+                loc.sortNameDesc,
                 state.sortField == SortField.name &&
                     state.sortOrder == SortOrder.descending,
                 Icons.sort_by_alpha_rounded),
             const PopupMenuDivider(),
-            _sortMenuItem(loc.sortBySize, 'size_desc', loc.sortSizeDesc,
+            _sortMenuItem(
+                loc.sortBySize,
+                'size_desc',
+                loc.sortSizeDesc,
                 state.sortField == SortField.size &&
                     state.sortOrder == SortOrder.descending,
                 Icons.storage_rounded),
-            _sortMenuItem(loc.sortBySize, 'size_asc', loc.sortSizeAsc,
+            _sortMenuItem(
+                loc.sortBySize,
+                'size_asc',
+                loc.sortSizeAsc,
                 state.sortField == SortField.size &&
                     state.sortOrder == SortOrder.ascending,
                 Icons.storage_rounded),
             const PopupMenuDivider(),
-            _sortMenuItem(loc.sortByType, 'type_asc', '按类型 (A-Z)',
+            _sortMenuItem(
+                loc.sortByType,
+                'type_asc',
+                '按类型 (A-Z)',
                 state.sortField == SortField.type &&
                     state.sortOrder == SortOrder.ascending,
                 Icons.category_rounded),
@@ -131,8 +151,7 @@ class _MediaScreenState extends State<MediaScreen> {
       child: Row(
         children: [
           Icon(icon,
-              size: 18,
-              color: selected ? cs.primary : cs.onSurfaceVariant),
+              size: 18, color: selected ? cs.primary : cs.onSurfaceVariant),
           const SizedBox(width: 12),
           Expanded(child: Text(label)),
           if (selected) Icon(Icons.check_rounded, size: 18, color: cs.primary),
@@ -583,8 +602,13 @@ class _MediaScreenState extends State<MediaScreen> {
           failCount++;
           continue;
         }
-        await importSingleFile(filePath: file.path);
-        successCount++;
+        // importSingleFile 返回 SQLITE_DONE (101) 表示成功
+        final result = await importSingleFile(filePath: file.path);
+        if (result == 101) {
+          successCount++;
+        } else {
+          failCount++;
+        }
       } catch (_) {
         failCount++;
       }
@@ -683,8 +707,13 @@ class _MediaScreenState extends State<MediaScreen> {
           failCount++;
           continue;
         }
-        await importSingleFile(filePath: path);
-        successCount++;
+        // importSingleFile 返回 SQLITE_DONE (101) 表示成功
+        final result = await importSingleFile(filePath: path);
+        if (result == 101) {
+          successCount++;
+        } else {
+          failCount++;
+        }
       } catch (_) {
         failCount++;
       }
