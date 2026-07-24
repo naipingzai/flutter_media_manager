@@ -158,6 +158,20 @@ void bind_opt_text(sqlite3_stmt* s, int i, const std::optional<std::string>& v) 
     else sqlite3_bind_null(s, i);
 }
 
+/**
+ * @brief 将 UTF-8 字符串转换为 std::filesystem::path
+ * Windows 上 std::filesystem 默认使用 ANSI 编码解析路径
+ * 对于含中文等非 ASCII 字符的路径，std::filesystem 会失败
+ * 使用 fs::u8path() 显式指定 UTF-8 编码以正确处理 Windows 上的中文路径
+ */
+static fs::path to_path(const std::string& s) {
+#ifdef _WIN32
+    return fs::u8path(s);
+#else
+    return fs::path(s);
+#endif
+}
+
 // 匿名命名空间结束
 } // anon
 
@@ -902,18 +916,8 @@ static std::string get_or_create_default_tag(sqlite3* database) {
  * 将文件复制到应用目录，创建缩略图占位，并插入数据库。
  * 导入后会自动关联到默认相册和默认标签。
  */
-// --------------------------------------------------------------------
-// Windows 上 std::filesystem 默认使用 ANSI 编码解析路径
-// 对于含中文等非 ASCII 字符的路径，std::filesystem 会失败
-// 使用 fs::u8path() 显式指定 UTF-8 编码以正确处理 Windows 上的中文路径
-// --------------------------------------------------------------------
-static fs::path to_path(const std::string& s) {
-#ifdef _WIN32
-    return fs::u8path(s);
-#else
-    return fs::path(s);
-#endif
-}
+// to_path() 辅助函数已定义于匿名命名空间内（init 之前），
+// 这里仅调用 to_path() 来避免 Windows 上的 ANSI 路径解析问题。
 
 int Database::import_media(const std::string& fp, const std::string& ad) {
     // 源文件不存在则返回 -1
